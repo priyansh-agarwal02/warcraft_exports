@@ -1,0 +1,440 @@
+import { createClient } from "@/lib/supabase/server"
+import { revalidatePath } from "next/cache"
+import Link from "next/link"
+import {
+  Package,
+  AlertTriangle,
+  CheckCircle,
+  TrendingUp,
+  DollarSign,
+  ShoppingCart,
+  Users,
+  Clock,
+  ExternalLink,
+  ChevronRight,
+} from "lucide-react"
+
+import { OrderStatusSelect } from "./order-status-select"
+
+export const dynamic = "force-dynamic"
+
+export const metadata = { title: "Command Center — Warcraft Exports Admin" }
+
+// ─── Helper Functions ───────────────────────────────────────────────────────
+
+async function getDashboardData() {
+  const supabase = await createClient()
+
+  // 1. Fetch Stats (Total Revenue, Orders, Pending, Customers, Products, Low Stock)
+  const [
+    { data: allRevenueData },
+    { data: recentOrders },
+    { count: pendingOrders },
+    { count: totalCustomers },
+    { count: totalProducts },
+    { count: lowStockAlerts },
+    { data: byNation },
+    { data: byCategory },
+    { data: latestOrders },
+    { data: latestLogs },
+    { data: lowStockProducts }
+  ] = await Promise.all([
+    // Revenue
+    supabase.from("orders").select("total_usd").neq("status", "cancelled").neq("status", "refunded"),
+    // Last 30 days orders for chart
+    supabase.from("orders").select("total_usd, created_at").gte("created_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()).neq("status", "cancelled").neq("status", "refunded"),
+    // Pending
+    supabase.from("orders").select("*", { count: "exact", head: true }).eq("status", "pending"),
+    // Customers
+    supabase.from("user_profiles").select("*", { count: "exact", head: true }),
+    // Products
+    supabase.from("products").select("*", { count: "exact", head: true }).eq("is_active", true),
+    // Low stock count
+    supabase.from("products").select("*", { count: "exact", head: true }).eq("is_active", true).gt("stock_quantity", 0).lte("stock_quantity", 5),
+    // By nation
+    supabase.from("products").select("nation").eq("is_active", true),
+    // By category
+    supabase.from("products").select("product_categories(category:categories(name, slug))").eq("is_active", true),
+    // Latest orders feed
+    supabase.from("orders").select("id, order_number, guest_email, user_id, status, total_usd, created_at").order("created_at", { ascending: false }).limit(8),
+    // Latest activity log
+    supabase.from("admin_activity_log").select("id, created_at, action, description, admin_id").order("created_at", { ascending: false }).limit(8),
+    // Low stock alert items
+    supabase.from("products").select("id, name, sku, stock_quantity, low_stock_threshold, images:product_images(url, is_hero)").eq("is_active", true).gt("stock_quantity", 0).lte("stock_quantity", 5).order("stock_quantity", { ascending: true }).limit(5)
+  ])
+
+  // Aggregate stats
+  const totalRevenue = allRevenueData?.reduce((sum, o) => sum + Number(o.total_usd), 0) ?? 0
+  
+  const startOfToday = new Date()
+  startOfToday.setHours(0,0,0,0)
+  const ordersToday = recentOrders?.filter(o => new Date(o.created_at) >= startOfToday).length ?? 0
+
+  // Daily revenue grouping
+  const dailyRevenue: Record<string, number> = {}
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date()
+    d.setDate(d.getDate() - i)
+    const label = d.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+    dailyRevenue[label] = 0
+  }
+  recentOrders?.forEach((o) => {
+    const d = new Date(o.created_at)
+    const label = d.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+    if (dailyRevenue[label] !== undefined) {
+      dailyRevenue[label] += Number(o.total_usd)
+    }
+  })
+  const chartData = Object.entries(dailyRevenue).map(([date, amount]) => ({ date, amount }))
+  const chartTotal = chartData.reduce((sum, d) => sum + d.amount, 0)
+  const chartAvg = chartData.length > 0 ? chartTotal / chartData.length : 0
+  const chartPeak = Math.max(...chartData.map((d) => d.amount), 0)
+
+  // Nation distribution
+  const nationCounts: Record<string, number> = {}
+  byNation?.forEach((r: { nation: string }) => {
+    if (r.nation) nationCounts[r.nation] = (nationCounts[r.nation] || 0) + 1
+  })
+
+  // Category distribution via join table
+  const catCounts: Record<string, number> = {}
+  byCategory?.forEach((r: any) => {
+    const categories = r.product_categories?.map((pc: any) => pc.category).filter(Boolean) || []
+    categories.forEach((cat: any) => {
+      if (cat?.name) catCounts[cat.name] = (catCounts[cat.name] || 0) + 1
+    })
+  })
+
+  return {
+    stats: {
+      totalRevenue,
+      ordersToday,
+      totalProducts: totalProducts ?? 0,
+      lowStockAlerts: lowStockAlerts ?? 0,
+      totalCustomers: totalCustomers ?? 0,
+      pendingOrders: pendingOrders ?? 0,
+    },
+    chart: {
+      data: chartData,
+      total: chartTotal,
+      avg: chartAvg,
+      peak: chartPeak,
+    },
+    byNation: Object.entries(nationCounts).sort((a, b) => b[1] - a[1]),
+    byCategory: Object.entries(catCounts).sort((a, b) => b[1] - a[1]).slice(0, 8),
+    latestOrders: latestOrders ?? [],
+    latestLogs: latestLogs ?? [],
+    lowStockProducts: lowStockProducts ?? [],
+  }
+}
+
+export default async function AdminDashboardPage() {
+  const data = await getDashboardData()
+
+  // 6 Stats Cards Info
+  const statCards = [
+    { label: "Total Revenue", value: `$${data.stats.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, icon: DollarSign, color: "border-l-4 border-l-green-600 bg-white" },
+    { label: "Orders Today", value: data.stats.ordersToday, icon: ShoppingCart, color: "border-l-4 border-l-[#33450D] bg-white" },
+    { label: "Pending Orders", value: data.stats.pendingOrders, icon: Clock, color: "border-l-4 border-l-amber-500 bg-white" },
+    { label: "Total Products", value: data.stats.totalProducts, icon: Package, color: "border-l-4 border-l-blue-600 bg-white" },
+    { label: "Low Stock Items", value: data.stats.lowStockAlerts, icon: AlertTriangle, color: "border-l-4 border-l-red-500 bg-white", isWarning: data.stats.lowStockAlerts > 0 },
+    { label: "Registered Users", value: data.stats.totalCustomers, icon: Users, color: "border-l-4 border-l-[#BBAC48] bg-white" },
+  ]
+
+  return (
+    <div className="p-8 space-y-8 bg-[#FAF9F6]">
+      {/* Page Header */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="font-heading text-[28px] text-[#18181B] uppercase tracking-tight">Command Center</h1>
+          <p className="text-[13px] font-sans text-[#71717A] mt-0.5">Real-time stats, order feed, and activity log</p>
+        </div>
+        <div className="flex gap-2">
+          <Link href="/" target="_blank" className="flex items-center gap-1.5 text-[11px] font-sans font-bold uppercase tracking-wide border border-[#E4E4E7] px-4 py-2 hover:bg-white transition-all">
+            View Live Store
+            <ExternalLink size={12} />
+          </Link>
+        </div>
+      </div>
+
+      {/* Hero Stats Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        {statCards.map((card) => {
+          const Icon = card.icon
+          return (
+            <div key={card.label} className={`${card.color} border border-[#E4E4E7] p-4 shadow-sm hover:translate-y-[-2px] transition-all duration-200`}>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-sans font-bold uppercase tracking-wider text-[#71717A]">{card.label}</span>
+                <Icon size={14} className={card.isWarning ? "text-red-500" : "text-[#71717A]"} />
+              </div>
+              <p className="font-heading text-[20px] lg:text-[22px] font-black text-[#18181B] truncate">{card.value}</p>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Main Charts & Feed Area */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Revenue Chart Box */}
+        <div className="lg:col-span-2 bg-white border border-[#E4E4E7] p-6 shadow-sm flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-heading text-[15px] uppercase tracking-wider text-[#18181B]">Revenue (Last 30 Days)</h2>
+              <span className="text-[11px] font-sans bg-[#33450D] text-white px-2 py-0.5 uppercase tracking-wide font-bold">
+                Total: ${data.chart.total.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+              </span>
+            </div>
+            
+            {/* SVG Daily Revenue Chart */}
+            <div className="relative pt-4 h-[180px] w-full bg-[#FAF9F6] border border-[#F4F4F5] p-3">
+              <svg className="w-full h-full" viewBox="0 0 600 120" preserveAspectRatio="none">
+                {data.chart.data.map((d, i) => {
+                  const h = data.chart.peak > 0 ? (d.amount / data.chart.peak) * 100 : 0
+                  const w = 12
+                  const g = 6
+                  const x = i * (w + g) + 30
+                  const y = 110 - h
+                  return (
+                    <g key={d.date} className="group">
+                      {/* Interactive Bar */}
+                      <rect
+                        x={x}
+                        y={y}
+                        width={w}
+                        height={h}
+                        fill={d.amount > 0 ? "#33450D" : "#E4E4E7"}
+                        className="transition-colors hover:fill-[#BBAC48] cursor-pointer"
+                      />
+                      {/* Invisible wider mouse hover trigger */}
+                      <rect
+                        x={x - 2}
+                        y={0}
+                        width={w + 4}
+                        height={120}
+                        fill="transparent"
+                        className="cursor-pointer"
+                      />
+                      <title>{`${d.date}: $${d.amount.toFixed(2)}`}</title>
+                    </g>
+                  )
+                })}
+                {/* Baseline */}
+                <line x1="0" y1="110" x2="600" y2="110" stroke="#71717A" strokeWidth="1" opacity="0.3" />
+              </svg>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 border-t border-[#F4F4F4] pt-4 mt-4 text-center">
+            <div>
+              <p className="text-[10px] uppercase font-bold text-[#71717A] tracking-wider">30-day Total</p>
+              <p className="text-[15px] font-heading font-black text-[#18181B] mt-0.5">${data.chart.total.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase font-bold text-[#71717A] tracking-wider">Daily Avg</p>
+              <p className="text-[15px] font-heading font-black text-[#18181B] mt-0.5">${data.chart.avg.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase font-bold text-[#71717A] tracking-wider">Peak Day</p>
+              <p className="text-[15px] font-heading font-black text-green-600 mt-0.5">${data.chart.peak.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Low Stock Alerts table widget */}
+        <div className="bg-white border border-[#E4E4E7] p-6 shadow-sm flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-heading text-[15px] uppercase tracking-wider text-[#18181B] flex items-center gap-2">
+                <AlertTriangle size={15} className="text-amber-500 animate-bounce" />
+                Low Stock Alerts
+              </h2>
+              <Link href="/admin/products?filter=low_stock" className="text-[10px] font-sans font-bold uppercase tracking-wider text-[#33450D] hover:underline">
+                Manage
+              </Link>
+            </div>
+
+            {data.lowStockProducts.length === 0 ? (
+              <div className="text-center py-12 text-[#A1A1AA] text-[12px] font-sans">
+                All products well stocked ✓
+              </div>
+            ) : (
+              <div className="divide-y divide-[#F4F4F4]">
+                {data.lowStockProducts.map((p: any) => {
+                  const img = p.images?.find((i: any) => i.is_hero)?.url ?? p.images?.[0]?.url
+                  return (
+                    <div key={p.id} className="py-2.5 flex items-center justify-between gap-3 text-[12px] font-sans">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        {img ? (
+                          <img src={img} alt="" className="w-8 h-8 object-cover bg-[#F4F4F4] border border-[#E4E4E7]" />
+                        ) : (
+                          <div className="w-8 h-8 bg-[#F4F4F4] border border-[#E4E4E7]" />
+                        )}
+                        <div className="min-w-0">
+                          <p className="font-medium text-[#18181B] truncate">{p.name}</p>
+                          <p className="text-[10px] text-[#A1A1AA] font-mono">{p.sku}</p>
+                        </div>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <span className="bg-red-50 text-red-600 font-bold px-1.5 py-0.5 rounded text-[11px]">
+                          {p.stock_quantity} left
+                        </span>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+
+          <Link href="/admin/products?filter=low_stock" className="block text-center border border-[#E4E4E7] py-2 text-[11px] font-sans font-bold uppercase tracking-wider text-[#18181B] hover:bg-[#FAF9F6] transition-colors mt-4">
+            View All Stock Alerts
+          </Link>
+        </div>
+      </div>
+
+      {/* Grid: Recent Orders & Logs */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Recent Orders Feed */}
+        <div className="lg:col-span-2 bg-white border border-[#E4E4E7] p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-heading text-[15px] uppercase tracking-wider text-[#18181B]">Recent Orders</h2>
+            <Link href="/admin/orders" className="text-[10px] font-sans font-bold uppercase tracking-wider text-[#33450D] hover:underline">
+              View All Orders
+            </Link>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-[12px] font-sans">
+              <thead>
+                <tr className="border-b border-[#E4E4E7] text-[#71717A] font-bold uppercase tracking-wider text-[10px]">
+                  <th className="py-2.5">Order</th>
+                  <th className="py-2.5">Customer</th>
+                  <th className="py-2.5 text-right">Total</th>
+                  <th className="py-2.5 text-center">Status</th>
+                  <th className="py-2.5 text-right w-36">Change Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#F4F4F4]">
+                {data.latestOrders.map((order: any) => (
+                  <tr key={order.id} className="hover:bg-[#FAF9F6]/40 transition-colors">
+                    <td className="py-3 font-mono font-bold text-[#18181B]">{order.order_number}</td>
+                    <td className="py-3 text-[#71717A] truncate max-w-[120px]" title={order.guest_email}>{order.guest_email || "Customer"}</td>
+                    <td className="py-3 text-right font-bold text-[#18181B]">${Number(order.total_usd).toFixed(2)}</td>
+                    <td className="py-3 text-center">
+                      <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${
+                        order.status === "delivered" ? "bg-green-100 text-green-800" :
+                        order.status === "pending" ? "bg-amber-100 text-amber-800" :
+                        order.status === "cancelled" ? "bg-red-100 text-red-800" :
+                        "bg-zinc-100 text-zinc-800"
+                      }`}>
+                        {order.status}
+                      </span>
+                    </td>
+                    <td className="py-3 text-right">
+                      <OrderStatusSelect orderId={order.id} currentStatus={order.status} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Catalog Distribution (Nations & Categories) */}
+        <div className="bg-white border border-[#E4E4E7] p-6 shadow-sm flex flex-col gap-6">
+          {/* By Nation */}
+          <div>
+            <h3 className="font-heading text-[14px] uppercase tracking-wide text-[#18181B] mb-3">Products by Nation</h3>
+            <div className="space-y-2.5">
+              {data.byNation.map(([nation, count]) => (
+                <div key={nation} className="flex items-center justify-between gap-3 text-[12px] font-sans">
+                  <span className="font-medium text-[#18181B] w-20">{nation}</span>
+                  <div className="flex-1 bg-[#F4F4F4] h-1.5">
+                    <div
+                      className="bg-[#33450D] h-1.5 transition-all duration-500"
+                      style={{ width: `${(count / data.stats.totalProducts) * 100}%` }}
+                    />
+                  </div>
+                  <span className="text-[#71717A] font-bold w-6 text-right">{count}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* By Category */}
+          <div>
+            <h3 className="font-heading text-[14px] uppercase tracking-wide text-[#18181B] mb-3">Top Categories</h3>
+            <div className="space-y-2.5">
+              {data.byCategory.map(([cat, count]) => (
+                <div key={cat} className="flex items-center justify-between gap-3 text-[12px] font-sans">
+                  <span className="font-medium text-[#18181B] truncate flex-1">{cat}</span>
+                  <div className="w-24 bg-[#F4F4F4] h-1.5">
+                    <div
+                      className="bg-[#BBAC48] h-1.5 transition-all duration-500"
+                      style={{ width: `${(count / data.stats.totalProducts) * 100}%` }}
+                    />
+                  </div>
+                  <span className="text-[#71717A] font-bold w-6 text-right">{count}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom Area: Quick Action Widget and Activity Logs */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Quick Action Grid */}
+        <div className="bg-white border border-[#E4E4E7] p-6 shadow-sm">
+          <h2 className="font-heading text-[15px] uppercase tracking-wider text-[#18181B] mb-4">Quick Management</h2>
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { label: "New Product", href: "/admin/products/new", desc: "Add single catalog item" },
+              { label: "Manage Orders", href: "/admin/orders", desc: "View & ship orders" },
+              { label: "Run Catalog Sale", href: "/admin/sale", desc: "Setup active sale prices" },
+              { label: "Coupons & Promos", href: "/admin/promotions", desc: "Setup custom coupon tier" },
+            ].map((btn) => (
+              <Link key={btn.label} href={btn.href} className="border border-[#E4E4E7] p-3 text-left hover:border-[#33450D] hover:bg-[#FAF9F6] transition-all group">
+                <span className="font-sans font-bold text-[12px] text-[#18181B] group-hover:text-[#33450D] flex items-center justify-between">
+                  {btn.label}
+                  <ChevronRight size={12} className="text-[#A1A1AA]" />
+                </span>
+                <span className="block text-[10px] text-[#71717A] mt-1">{btn.desc}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* Activity Log Widget */}
+        <div className="lg:col-span-2 bg-white border border-[#E4E4E7] p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-heading text-[15px] uppercase tracking-wider text-[#18181B]">Latest Admin Log</h2>
+            <Link href="/admin/activity-log" className="text-[10px] font-sans font-bold uppercase tracking-wider text-[#33450D] hover:underline">
+              View Audit Trails
+            </Link>
+          </div>
+
+          <div className="space-y-3 max-h-[160px] overflow-y-auto pr-1">
+            {data.latestLogs.length === 0 ? (
+              <div className="text-center py-8 text-[#A1A1AA] text-[12px] font-sans">
+                No activity logged yet.
+              </div>
+            ) : (
+              data.latestLogs.map((log: any) => (
+                <div key={log.id} className="text-[12px] font-sans flex items-start justify-between gap-3 border-b border-[#F4F4F4] pb-2 last:border-0 last:pb-0">
+                  <div>
+                    <span className="font-mono text-[11px] font-bold text-[#18181B] bg-zinc-100 px-1.5 py-0.5 rounded">{log.action}</span>
+                    <span className="text-[#71717A] ml-2">{log.description || "System action executed."}</span>
+                  </div>
+                  <span className="text-[10px] text-[#A1A1AA] font-mono flex-shrink-0">
+                    {new Date(log.created_at).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
