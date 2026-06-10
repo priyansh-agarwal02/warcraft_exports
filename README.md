@@ -1,36 +1,42 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ⚔️ Warcraft Exports
 
-## Getting Started
+An enterprise-grade, high-performance e-commerce platform built for scale, speed, and seamless user experiences.
 
-First, run the development server:
+![Warcraft Exports](public/images/logo.png)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## 🚀 Overview
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Warcraft Exports is a modern, full-stack web application designed to deliver a premium shopping experience. Built from the ground up utilizing the latest web technologies, it features dynamic interfaces, robust administrative controls, global payment gateways, and real-time database management.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## ✨ Key Features
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+*   **⚡ Blazing Fast UI:** Server-side rendered pages and static generation powered by Next.js 14 App Router.
+*   **🎨 Premium Design System:** Beautiful, accessible, and responsive components built with Tailwind CSS, Shadcn UI, and smooth GSAP micro-animations.
+*   **🔐 Secure Authentication:** Enterprise-level secure login, registration, and session management.
+*   **💳 Global Payments:** Integrated checkout flows supporting multiple international gateways including Stripe, PayPal, and Razorpay.
+*   **📦 Advanced Admin Dashboard:** Comprehensive tools for inventory management, rich-text product descriptions (Tiptap), order tracking, and dynamic shipping rates.
+*   **🌍 Multi-Currency & Localization:** Real-time currency switching and language selection for a global audience.
+*   **📊 Smart Analytics:** Integrated PostHog tracking to monitor user journeys and conversion metrics.
+*   **☁️ Cloud Native:** Scalable cloud database architecture with secure image hosting via UploadThing.
 
-## Learn More
+## 🛠️ Technology Stack
 
-To learn more about Next.js, take a look at the following resources:
+*   **Framework:** [Next.js](https://nextjs.org/) (React)
+*   **Styling:** [Tailwind CSS](https://tailwindcss.com/) & [Shadcn UI](https://ui.shadcn.com/)
+*   **Database & Auth:** [Supabase](https://supabase.com/) (PostgreSQL)
+*   **Payments:** Stripe, PayPal, Razorpay
+*   **Animations:** GSAP & Tailwind Animate
+*   **Analytics:** PostHog
+*   **Email:** Resend
+*   **Deployment:** Vercel
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🛡️ Security & Best Practices
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+As a production application, security is heavily prioritized:
+- All sensitive environment variables and API keys are strictly excluded from version control.
+- Row Level Security (RLS) policies are enforced at the database level to ensure user data isolation.
+- Administrative routes and API endpoints are protected by secure middleware checks.
+- Server-side validation is strictly enforced utilizing Zod schemas.
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+*Developed with a focus on modern aesthetics, robust architecture, and exceptional user experience.*
