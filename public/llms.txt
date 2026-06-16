@@ -1,0 +1,36 @@
+# Warcraft Exports
+
+> Manufacturer and global exporter of museum-grade WW1 & WW2 historical reproduction military gear. Based in Kanpur, India.
+
+Warcraft Exports is a manufacturer-direct brand of RAAS Enterprises, specializing in highly authentic WWII and WWI leather holsters, canvas webbing, pouches, and historical militaria gear. We ship directly to reenactors, collectors, museums, and film production houses in over 20 countries.
+
+## Core Pages
+
+- [Shop](/shop): Full catalog of reproduction gear.
+- [About Us](/about): Company details, history of our workshop in Kanpur, and manufacturing craftsmanship.
+- [Wholesale Enquiry](/wholesale): Bulk ordering options for museum gift shops, distributors, and prop designers.
+- [Frequently Asked Questions](/faq): Shipping times, customs duties, return policies, and materials information.
+- [Kit Selector / Fit Guide](/fit-guide): Interactive tool sorting equipment by nation and era.
+- [Customer Reviews](/reviews): Verified testimonials from historical reenactors and collectors.
+
+## Collections & Filters
+
+- [Browse by Nation](/shop/nation/us): Collections categorized by historical military force:
+  - [US Army Reproduction Gear](/shop/nation/us)
+  - [German Wehrmacht / Imperial Reproduction Gear](/shop/nation/german)
+  - [British Army / Commonwealth Reproduction Gear](/shop/nation/british)
+  - [Imperial Japanese Army Reproduction Gear](/shop/nation/japanese)
+  - [Soviet Red Army Reproduction Gear](/shop/nation/soviet)
+  - [French Army Reproduction Gear](/shop/nation/french)
+  - [Italian Army Reproduction Gear](/shop/nation/italian)
+- [Browse by Era](/shop/era/ww2): Collections sorted by conflict period:
+  - [World War 1 (WW1) Collection](/shop/era/ww1)
+  - [World War 2 (WW2) Collection](/shop/era/ww2)
+  - [Cold War Collection](/shop/era/cold-war)
+  - [Modern Tactical Gear](/shop/era/modern-tactical)
+
+## Ordering & Shipping Guidelines
+
+- [Pricing Details](/pricing.md): Detailed explanation of retail, wholesale, and logistics rates.
+- [Shipping Policy](/shipping-policy): Global courier options, estimated transit times, and import tax information.
+- [Returns Policy](/returns-policy): 30-day return window and easy sizing exchanges.

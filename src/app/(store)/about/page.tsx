@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 }
 
 const STATS = [
-  { value: "10+", label: "Years in Business" },
+  { value: siteConfig.brand.yearsInBusiness, label: "Years in Business" },
   { value: siteConfig.brand.countriesServed, label: "Countries Served" },
   { value: siteConfig.brand.ordersFulfilled, label: "Orders Fulfilled" },
   { value: siteConfig.brand.products, label: "Products" },
@@ -108,9 +108,9 @@ export default function AboutPage() {
               {[
                 { term: "Registered Name", detail: "RAAS Enterprises" },
                 { term: "Location", detail: "Fazalgunj, Kanpur, Uttar Pradesh 208012, India" },
-                { term: "Established", detail: "2014" },
+                { term: "Established", detail: "2018" },
                 { term: "Specialisation", detail: "WW1 & WW2 Historical Reproduction Leather Gear" },
-                { term: "Export Markets", detail: "20+ Countries across North America, Europe, Asia-Pacific" },
+                { term: "Export Markets", detail: "20+ Countries across USA, Canada, Mexico, Europe, Japan, Australia, Asia-Pacific" },
                 { term: "Contact", detail: siteConfig.email },
               ].map(({ term, detail }) => (
                 <div key={term} className="flex flex-col sm:flex-row sm:gap-4">
@@ -121,6 +121,85 @@ export default function AboutPage() {
                 </div>
               ))}
             </dl>
+          </div>
+        </div>
+
+        {/* Marketplace Storefronts */}
+        <div className="mb-16">
+          <div className="text-center mb-10">
+            <p className="text-[10px] font-sans font-bold uppercase tracking-[0.2em] text-leather mb-2">
+              Our Marketplaces
+            </p>
+            <h2 className="font-heading text-2xl sm:text-3xl text-leather-dark">
+              Our Global Storefronts
+            </h2>
+            <p className="font-sans text-leather/80 max-w-2xl mx-auto text-sm leading-relaxed mt-2">
+              To offer the most flexible shipping, regional pricing, and convenient buying options, 
+              we maintain official stores on the world&apos;s leading platforms in addition to our direct workshop site.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              {
+                name: "Amazon Storefront",
+                tagline: "Prime Shipping & Global Fulfilment",
+                desc: "Purchase our museum-grade WWII and WWI leather gear with Amazon's familiar checkout, Prime eligibility, and reliable customer service.",
+                url: siteConfig.social.amazon,
+                buttonText: "Shop on Amazon",
+                color: "hover:border-[#FF9900]/60",
+                badge: "bg-[#FF9900]/10 text-[#FF9900]",
+              },
+              {
+                name: "eBay Outlet",
+                tagline: "Specialized Auctions & Direct Lots",
+                desc: "Bid on special auction batches, unique militaria items, and bundle deals directly through our authorized eBay storefront.",
+                url: siteConfig.social.ebay,
+                buttonText: "Shop on eBay",
+                color: "hover:border-[#0064D2]/60",
+                badge: "bg-[#0064D2]/10 text-[#0064D2]",
+              },
+              {
+                name: "Walmart Marketplace",
+                tagline: "Walmart Certified Partner",
+                desc: "Shop our reproductions on Walmart's marketplace platform, integrated directly with your Walmart account and domestic support.",
+                url: siteConfig.social.walmart,
+                buttonText: "Shop on Walmart",
+                color: "hover:border-[#0071CE]/60",
+                badge: "bg-[#0071CE]/10 text-[#0071CE]",
+              },
+            ].map((store) => (
+              <div
+                key={store.name}
+                className={`flex flex-col justify-between bg-white border border-khaki/30 rounded-sm p-6 hover:shadow-md transition-all duration-300 ${store.color} hover:translate-y-[-2px]`}
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-heading text-lg text-leather-dark">{store.name}</h3>
+                    <span className={`text-[9px] font-sans font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${store.badge}`}>
+                      Active
+                    </span>
+                  </div>
+                  <p className="font-sans text-[10px] font-bold uppercase tracking-wider text-khaki mb-4">
+                    {store.tagline}
+                  </p>
+                  <p className="font-sans text-xs text-leather/70 leading-relaxed mb-6">
+                    {store.desc}
+                  </p>
+                </div>
+                <a
+                  href={store.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-2 w-full bg-[#33450D] text-white py-2.5 text-xs font-sans font-bold uppercase tracking-[0.1em] hover:bg-[#4A5D23] transition-colors rounded-sm"
+                >
+                  {store.buttonText}
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </a>
+              </div>
+            ))}
           </div>
         </div>
 

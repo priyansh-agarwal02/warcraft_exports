@@ -36,8 +36,8 @@ export function MobileDrawer() {
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-khaki/50">
-          <span className="font-heading text-xl text-leather-dark tracking-tight">
-            Warcraft Exports
+          <span className="font-heading text-lg font-black text-[#18181B] tracking-[-0.04em] uppercase">
+            WARCRAFT EXPORTS ®
           </span>
           <button onClick={() => setOpen(false)} className="p-1 text-leather-dark">
             <X size={20} />
@@ -92,6 +92,11 @@ export function MobileDrawer() {
               className="block py-2.5 text-sm font-sans font-semibold uppercase tracking-widest text-leather-dark border-b border-khaki/30 hover:text-leather"
             >{label}</Link>
           ))}
+          <Link href="/sale" onClick={() => setOpen(false)}
+            className="block py-2.5 text-sm font-sans font-bold uppercase tracking-widest text-red-600 border-b border-khaki/30 hover:text-red-700"
+          >
+            Sale
+          </Link>
         </nav>
 
         {/* Footer links */}

@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json()
-    const { customer, items, paymentMethod, paymentIntentId, shippingMethod = "standard", status = "confirmed", couponCode } = body as {
+    const { customer, items, paymentMethod, paymentIntentId, shippingMethod = "standard", couponCode } = body as {
       customer: {
         fullName: string
         email: string
@@ -32,9 +32,11 @@ export async function POST(req: NextRequest) {
       paymentMethod?: "razorpay" | "paypal"
       paymentIntentId?: string
       shippingMethod?: "standard" | "express"
-      status?: "confirmed" | "processing" | "shipped" | "delivered" | "cancelled" | "refunded"
       couponCode?: string | null
     }
+
+    // Server determines order status — never trust client
+    const status = "confirmed"
 
     // Honeypot — silent drop for bots
     if (customer?.honeypot) {
@@ -48,6 +50,31 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing required customer fields" }, { status: 400 })
     }
 
+    // Email format validation
+    const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!EMAIL_RE.test(customer.email.trim())) {
+      return NextResponse.json({ error: "Invalid email address" }, { status: 400 })
+    }
+
+    // Phone format validation (if provided)
+    if (customer.phone && !/^\+?[\d\s\-().]{7,20}$/.test(customer.phone.trim())) {
+      return NextResponse.json({ error: "Invalid phone number" }, { status: 400 })
+    }
+
+    // Length limits to prevent abuse
+    if (
+      customer.fullName.length > 100 || customer.email.length > 254 ||
+      customer.address1.length > 200 || customer.city.length > 100 ||
+      (customer.notes && customer.notes.length > 2000)
+    ) {
+      return NextResponse.json({ error: "Field length exceeds maximum allowed" }, { status: 400 })
+    }
+
+    // Sanitize notes — strip HTML tags to prevent stored XSS
+    if (customer.notes) {
+      customer.notes = customer.notes.replace(/<[^>]*>/g, "").slice(0, 2000)
+    }
+
     if (!items?.length) {
       return NextResponse.json({ error: "Cart is empty" }, { status: 400 })
     }
@@ -59,10 +86,11 @@ export async function POST(req: NextRequest) {
     }
 
     const supabase = await createClient()
+    const serviceClient = createServiceClient()
 
     // Server-side price recalculation — never trust client amounts
     const productIds = [...new Set(items.map((i) => i.productId))]
-    const { data: dbProducts, error: fetchError } = await supabase
+    const { data: dbProducts, error: fetchError } = await serviceClient
       .from("products")
       .select("id, name, sku, price_usd, sale_price_usd")
       .in("id", productIds)
@@ -75,7 +103,7 @@ export async function POST(req: NextRequest) {
     const variantIds = items.map((i) => i.variantId).filter(Boolean) as string[]
     let dbVariants: any[] = []
     if (variantIds.length > 0) {
-      const { data, error } = await supabase
+      const { data, error } = await serviceClient
         .from("product_variants")
         .select("id, price_override")
         .in("id", variantIds)
@@ -124,7 +152,6 @@ export async function POST(req: NextRequest) {
 
     if (couponCode) {
       const cleanCouponCode = couponCode.toUpperCase().trim()
-      const serviceClient = createServiceClient()
       const { data: dbCoupon, error: couponErr } = await serviceClient
         .from("coupons")
         .select("id, code, type, value, min_order_usd, usage_limit, times_used, is_active, expires_at")
@@ -145,7 +172,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Fetch active shipping rate from database based on selected country name
-    const { data: dbRate } = await supabase
+    const { data: dbRate } = await serviceClient
       .from("shipping_rates")
       .select("standard_price, free_threshold, express_price")
       .eq("country_name", customer.country)
@@ -154,7 +181,7 @@ export async function POST(req: NextRequest) {
     // Fallback to "Rest of World" / "OTHER" if no country-specific rate exists
     let activeRate = dbRate
     if (!activeRate) {
-      const { data: fallbackRate } = await supabase
+      const { data: fallbackRate } = await serviceClient
         .from("shipping_rates")
         .select("standard_price, free_threshold, express_price")
         .eq("country_code", "OTHER")
@@ -197,7 +224,6 @@ export async function POST(req: NextRequest) {
 
     if (!orderUserId && customer.email) {
       try {
-        const serviceClient = createServiceClient()
         let existingUserId: string | null = null
 
         // 1. Paginate to find if user already exists in auth.users
@@ -247,7 +273,7 @@ export async function POST(req: NextRequest) {
       customer.notes ? `Customer Notes: ${customer.notes}` : ""
     ].filter(Boolean).join(" | ")
 
-    const { data: order, error: orderError } = await supabase
+    const { data: order, error: orderError } = await serviceClient
       .from("orders")
       .insert({
         order_number: orderNumber,
@@ -277,7 +303,6 @@ export async function POST(req: NextRequest) {
     // Auto-save shipping address using RLS-proof service role client if user is logged in or account created
     if (orderUserId) {
       try {
-        const serviceClient = createServiceClient()
         const { data: existingAddress } = await serviceClient
           .from("addresses")
           .select("id")
@@ -314,7 +339,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    await supabase.from("order_items").insert(
+    await serviceClient.from("order_items").insert(
       validatedItems.map((item) => ({
         order_id: order.id,
         product_id: item.productId,
@@ -329,7 +354,6 @@ export async function POST(req: NextRequest) {
     // Log coupon usage in coupon_uses and update times_used on the coupon table using service role client
     if (couponId && order?.id) {
       try {
-        const serviceClient = createServiceClient()
         // 1. Log coupon usage
         await serviceClient.from("coupon_uses").insert({
           coupon_id: couponId,
@@ -337,17 +361,9 @@ export async function POST(req: NextRequest) {
           user_id: orderUserId || null,
         })
         
-        // 2. Increment times_used on coupon
-        const { data: currCoupon } = await serviceClient
-          .from("coupons")
-          .select("times_used")
-          .eq("id", couponId)
-          .single()
-        
-        await serviceClient
-          .from("coupons")
-          .update({ times_used: (currCoupon?.times_used ?? 0) + 1 })
-          .eq("id", couponId)
+        // 2. Atomically increment times_used (prevents race condition)
+        await serviceClient.rpc("increment_coupon_usage", { coupon_uuid: couponId })
+
       } catch (useErr) {
         console.error("Failed to record coupon usage:", useErr)
       }

@@ -160,12 +160,27 @@ export function CheckoutForm() {
   }
 
   function validateForm(): boolean {
+    const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    const PHONE_RE = /^\+?[\d\s\-().]{7,20}$/
+
     if (!form.fullName.trim() || !form.email.trim() || !form.phone.trim()) {
       setError("Please fill in all contact information fields.")
       return false
     }
+    if (!EMAIL_RE.test(form.email.trim())) {
+      setError("Please enter a valid email address.")
+      return false
+    }
+    if (!PHONE_RE.test(form.phone.trim())) {
+      setError("Please enter a valid phone number (digits, spaces, dashes, with optional country code).")
+      return false
+    }
     if (!form.address1.trim() || !form.city.trim() || !form.postalCode.trim()) {
       setError("Please fill in all address fields.")
+      return false
+    }
+    if (form.postalCode.trim().length < 3 || form.postalCode.trim().length > 10) {
+      setError("Please enter a valid postal code (3–10 characters).")
       return false
     }
     if (items.length === 0) {
@@ -265,15 +280,15 @@ export function CheckoutForm() {
             <div className="flex flex-col gap-4">
               <div>
                 <label htmlFor="fullName" className={labelClass}>Full Name *</label>
-                <input id="fullName" name="fullName" type="text" required value={form.fullName} onChange={handleChange} placeholder="John Smith" className={inputClass} />
+                <input id="fullName" name="fullName" type="text" required maxLength={100} value={form.fullName} onChange={handleChange} placeholder="John Smith" className={inputClass} />
               </div>
               <div>
                 <label htmlFor="email" className={labelClass}>Email *</label>
-                <input id="email" name="email" type="email" required value={form.email} onChange={handleChange} placeholder="you@example.com" className={inputClass} />
+                <input id="email" name="email" type="email" required maxLength={254} value={form.email} onChange={handleChange} placeholder="you@example.com" className={inputClass} />
               </div>
               <div>
                 <label htmlFor="phone" className={labelClass}>Phone *</label>
-                <input id="phone" name="phone" type="tel" required value={form.phone} onChange={handleChange} placeholder="+1 or +91 — include country code" className={inputClass} />
+                <input id="phone" name="phone" type="tel" required maxLength={20} value={form.phone} onChange={handleChange} placeholder="+1 or +91 — include country code" className={inputClass} />
               </div>
             </div>
           </section>
@@ -319,26 +334,26 @@ export function CheckoutForm() {
               )}
               <div>
                 <label htmlFor="address1" className={labelClass}>Address Line 1 *</label>
-                <input id="address1" name="address1" type="text" required value={form.address1} onChange={handleChange} placeholder="123 Main Street" className={inputClass} />
+                <input id="address1" name="address1" type="text" required maxLength={200} value={form.address1} onChange={handleChange} placeholder="123 Main Street" className={inputClass} />
               </div>
               <div>
                 <label htmlFor="address2" className={labelClass}>Address Line 2</label>
-                <input id="address2" name="address2" type="text" value={form.address2} onChange={handleChange} placeholder="Apt, Suite, Unit (optional)" className={inputClass} />
+                <input id="address2" name="address2" type="text" maxLength={200} value={form.address2} onChange={handleChange} placeholder="Apt, Suite, Unit (optional)" className={inputClass} />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="city" className={labelClass}>City *</label>
-                  <input id="city" name="city" type="text" required value={form.city} onChange={handleChange} placeholder="City" className={inputClass} />
+                  <input id="city" name="city" type="text" required maxLength={100} value={form.city} onChange={handleChange} placeholder="City" className={inputClass} />
                 </div>
                 <div>
                   <label htmlFor="state" className={labelClass}>State / Province *</label>
-                  <input id="state" name="state" type="text" required value={form.state} onChange={handleChange} placeholder="State" className={inputClass} />
+                  <input id="state" name="state" type="text" required maxLength={100} value={form.state} onChange={handleChange} placeholder="State" className={inputClass} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="postalCode" className={labelClass}>Postal Code *</label>
-                  <input id="postalCode" name="postalCode" type="text" required value={form.postalCode} onChange={handleChange} placeholder="12345" className={inputClass} />
+                  <input id="postalCode" name="postalCode" type="text" required maxLength={10} value={form.postalCode} onChange={handleChange} placeholder="12345" className={inputClass} />
                 </div>
                 <div>
                   <label htmlFor="country" className={labelClass}>Country *</label>

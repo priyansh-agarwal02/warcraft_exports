@@ -34,7 +34,7 @@ export function FeaturedCategories() {
             <Link
               key={nation}
               href={`/shop/nation/${nation}`}
-              className="group relative overflow-hidden border border-khaki bg-card-white aspect-[3/4] flex flex-col justify-end p-4 hover:border-leather transition-colors"
+              className={`group relative overflow-hidden border border-khaki bg-card-white aspect-[3/4] flex flex-col justify-end p-4 hover:border-leather transition-colors ${nation === "japanese" ? "hidden sm:flex" : "flex"}`}
             >
               {/* Background Image */}
               <div className="absolute inset-0">

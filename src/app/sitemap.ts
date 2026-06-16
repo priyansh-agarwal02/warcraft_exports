@@ -1,12 +1,13 @@
 import type { MetadataRoute } from "next"
 import { createClient } from "@/lib/supabase/server"
+import { siteConfig } from "@/config/site.config"
 
 export const revalidate = 3600 // regenerate every hour
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://warcraftexports.com"
 
-  // Static pages
+  // Core static pages
   const staticPages: MetadataRoute.Sitemap = [
     { url: `${baseUrl}/`, lastModified: new Date(), changeFrequency: "daily", priority: 1.0 },
     { url: `${baseUrl}/shop`, lastModified: new Date(), changeFrequency: "daily", priority: 0.9 },
@@ -16,26 +17,38 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${baseUrl}/faq`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.6 },
     { url: `${baseUrl}/fit-guide`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.5 },
     { url: `${baseUrl}/stores`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.5 },
+    { url: `${baseUrl}/reviews`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.7 },
+    { url: `${baseUrl}/sale`, lastModified: new Date(), changeFrequency: "daily", priority: 0.85 },
     { url: `${baseUrl}/track-order`, lastModified: new Date(), changeFrequency: "yearly", priority: 0.4 },
     { url: `${baseUrl}/shipping-policy`, lastModified: new Date(), changeFrequency: "yearly", priority: 0.3 },
     { url: `${baseUrl}/returns-policy`, lastModified: new Date(), changeFrequency: "yearly", priority: 0.3 },
     { url: `${baseUrl}/privacy-policy`, lastModified: new Date(), changeFrequency: "yearly", priority: 0.3 },
     { url: `${baseUrl}/terms-of-service`, lastModified: new Date(), changeFrequency: "yearly", priority: 0.3 },
-    // Nation filtered pages (high SEO value — long-tail)
-    { url: `${baseUrl}/shop/nation/us`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.8 },
-    { url: `${baseUrl}/shop/nation/german`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.8 },
-    { url: `${baseUrl}/shop/nation/british`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.7 },
-    { url: `${baseUrl}/shop/nation/japanese`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.7 },
-    { url: `${baseUrl}/shop/nation/soviet`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.7 },
-    { url: `${baseUrl}/shop/nation/french`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.6 },
-    // Era filtered pages
-    { url: `${baseUrl}/shop/era/ww1`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.8 },
-    { url: `${baseUrl}/shop/era/ww2`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.8 },
-    { url: `${baseUrl}/shop/era/cold-war`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.6 },
-    { url: `${baseUrl}/shop/era/modern-tactical`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.6 },
   ]
 
-  // Dynamic product pages
+  // Dynamic nation pages from siteConfig
+  const nationPages: MetadataRoute.Sitemap = siteConfig.nations.map((nation) => {
+    const slug = nation.toLowerCase()
+    return {
+      url: `${baseUrl}/shop/nation/${slug}`,
+      lastModified: new Date(),
+      changeFrequency: "weekly" as const,
+      priority: slug === "us" || slug === "german" ? 0.8 : 0.7,
+    }
+  })
+
+  // Dynamic era pages from siteConfig
+  const eraPages: MetadataRoute.Sitemap = siteConfig.eras.map((era) => {
+    const slug = era.toLowerCase().replace(/\s+/g, "-")
+    return {
+      url: `${baseUrl}/shop/era/${slug}`,
+      lastModified: new Date(),
+      changeFrequency: "weekly" as const,
+      priority: slug === "ww1" || slug === "ww2" ? 0.8 : 0.6,
+    }
+  })
+
+  // Dynamic product & category pages
   let productPages: MetadataRoute.Sitemap = []
   let categoryPages: MetadataRoute.Sitemap = []
 
@@ -75,5 +88,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Silently fall through — static pages are still generated
   }
 
-  return [...staticPages, ...categoryPages, ...productPages]
+  return [...staticPages, ...nationPages, ...eraPages, ...categoryPages, ...productPages]
 }

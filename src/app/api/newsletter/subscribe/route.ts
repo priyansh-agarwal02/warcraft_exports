@@ -1,29 +1,15 @@
 import { NextRequest, NextResponse } from "next/server"
 import { sendNewsletterWelcome } from "@/lib/email"
+import { checkRateLimit } from "@/lib/rate-limit"
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
 const EMAIL_REGEX = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/
 
-// Simple in-memory rate limit — max 3 subscribe attempts per IP per hour
-const rateMap = new Map<string, { count: number; resetAt: number }>()
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now()
-  const entry = rateMap.get(ip)
-  if (!entry || now > entry.resetAt) {
-    rateMap.set(ip, { count: 1, resetAt: now + 3_600_000 })
-    return true
-  }
-  if (entry.count >= 3) return false
-  entry.count++
-  return true
-}
-
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown"
-  if (!checkRateLimit(ip)) {
+  if (!checkRateLimit(`newsletter:${ip}`, 3, 3_600_000)) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 })
   }
 

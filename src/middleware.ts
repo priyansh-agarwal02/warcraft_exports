@@ -182,10 +182,12 @@ export async function middleware(request: NextRequest) {
 
   // Protect /admin routes — require admin role
   if (request.nextUrl.pathname.startsWith("/admin")) {
-    console.log("[MIDDLEWARE] Checking admin path:", request.nextUrl.pathname);
-    console.log("[MIDDLEWARE] User:", user ? user.email : "none");
+    if (process.env.NODE_ENV !== "production") {
+      console.log("[MIDDLEWARE] Checking admin path:", request.nextUrl.pathname);
+      console.log("[MIDDLEWARE] User:", user ? user.email : "none");
+    }
     if (!user) {
-      console.log("[MIDDLEWARE] No user, redirecting to /login");
+      if (process.env.NODE_ENV !== "production") console.log("[MIDDLEWARE] No user, redirecting to /login");
       const url = request.nextUrl.clone();
       url.pathname = "/login";
       return NextResponse.redirect(url);
@@ -200,27 +202,27 @@ export async function middleware(request: NextRequest) {
         .single();
       if (error) throw error;
       profile = data;
-      console.log("[MIDDLEWARE] Profile query result:", profile, "Error: none");
+      if (process.env.NODE_ENV !== "production") console.log("[MIDDLEWARE] Profile query result:", profile?.role);
     } catch (err: any) {
       console.error("[MIDDLEWARE] Profile query error:", err?.message || err);
     }
 
     if (profile?.role !== "admin") {
-      console.log("[MIDDLEWARE] Access Denied: role is", profile?.role);
+      if (process.env.NODE_ENV !== "production") console.log("[MIDDLEWARE] Access Denied: role is", profile?.role);
       return new NextResponse(ACCESS_DENIED_HTML, {
         status: 403,
         headers: { "Content-Type": "text/html" },
       });
     }
 
-    console.log("[MIDDLEWARE] Access Granted");
+    if (process.env.NODE_ENV !== "production") console.log("[MIDDLEWARE] Access Granted");
     // Block search engines from indexing admin
     supabaseResponse.headers.set("X-Robots-Tag", "noindex, nofollow");
   }
 
   // Security headers for all responses
   supabaseResponse.headers.set("X-Content-Type-Options", "nosniff");
-  supabaseResponse.headers.set("X-Frame-Options", "SAMEORIGIN");
+  supabaseResponse.headers.set("X-Frame-Options", "DENY");
   supabaseResponse.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   supabaseResponse.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
 

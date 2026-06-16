@@ -140,20 +140,18 @@ export function ProductEditForm({ product, categories }: Props) {
     const result = await res.json()
     const savedId = product?.id ?? (Array.isArray(result) ? result[0]?.id : result?.id)
 
-    // Add image if provided
+    // Add image if provided — via authenticated admin API
     if (form.imageUrl && savedId) {
-      const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
-      const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      await fetch(`${SUPABASE_URL}/rest/v1/product_images`, {
+      await fetch("/api/admin/products/images", {
         method: "POST",
-        headers: { "apikey": ANON_KEY, "Content-Type": "application/json" },
-        body: JSON.stringify([{
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           product_id: savedId,
           url: form.imageUrl,
           alt_text: form.name,
           sort_order: 0,
           is_hero: !(product?.images?.length),
-        }]),
+        }),
       })
     }
 

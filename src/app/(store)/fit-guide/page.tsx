@@ -1,5 +1,17 @@
-"use client"
+import type { Metadata } from "next"
 import Link from "next/link"
+
+export const metadata: Metadata = {
+  title: "Fit Guide & Kit Selector — Warcraft Exports",
+  description:
+    "Interactive kit selector for WW1 & WW2 reproduction military gear. Browse leather holsters, canvas pouches, and historical collector items by era and nation.",
+  keywords: [
+    "reproduction gear fit guide",
+    "WW1 military kit selector",
+    "WW2 military kit selector",
+    "historical reenactment gear builder",
+  ],
+}
 
 const NATIONS = [
   { label: "American", slug: "us", code: "US", bg: "#1C2C4A" },

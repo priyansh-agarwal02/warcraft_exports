@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { requireAdmin } from "@/lib/admin-auth"
 
 export const dynamic = "force-dynamic"
 
@@ -8,6 +9,9 @@ export const dynamic = "force-dynamic"
  * Falls back to mock data if PostHog personal API key is not configured.
  */
 export async function GET(request: NextRequest) {
+  const auth = await requireAdmin()
+  if (auth.error) return auth.error
+
   const { searchParams } = new URL(request.url)
   const range = searchParams.get("range") ?? "30d"
   const fromParam = searchParams.get("from") ?? undefined

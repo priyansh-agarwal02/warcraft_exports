@@ -18,8 +18,8 @@ export async function getUserProfile() {
       }
     )
 
-    const { data: { session } } = await supabaseSession.auth.getSession()
-    if (!session?.user?.id) return null
+    const { data: { user } } = await supabaseSession.auth.getUser()
+    if (!user?.id) return null
 
     // Use Service Role to bypass RLS infinite recursion on `profiles`
     const supabaseAdmin = createClient(
@@ -30,7 +30,7 @@ export async function getUserProfile() {
     const { data, error } = await supabaseAdmin
       .from("profiles")
       .select("full_name, email, role, avatar_url")
-      .eq("id", session.user.id)
+      .eq("id", user.id)
       .single()
 
     if (error) {

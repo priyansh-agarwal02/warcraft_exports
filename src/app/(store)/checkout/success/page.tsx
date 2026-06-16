@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
+import { createServiceClient } from "@/lib/supabase/service"
 import { createClient } from "@/lib/supabase/server"
 
 export const metadata: Metadata = { title: "Order Confirmed — Warcraft Exports" }
@@ -35,20 +36,30 @@ function calculateEstimatedArrival(createdAtStr: string, standardDays: string): 
 export default async function CheckoutSuccessPage({ searchParams }: { searchParams: SP }) {
   const { order_id } = await searchParams
   let order = null
+  let isOwner = false
   let shippingMethod = "Standard Shipping"
   let estimatedArrival = "7-14 Business Days"
   let formattedAddress = ""
 
   if (order_id) {
-    const supabase = await createClient()
-    const { data } = await supabase
+    const serviceClient = createServiceClient()
+    const { data } = await serviceClient
       .from("orders")
-      .select("id, order_number, total_usd, shipping_usd, created_at, customer_name, shipping_address, order_items(id, quantity, unit_price_usd, price_usd, product_snapshot, product:products(name, sku, images:product_images(url, is_hero)))")
+      .select("id, order_number, total_usd, shipping_usd, created_at, customer_name, shipping_address, user_id, order_items(id, quantity, unit_price_usd, price_usd, product_snapshot, product:products(name, sku, images:product_images(url, is_hero)))")
       .eq("id", order_id)
       .single()
     
     if (data) {
       order = data
+
+      // Verify ownership — only the order owner sees full PII
+      try {
+        const supabase = await createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        isOwner = !!(user && (data as any).user_id && user.id === (data as any).user_id)
+      } catch {
+        isOwner = false
+      }
       
       // Format address string
       const addr = data.shipping_address as any
@@ -62,7 +73,7 @@ export default async function CheckoutSuccessPage({ searchParams }: { searchPara
 
       // Fetch dynamic country-specific shipping rate details
       if (addr?.country) {
-        const { data: rate } = await supabase
+        const { data: rate } = await serviceClient
           .from("shipping_rates")
           .select("standard_days, standard_price, country_name")
           .eq("country_name", addr.country)
@@ -71,7 +82,7 @@ export default async function CheckoutSuccessPage({ searchParams }: { searchPara
         // Fallback to "Rest of World" (OTHER) if country rate is not found
         let activeRate = rate
         if (!activeRate) {
-          const { data: fallbackRate } = await supabase
+          const { data: fallbackRate } = await serviceClient
             .from("shipping_rates")
             .select("standard_days, standard_price, country_name")
             .eq("country_code", "OTHER")
@@ -171,16 +182,18 @@ export default async function CheckoutSuccessPage({ searchParams }: { searchPara
                   </span>
                 </div>
                 
-                {/* DESTINATION */}
-                <div className="flex flex-col gap-1">
-                  <span className="font-sans font-bold text-[12px] leading-[12px] tracking-[1.2px] text-[#76786B] uppercase">
-                    DESTINATION
-                  </span>
-                  <div className="font-sans font-normal text-[13px] md:text-[14px] leading-[20px] text-[#1A1C1C]">
-                    <strong className="block font-bold mb-0.5">{order.customer_name}</strong>
-                    {formattedAddress}
+                {/* DESTINATION — only shown to order owner */}
+                {isOwner && (
+                  <div className="flex flex-col gap-1">
+                    <span className="font-sans font-bold text-[12px] leading-[12px] tracking-[1.2px] text-[#76786B] uppercase">
+                      DESTINATION
+                    </span>
+                    <div className="font-sans font-normal text-[13px] md:text-[14px] leading-[20px] text-[#1A1C1C]">
+                      <strong className="block font-bold mb-0.5">{order.customer_name}</strong>
+                      {formattedAddress}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
 
               {/* Right Column inside card: ESTIMATED ARRIVAL & SHIPPING METHOD */}

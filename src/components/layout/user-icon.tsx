@@ -262,10 +262,10 @@ export function UserIcon() {
                   Sign in to check orders, save addresses, and customize your wishlist history.
                 </p>
                 
-                <DropdownMenuItem asChild className="p-0 focus:bg-transparent">
+                <DropdownMenuItem asChild className="px-0 py-0 focus:bg-transparent w-full justify-center">
                   <Link 
                     href="/auth/login" 
-                    className="block text-center w-full bg-[#33450D] text-white py-2 text-[11px] font-sans font-bold uppercase tracking-[0.12em] hover:bg-[#4A5D23] transition-colors"
+                    className="flex justify-center items-center w-full bg-[#33450D] text-white py-2 text-[11px] font-sans font-bold uppercase tracking-[0.12em] hover:bg-[#4A5D23] transition-colors"
                   >
                     Sign In / Register
                   </Link>

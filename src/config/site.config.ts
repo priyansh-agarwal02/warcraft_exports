@@ -13,9 +13,9 @@ export const siteConfig = {
   },
 
   brand: {
-    yearsInBusiness: 8,
+    yearsInBusiness: "8+",
     countriesServed: "20+",
-    ordersFulfilled: "70,000+",
+    ordersFulfilled: "100K+",
     products: "300+",
   },
 
@@ -23,7 +23,7 @@ export const siteConfig = {
   defaultCurrency: "USD" as const,
 
   nations: ["US", "German", "British", "Japanese", "Soviet", "French", "Italian", "Universal"] as const,
-  navNations: ["US", "German", "British", "Japanese", "Soviet", "French"] as const, // Italian excluded from nav (Amendment 011)
+  navNations: ["US", "German", "British", "Japanese", "Soviet"] as const, // Italian excluded from nav (Amendment 011), French excluded (shows French in nation but not there)
   eras: ["WW1", "WW2", "Cold War", "Modern Tactical", "Universal"] as const,
 
   wholesale: {

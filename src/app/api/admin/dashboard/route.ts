@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createServiceClient } from "@/lib/supabase/service"
 import { CURRENCIES } from "@/lib/currency"
+import { requireAdmin } from "@/lib/admin-auth"
 
 export const dynamic = "force-dynamic"
 
@@ -41,6 +42,9 @@ function buildDailyBuckets(start: Date, days: number): Record<string, number> {
 }
 
 export async function GET(request: NextRequest) {
+  const auth = await requireAdmin()
+  if (auth.error) return auth.error
+
   const { searchParams } = new URL(request.url)
   const range = searchParams.get("range") ?? "30d"
   const fromParam = searchParams.get("from") ?? undefined
@@ -246,6 +250,6 @@ export async function GET(request: NextRequest) {
     days,
   }
 
-  console.log("api/admin/dashboard totalCustomers:", totalCustomers)
+
   return NextResponse.json(response)
 }
