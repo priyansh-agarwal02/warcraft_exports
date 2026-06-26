@@ -160,7 +160,7 @@ export default function AdminSalePage() {
 
   if (loading) {
     return (
-      <div className="p-8">
+      <div className="p-4 sm:p-8">
         <div className="h-8 w-48 bg-[#F4F4F4] animate-pulse mb-6" />
         <div className="space-y-3">
           {[...Array(5)].map((_, i) => (
@@ -172,7 +172,7 @@ export default function AdminSalePage() {
   }
 
   return (
-    <div className="p-8 max-w-[1100px] space-y-8">
+    <div className="p-4 sm:p-8 max-w-[1100px] space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -361,7 +361,7 @@ export default function AdminSalePage() {
       </div>
 
       {/* Product list */}
-      <div className="bg-white border border-[#E4E4E7] overflow-hidden">
+      <div className="bg-white border border-[#E4E4E7] overflow-x-auto">
         <table className="w-full text-[13px] font-sans">
           <thead>
             <tr className="border-b border-[#E4E4E7] bg-[#F4F4F4]">

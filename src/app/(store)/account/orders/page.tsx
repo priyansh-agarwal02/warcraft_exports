@@ -162,29 +162,31 @@ export default async function AccountOrdersPage({
                             : 0
 
                           return (
-                            <tr key={order.id} className="hover:bg-parchment/50 transition-colors">
-                              <td className="py-3 pr-4">
+                            <tr key={order.id} className="relative hover:bg-parchment/50 transition-colors group cursor-pointer">
+                              <td className="py-3 pr-4 z-0">
+                                <Link
+                                  href={`/account/orders/${order.id}`}
+                                  className="absolute inset-0 z-10"
+                                  aria-label={`View order #${displayId}`}
+                                />
                                 <span className="font-mono text-xs text-leather-dark">#{displayId}</span>
                               </td>
-                              <td className="py-3 pr-4 text-leather-dark/80 text-xs">{date}</td>
-                              <td className="py-3 pr-4 text-leather-dark/80 text-xs">{itemCount}</td>
-                              <td className="py-3 pr-4">
+                              <td className="py-3 pr-4 text-leather-dark/80 text-xs relative z-0">{date}</td>
+                              <td className="py-3 pr-4 text-leather-dark/80 text-xs relative z-0">{itemCount}</td>
+                              <td className="py-3 pr-4 relative z-0">
                                 <span
                                   className={`inline-flex px-2 py-0.5 rounded-sm text-[11px] font-semibold uppercase tracking-wider ${statusStyle}`}
                                 >
                                   {status}
                                 </span>
                               </td>
-                              <td className="py-3 pr-4 text-right font-semibold text-leather-dark text-xs">
+                              <td className="py-3 pr-4 text-right font-semibold text-leather-dark text-xs relative z-0">
                                 ${(order.total_usd ?? 0).toFixed(2)}
                               </td>
-                              <td className="py-3 text-right">
-                                <Link
-                                  href={`/account/orders/${order.id}`}
-                                  className="text-xs font-semibold text-leather hover:text-leather-dark transition-colors"
-                                >
+                              <td className="py-3 text-right relative z-0">
+                                <span className="text-xs font-semibold text-leather group-hover:text-leather-dark transition-colors">
                                   View
-                                </Link>
+                                </span>
                               </td>
                             </tr>
                           )

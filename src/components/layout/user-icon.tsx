@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
+import { motion, AnimatePresence } from "framer-motion"
 import { 
   User, 
   ShoppingBag, 
@@ -106,11 +107,7 @@ export function UserIcon() {
     }
   }, [user, authInitialized])
 
-  async function handleLogout() {
-    const supabase = createClient()
-    await supabase.auth.signOut()
-    window.location.href = "/"
-  }
+
 
   // Get initials for avatar display
   const getInitials = () => {
@@ -132,30 +129,59 @@ export function UserIcon() {
 
   return (
     <div
-      onMouseEnter={() => setIsOpen(true)}
-      onMouseLeave={() => setIsOpen(false)}
+      onMouseEnter={() => {
+        if (typeof window !== "undefined" && window.innerWidth >= 1024) {
+          setIsOpen(true)
+        }
+      }}
+      onMouseLeave={() => {
+        if (typeof window !== "undefined" && window.innerWidth >= 1024) {
+          setIsOpen(false)
+        }
+      }}
       className="relative inline-block"
     >
       <DropdownMenu open={isOpen} onOpenChange={setIsOpen} modal={false}>
         <DropdownMenuTrigger asChild>
-          <Link
-            href={user ? "/account" : "/auth/login"}
-            className="relative p-2.5 text-[#18181B] hover:text-leather transition-colors cursor-pointer outline-none block"
-            aria-label={user ? "User menu" : "Sign in / Register"}
-          >
-            <User size={20} />
-            {user && (
-              <span className="absolute top-2 right-2 w-2 h-2 bg-[#BBAC48] border border-[#FAFAF9] rounded-full" />
-            )}
-          </Link>
+          {/* MOTION: Icon scales slightly on hover, taps down on click */}
+          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.92 }} transition={{ type: "spring", stiffness: 400, damping: 17 }}>
+            <Link
+              href={user ? "/account" : "/auth/login"}
+              onClick={(e) => {
+                if (typeof window !== "undefined" && window.innerWidth < 1024) {
+                  e.preventDefault()
+                }
+              }}
+              className="relative p-1.5 sm:p-2.5 text-[#18181B] hover:text-leather transition-colors cursor-pointer outline-none block"
+              aria-label={user ? "User menu" : "Sign in / Register"}
+            >
+              <User size={20} />
+              {user && (
+                <motion.span
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: "spring", stiffness: 500, damping: 20 }}
+                  className="absolute top-2 right-2 w-2 h-2 bg-[#BBAC48] border border-[#FAFAF9] rounded-full"
+                />
+              )}
+            </Link>
+          </motion.div>
         </DropdownMenuTrigger>
 
-        <DropdownMenuContent 
-          align="end" 
-          alignOffset={-32} 
-          className="w-48 mt-1.5 border-[#76786B] bg-white select-none"
-          onMouseEnter={() => setIsOpen(true)}
-          onMouseLeave={() => setIsOpen(false)}
+        <DropdownMenuContent
+          align="end"
+          alignOffset={-32}
+          className="w-48 mt-1.5 border-[#76786B] bg-white select-none overflow-hidden animate-in fade-in-0 zoom-in-95 slide-in-from-top-2 duration-150"
+          onMouseEnter={() => {
+            if (typeof window !== "undefined" && window.innerWidth >= 1024) {
+              setIsOpen(true)
+            }
+          }}
+          onMouseLeave={() => {
+            if (typeof window !== "undefined" && window.innerWidth >= 1024) {
+              setIsOpen(false)
+            }
+          }}
         >
           {loading ? (
             <div className="px-4 py-6 text-center text-[10px] font-sans font-bold uppercase tracking-widest text-khaki">
@@ -242,13 +268,18 @@ export function UserIcon() {
 
               <DropdownMenuSeparator />
 
-              {/* Sign Out Action */}
-              <DropdownMenuItem 
-                onClick={handleLogout} 
-                className="text-red-700 focus:bg-red-700 focus:text-white focus:[&_svg]:text-white"
-              >
-                <LogOut />
-                <span>Log Out</span>
+              {/* Sign Out — use a real form POST (same as account pages) so
+                  the dropdown's onMouseLeave cannot cancel the submission */}
+              <DropdownMenuItem asChild className="p-0">
+                <form action="/auth/signout" method="POST" className="w-full">
+                  <button
+                    type="submit"
+                    className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-red-700 hover:bg-red-700 hover:text-white transition-colors cursor-pointer [&_svg]:text-current"
+                  >
+                    <LogOut size={16} />
+                    <span>Log Out</span>
+                  </button>
+                </form>
               </DropdownMenuItem>
             </>
           ) : (
@@ -261,11 +292,10 @@ export function UserIcon() {
                 <p className="text-[11px] font-sans text-khaki leading-normal mb-2.5">
                   Sign in to check orders, save addresses, and customize your wishlist history.
                 </p>
-                
-                <DropdownMenuItem asChild className="px-0 py-0 focus:bg-transparent w-full justify-center">
-                  <Link 
-                    href="/auth/login" 
-                    className="flex justify-center items-center w-full bg-[#33450D] text-white py-2 text-[11px] font-sans font-bold uppercase tracking-[0.12em] hover:bg-[#4A5D23] transition-colors"
+                <DropdownMenuItem asChild className="px-0 py-0 w-full justify-center">
+                  <Link
+                    href="/auth/login"
+                    className="flex justify-center items-center w-full bg-[#33450D] text-white py-2 text-[11px] font-sans font-bold uppercase tracking-[0.12em] hover:bg-[#4A5D23] hover:scale-[1.02] focus:bg-[#33450D] focus:text-white transition-all duration-150 active:scale-95 active:brightness-90"
                   >
                     Sign In / Register
                   </Link>

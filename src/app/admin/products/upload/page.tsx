@@ -61,7 +61,7 @@ export default function AdminBulkUploadPage() {
   }
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-8">
       <div className="mb-6">
         <h1 className="font-heading text-[28px] text-[#18181B] uppercase tracking-tight">Bulk Upload</h1>
         <p className="text-[13px] font-sans text-[#71717A] mt-0.5">Import products from CSV or Excel spreadsheet</p>
@@ -110,7 +110,7 @@ export default function AdminBulkUploadPage() {
 
       {/* Preview table */}
       {rows.length > 0 && (
-        <div className="bg-white border border-[#E4E4E7] overflow-hidden mb-6">
+        <div className="bg-white border border-[#E4E4E7] overflow-x-auto mb-6">
           <div className="px-6 py-4 border-b border-[#E4E4E7] flex items-center justify-between">
             <h2 className="font-heading text-[15px] text-[#18181B] uppercase">Preview ({rows.length} rows)</h2>
             <button

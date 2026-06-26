@@ -30,11 +30,17 @@ export function LoginForm() {
     }
 
     // Query profiles to get the user's role and email
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role, email")
-      .eq("id", authData.user.id)
-      .single()
+    let profile = null
+    try {
+      const { data } = await supabase
+        .from("profiles")
+        .select("role, email")
+        .eq("id", authData.user.id)
+        .single()
+      profile = data
+    } catch (profileErr) {
+      console.error("[LOGIN] Profile role fetch error:", profileErr)
+    }
 
     const searchParams = new URLSearchParams(window.location.search)
     const redirectTo = searchParams.get("redirectTo")

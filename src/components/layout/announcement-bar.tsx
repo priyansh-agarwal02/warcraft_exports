@@ -30,7 +30,7 @@ export function AnnouncementBar() {
 
         {/* Center: rotating text */}
         <p
-          className={`text-[11px] font-sans font-bold uppercase tracking-[0.22em] text-parchment/80 transition-opacity duration-400 text-center flex-1 ${visible ? "opacity-100" : "opacity-0"}`}
+          className={`text-[9px] sm:text-[11px] font-sans font-bold uppercase tracking-[0.1em] sm:tracking-[0.22em] text-parchment/80 transition-opacity duration-400 text-center flex-1 ${visible ? "opacity-100" : "opacity-0"}`}
         >
           {msgs[idx]}
         </p>

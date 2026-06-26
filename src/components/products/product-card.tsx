@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { ShoppingCart, Heart } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { useCartStore } from "@/lib/cart"
 import { useCurrency } from "@/lib/currency"
@@ -34,16 +35,13 @@ export function ProductCard({
   const [added, setAdded] = useState(false)
   const [wishlistLoading, setWishlistLoading] = useState(false)
 
-  // Shared wishlist store — single auth call for the whole page
   const wishlistLoad = useWishlistStore((s) => s.load)
   const wishlistToggle = useWishlistStore((s) => s.toggle)
   const wishlisted = useWishlistStore((s) => s.has(id))
   const wishlistUserId = useWishlistStore((s) => s.userId)
   const wishlistLoaded = useWishlistStore((s) => s.loaded)
 
-  useEffect(() => {
-    wishlistLoad()
-  }, [wishlistLoad])
+  useEffect(() => { wishlistLoad() }, [wishlistLoad])
 
   function handleAddToCart(e: React.MouseEvent) {
     e.preventDefault()
@@ -73,24 +71,29 @@ export function ProductCard({
     }
     if (wishlistLoading) return
     setWishlistLoading(true)
-    try {
-      await wishlistToggle(id)
-    } finally {
-      setWishlistLoading(false)
-    }
+    try { await wishlistToggle(id) }
+    finally { setWishlistLoading(false) }
   }
 
   return (
-    <div className={cn("group flex flex-col", className)}>
+    // MOTION: Card lifts on hover with subtle shadow — mobile-safe (no hover on touch)
+    <motion.div
+      className={cn("group flex flex-col", className)}
+      whileHover={{ y: -4 }}
+      transition={{ type: "spring", stiffness: 300, damping: 22 }}
+    >
       <Link href={`/product/${slug}`} className="flex flex-col flex-1">
         <article className="bg-card-white border border-khaki flex flex-col hover:border-leather transition-colors duration-200 h-full">
           {/* Image area */}
           <div className="relative overflow-hidden bg-canvas border-b border-khaki" style={{ aspectRatio: "4/3" }}>
             {heroImageUrl ? (
-              <img
+              // MOTION: Image subtly scales up on hover
+              <motion.img
                 src={heroImageUrl}
                 alt={name}
                 className="object-cover w-full h-full"
+                whileHover={{ scale: 1.05 }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
               />
             ) : (
               <div className="w-full h-full flex flex-col items-center justify-center gap-2">
@@ -123,9 +126,11 @@ export function ProductCard({
               )}
             </div>
 
-            {/* Wishlist button */}
-            <button
+            {/* MOTION: Wishlist heart — burst on toggle */}
+            <motion.button
               onClick={handleWishlist}
+              whileTap={{ scale: 1.4 }}
+              transition={{ type: "spring", stiffness: 500, damping: 15 }}
               className={cn(
                 "absolute top-2 right-2 w-8 h-8 flex items-center justify-center border transition-colors z-10",
                 wishlisted
@@ -134,8 +139,13 @@ export function ProductCard({
               )}
               aria-label="Add to wishlist"
             >
-              <Heart size={14} className={wishlisted ? "fill-parchment" : ""} />
-            </button>
+              <motion.div
+                animate={wishlisted ? { scale: [1, 1.3, 1] } : { scale: 1 }}
+                transition={{ duration: 0.3 }}
+              >
+                <Heart size={14} className={wishlisted ? "fill-parchment" : ""} />
+              </motion.div>
+            </motion.button>
           </div>
 
           {/* Info */}
@@ -172,10 +182,13 @@ export function ProductCard({
         </article>
       </Link>
 
-      {/* Add to Cart button — always visible below card */}
-      <button
+      {/* MOTION: Add to Cart — spring tap + success pulse */}
+      <motion.button
         onClick={handleAddToCart}
         disabled={!isInStock}
+        whileHover={isInStock ? { scale: 1.01 } : {}}
+        whileTap={isInStock ? { scale: 0.96 } : {}}
+        transition={{ type: "spring", stiffness: 400, damping: 17 }}
         className={cn(
           "w-full text-[11px] font-sans font-bold uppercase tracking-[0.12em] py-2.5 flex justify-center items-center gap-2 cursor-pointer border-x border-b transition-colors",
           isInStock
@@ -185,10 +198,26 @@ export function ProductCard({
             : "bg-khaki/20 text-khaki border-khaki cursor-not-allowed"
         )}
       >
-        <ShoppingCart size={14} />
-        {!isInStock ? "Out of Stock" : added ? "Added!" : "Add to Cart"}
-      </button>
-    </div>
+        {/* MOTION: Cart icon spins briefly when added */}
+        <motion.div
+          animate={added ? { rotate: [0, -15, 15, -10, 10, 0] } : { rotate: 0 }}
+          transition={{ duration: 0.4 }}
+        >
+          <ShoppingCart size={14} />
+        </motion.div>
+        <AnimatePresence mode="wait">
+          <motion.span
+            key={added ? "added" : "add"}
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.15 }}
+          >
+            {!isInStock ? "Out of Stock" : added ? "Added!" : "Add to Cart"}
+          </motion.span>
+        </AnimatePresence>
+      </motion.button>
+    </motion.div>
   )
 }
 

@@ -71,17 +71,17 @@ export function ProductCarousel({ products }: ProductCarouselProps) {
       {/* Navigation Buttons */}
       <button 
         onClick={prevSlide}
-        className="absolute left-0 top-[40%] -translate-y-1/2 -ml-6 z-10 bg-white border border-khaki shadow-lg p-3 text-leather-dark hover:bg-leather hover:text-white transition-colors"
+        className="absolute left-2 md:left-0 top-[40%] -translate-y-1/2 md:-ml-6 z-10 bg-white border border-khaki shadow-lg p-2 md:p-3 text-leather-dark hover:bg-leather hover:text-white transition-colors"
         aria-label="Previous products"
       >
-        <ChevronLeft size={24} />
+        <ChevronLeft size={20} className="md:w-6 md:h-6" />
       </button>
       <button 
         onClick={nextSlide}
-        className="absolute right-0 top-[40%] -translate-y-1/2 -mr-6 z-10 bg-white border border-khaki shadow-lg p-3 text-leather-dark hover:bg-leather hover:text-white transition-colors"
+        className="absolute right-2 md:right-0 top-[40%] -translate-y-1/2 md:-mr-6 z-10 bg-white border border-khaki shadow-lg p-2 md:p-3 text-leather-dark hover:bg-leather hover:text-white transition-colors"
         aria-label="Next products"
       >
-        <ChevronRight size={24} />
+        <ChevronRight size={20} className="md:w-6 md:h-6" />
       </button>
 
       {/* Carousel Track Container */}

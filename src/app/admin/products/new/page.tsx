@@ -8,7 +8,7 @@ export default async function NewProductPage() {
   const { data: cats } = await supabase.from("categories").select("id, name, slug").order("name")
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-8">
       <Link href="/admin/products" className="flex items-center gap-2 text-[12px] font-sans text-[#71717A] hover:text-[#18181B] mb-6 transition-colors">
         <ArrowLeft size={14} />
         Back to Products

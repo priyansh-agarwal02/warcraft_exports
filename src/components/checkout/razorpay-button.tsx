@@ -10,6 +10,7 @@ interface RazorpayButtonProps {
   onSuccess: (paymentId: string) => void
   onError: (msg?: string) => void
   onProcessing?: (state: "verifying" | "recording" | "redirecting" | null) => void
+  onClick?: () => boolean
 }
 
 declare global {
@@ -76,7 +77,7 @@ function loadScript(src: string): Promise<boolean> {
 }
 
 export function RazorpayButton({
-  totalUsd, currency, customerName, customerEmail, customerPhone, onSuccess, onError, onProcessing,
+  totalUsd, currency, customerName, customerEmail, customerPhone, onSuccess, onError, onProcessing, onClick,
 }: RazorpayButtonProps) {
   const [loading, setLoading] = useState(false)
 
@@ -85,6 +86,9 @@ export function RazorpayButton({
   }, [])
 
   async function openRazorpay() {
+    if (onClick && !onClick()) {
+      return
+    }
     setLoading(true)
     try {
       const loaded = await loadScript("https://checkout.razorpay.com/v1/checkout.js")

@@ -153,14 +153,16 @@ export default async function AccountPage() {
                           year: "numeric",
                         })
                         return (
-                          <tr key={order.id} className="hover:bg-parchment/50 transition-colors">
-                            <td className="py-3 pr-4">
+                          <tr key={order.id} className="relative hover:bg-parchment/50 transition-colors group cursor-pointer">
+                            <td className="py-3 pr-4 z-0">
                               <Link
                                 href={`/account/orders/${order.id}`}
-                                className="text-leather hover:text-leather-dark font-mono text-xs transition-colors"
-                              >
+                                className="absolute inset-0 z-10"
+                                aria-label={`View order #${shortId}`}
+                              />
+                              <span className="text-leather font-mono text-xs transition-colors">
                                 #{shortId}
-                              </Link>
+                              </span>
                             </td>
                             <td className="py-3 pr-4 text-leather-dark/80 text-xs">{date}</td>
                             <td className="py-3 pr-4">
@@ -168,7 +170,7 @@ export default async function AccountPage() {
                                 {status}
                               </span>
                             </td>
-                            <td className="py-3 text-right font-semibold text-leather-dark text-xs">
+                            <td className="py-3 text-right font-semibold text-leather-dark text-xs relative z-0">
                               ${(order.total_usd ?? 0).toFixed(2)}
                             </td>
                           </tr>

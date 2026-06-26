@@ -4,6 +4,7 @@ import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { Save, Trash2, Plus, X, Eye } from "lucide-react"
 import { DuplicateProductButton } from "@/components/admin/duplicate-product-button"
+import { ImageUploader } from "@/components/admin/image-uploader"
 
 const NATIONS = ["British", "German", "US", "Japanese", "Soviet", "Italian", "French"]
 const ERAS = ["WW1", "WW2"]
@@ -140,19 +141,22 @@ export function ProductEditForm({ product, categories }: Props) {
     const result = await res.json()
     const savedId = product?.id ?? (Array.isArray(result) ? result[0]?.id : result?.id)
 
-    // Add image if provided — via authenticated admin API
-    if (form.imageUrl && savedId) {
-      await fetch("/api/admin/products/images", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          product_id: savedId,
-          url: form.imageUrl,
-          alt_text: form.name,
-          sort_order: 0,
-          is_hero: !(product?.images?.length),
-        }),
-      })
+    // Save new product images if any
+    if (!product && newImages.length > 0 && savedId) {
+      for (let index = 0; index < newImages.length; index++) {
+        const img = newImages[index]
+        await fetch("/api/admin/products/images", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            product_id: savedId,
+            url: img.url,
+            alt_text: form.name,
+            sort_order: index,
+            is_hero: img.is_hero,
+          }),
+        })
+      }
     }
 
     setSuccess("Product saved successfully!")
@@ -204,7 +208,8 @@ export function ProductEditForm({ product, categories }: Props) {
     }
   }
 
-  const images: Image[] = product?.images ?? []
+  const [images, setImages] = useState<Image[]>(product?.images ?? [])
+  const [newImages, setNewImages] = useState<{ url: string; is_hero: boolean }[]>([])
   const variants: Variant[] = product?.variants ?? []
 
   return (
@@ -369,29 +374,16 @@ export function ProductEditForm({ product, categories }: Props) {
 
           {/* Images */}
           <section className="bg-white border border-[#E4E4E7] p-5">
-            <h2 className="font-heading text-[14px] text-[#18181B] uppercase tracking-wide mb-4">Images ({images.length})</h2>
-            {images.length > 0 && (
-              <div className="grid grid-cols-3 gap-2 mb-3">
-                {images.slice(0, 6).map(img => (
-                  <div key={img.id} className="relative">
-                    <img src={img.url} alt="" className="w-full aspect-square object-cover bg-[#F4F4F4]" />
-                    {img.is_hero && (
-                      <span className="absolute top-0 left-0 bg-[#33450D] text-white text-[9px] px-1 py-0.5">Hero</span>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-            <div>
-              <label className="block text-[11px] font-sans font-bold uppercase tracking-wide text-[#71717A] mb-1">Add Image URL</label>
-              <input
-                value={form.imageUrl}
-                onChange={e => set("imageUrl", e.target.value)}
-                placeholder="https://..."
-                className="w-full px-3 py-2 text-[12px] border border-[#E4E4E7] focus:border-[#33450D] focus:outline-none"
-              />
-              <p className="text-[10px] text-[#A1A1AA] mt-1">Paste Amazon CDN or UploadThing URL</p>
-            </div>
+            <h2 className="font-heading text-[14px] text-[#18181B] uppercase tracking-wide mb-4">
+              Images ({product ? images.length : newImages.length})
+            </h2>
+            <ImageUploader
+              productId={product?.id}
+              images={images}
+              onImagesChange={setImages}
+              newImages={newImages}
+              onNewImagesChange={setNewImages}
+            />
           </section>
 
           {/* Variants summary */}

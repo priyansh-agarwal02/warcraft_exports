@@ -45,7 +45,7 @@ export default async function AdminShippingPage() {
   const INPUT = "w-full border border-[#E4E4E7] bg-white px-2 py-1.5 text-[12px] font-sans text-[#18181B] focus:outline-none focus:border-[#33450D]"
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-8">
       <div className="mb-6">
         <h1 className="font-heading text-[28px] text-[#18181B] uppercase tracking-tight">Shipping Configuration</h1>
         <p className="text-[13px] font-sans text-[#71717A] mt-1">

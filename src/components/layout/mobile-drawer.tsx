@@ -1,13 +1,43 @@
 "use client"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Menu, X, ChevronDown } from "lucide-react"
 import { siteConfig } from "@/config/site.config"
 import { cn } from "@/lib/utils"
+import { createClient } from "@/lib/supabase/client"
 
 export function MobileDrawer() {
   const [open, setOpen] = useState(false)
   const [shopOpen, setShopOpen] = useState(false)
+  const [user, setUser] = useState<any>(null)
+
+  useEffect(() => {
+    const supabase = createClient()
+    let active = true
+    async function initAuth() {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (active) {
+          setUser(session?.user ?? null)
+        }
+      } catch (err) {
+        if (active) {
+          setUser(null)
+        }
+      }
+    }
+    initAuth()
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!active) return
+      setUser(session?.user ?? null)
+    })
+
+    return () => {
+      active = false
+      subscription.unsubscribe()
+    }
+  }, [])
 
   return (
     <>
@@ -100,9 +130,21 @@ export function MobileDrawer() {
         </nav>
 
         {/* Footer links */}
-        <div className="px-5 py-4 border-t border-khaki/50 space-y-1">
-          <Link href="/login" onClick={() => setOpen(false)} className="block text-xs text-leather hover:text-leather-dark">My Account</Link>
-          <Link href="/track-order" onClick={() => setOpen(false)} className="block text-xs text-leather hover:text-leather-dark">Track Order</Link>
+        <div className="px-5 py-6 border-t border-khaki/30 space-y-3 bg-[#F0F0EF]/80">
+          <Link
+            href={user ? "/account" : "/auth/login"}
+            onClick={() => setOpen(false)}
+            className="block w-full py-3 px-4 text-center text-xs font-sans font-bold uppercase tracking-widest text-[#F9F9F9] bg-[#33450D] hover:bg-[#4A5D23] transition-colors rounded-sm shadow-sm"
+          >
+            {user ? "My Account" : "Sign In / Register"}
+          </Link>
+          <Link
+            href="/track-order"
+            onClick={() => setOpen(false)}
+            className="block w-full py-3 px-4 text-center text-xs font-sans font-bold uppercase tracking-widest text-[#33450D] border-2 border-[#33450D] hover:bg-[#33450D] hover:text-[#F9F9F9] transition-colors rounded-sm bg-transparent"
+          >
+            Track Order
+          </Link>
         </div>
       </div>
     </>

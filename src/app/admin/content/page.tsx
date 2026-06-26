@@ -25,7 +25,7 @@ export default async function AdminContentPage() {
     .order("key", { ascending: true })
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-8">
       <div className="mb-6">
         <h1 className="font-heading text-[28px] text-[#18181B] uppercase tracking-tight">Content Blocks</h1>
         <p className="text-[13px] font-sans text-[#71717A] mt-0.5">Edit homepage and site-wide content blocks</p>

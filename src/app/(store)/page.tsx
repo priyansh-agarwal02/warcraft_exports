@@ -36,7 +36,7 @@ export default async function HomePage() {
       {/* 4. Featured Products */}
       {products.length > 0 && (
         <section className="pt-6 pb-16 bg-parchment">
-          <div className="max-w-[1280px] mx-auto px-8">
+          <div className="max-w-[1280px] mx-auto px-4 sm:px-8">
             <div className="flex justify-between items-end border-b-2 border-khaki pb-6 mb-12">
               <div>
                 <p className="text-[12px] font-sans font-bold uppercase tracking-[0.12em] text-khaki mb-2">

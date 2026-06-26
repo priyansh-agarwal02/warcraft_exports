@@ -241,7 +241,7 @@ export default async function AdminPromotionsPage({ searchParams }: { searchPara
   }
 
   return (
-    <div className="p-8 space-y-10">
+    <div className="p-4 sm:p-8 space-y-10">
       <div className="mb-2">
         <h1 className="font-heading text-[28px] text-[#18181B] uppercase tracking-tight">Promotions</h1>
         <p className="text-[13px] font-sans text-[#71717A] mt-0.5">Manage coupon codes, quantity-based discounts, and combo deals</p>
@@ -272,7 +272,7 @@ export default async function AdminPromotionsPage({ searchParams }: { searchPara
                   No quantity promotions yet. Create one →
                 </div>
               ) : (
-                <div className="bg-white border border-[#E4E4E7] overflow-hidden">
+                <div className="bg-white border border-[#E4E4E7] overflow-x-auto">
                   <table className="w-full text-[13px] font-sans">
                     <thead>
                       <tr className="border-b border-[#E4E4E7] bg-[#F4F4F4]">
@@ -507,7 +507,7 @@ export default async function AdminPromotionsPage({ searchParams }: { searchPara
                   No combo deals created yet.
                 </div>
               ) : (
-                <div className="bg-white border border-[#E4E4E7] overflow-hidden">
+                <div className="bg-white border border-[#E4E4E7] overflow-x-auto">
                   <table className="w-full text-[13px] font-sans">
                     <thead>
                       <tr className="border-b border-[#E4E4E7] bg-[#F4F4F4]">
@@ -612,7 +612,7 @@ export default async function AdminPromotionsPage({ searchParams }: { searchPara
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Coupon list */}
           <div className="lg:col-span-2">
-            <div className="bg-white border border-[#E4E4E7] overflow-hidden">
+            <div className="bg-white border border-[#E4E4E7] overflow-x-auto">
               <table className="w-full text-[13px] font-sans">
                 <thead>
                   <tr className="border-b border-[#E4E4E7] bg-[#F4F4F4]">

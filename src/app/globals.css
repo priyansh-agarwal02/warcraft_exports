@@ -110,6 +110,13 @@
 /* No dark mode — editorial catalog theme is the brand identity */
 
 @layer base {
+  html {
+    max-width: 100%;
+  }
+  body {
+    max-width: 100%;
+    overflow-x: clip;
+  }
   * {
     @apply border-border outline-ring/50;
   }
@@ -143,6 +150,22 @@
 }
 .animate-logo-scroll {
   animation: logo-scroll 35s linear infinite;
+}
+
+/* ── Google Translate banner — hide permanently ─────────────────────── */
+/* The top "Translated into: German | Show original" bar must never show. */
+iframe.goog-te-banner-frame,
+.goog-te-banner-frame,
+#goog-gt-tt,
+.goog-te-balloon-frame,
+.goog-te-ftab-float,
+.goog-te-menu-frame {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  max-height: 0 !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
 }
 
 /* ── PayPal Advanced Card Fields Warcraft Styling ── */

@@ -102,7 +102,7 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
   }
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-8">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -164,7 +164,7 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
       </div>
 
       {/* Products Table */}
-      <div className="bg-white border border-[#E4E4E7] overflow-hidden">
+      <div className="bg-white border border-[#E4E4E7] overflow-x-auto">
         <table className="w-full text-[13px] font-sans">
           <thead>
             <tr className="border-b border-[#E4E4E7] bg-[#F4F4F4]">

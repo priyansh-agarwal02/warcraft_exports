@@ -20,6 +20,7 @@ interface PayPalButtonProps {
   }
   onSuccess: (paymentId: string) => void
   onError: (msg?: string) => void
+  onClick?: () => boolean
 }
 
 export function PayPalCheckout({
@@ -31,6 +32,7 @@ export function PayPalCheckout({
   customerAddress,
   onSuccess,
   onError,
+  onClick,
 }: PayPalButtonProps) {
   const clientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || "test"
 
@@ -116,6 +118,10 @@ export function PayPalCheckout({
               onError("An error occurred with PayPal Express checkout. Please try again.")
             }}
             onClick={(data, actions) => {
+              if (onClick && !onClick()) {
+                return actions.reject()
+              }
+
               const isValid =
                 customerName.trim() &&
                 customerEmail.trim() &&

@@ -77,7 +77,7 @@ export function HeroSection() {
 
       {/* Content */}
       <div className="relative z-10 h-full flex items-end pb-[160px]">
-        <div className="max-w-[1280px] mx-auto px-8 w-full">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-8 w-full">
           {/* Eyebrow */}
           <div className="flex items-center gap-4 mb-4">
             <div className="w-8 h-px bg-[#BBAC48]" />
@@ -120,7 +120,7 @@ export function HeroSection() {
       </div>
 
       {/* Slide indicators (bottom left) */}
-      <div className="absolute bottom-12 left-8 z-20 flex gap-3 items-center">
+      <div className="absolute bottom-12 left-4 sm:left-8 z-20 flex gap-3 items-center">
         <span className="text-white/70 text-[11px] font-sans tracking-[0.2em]">
           {String(current + 1).padStart(2, "0")} / {String(slides.length).padStart(2, "0")}
         </span>
@@ -142,7 +142,7 @@ export function HeroSection() {
       </div>
 
       {/* Arrow controls (bottom right) */}
-      <div className="absolute bottom-8 right-8 z-20 flex gap-2">
+      <div className="absolute bottom-8 right-4 sm:right-8 z-20 flex gap-2">
         <button
           onClick={prev}
           className="w-11 h-11 border border-white/40 text-white flex items-center justify-center bg-black/30 hover:bg-leather hover:border-leather transition-colors"

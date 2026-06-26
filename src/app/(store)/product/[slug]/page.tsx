@@ -120,7 +120,7 @@ export default async function ProductPage({ params }: Props) {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
 
-      <div className="max-w-[1280px] mx-auto px-8 py-12">
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-8 py-12">
 
         {/* Breadcrumb */}
         <nav className="flex items-center gap-2 text-[11px] font-sans text-khaki mb-10 uppercase tracking-[0.08em]">

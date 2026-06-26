@@ -56,7 +56,7 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
   }
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-8">
       <div className="mb-6">
         <h1 className="font-heading text-[28px] text-[#18181B] uppercase tracking-tight">Orders</h1>
         <p className="text-[13px] font-sans text-[#71717A] mt-0.5">{count ?? 0} total orders</p>
@@ -79,7 +79,7 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
         </div>
       </div>
 
-      <div className="bg-white border border-[#E4E4E7] overflow-hidden">
+      <div className="bg-white border border-[#E4E4E7] overflow-x-auto">
         <table className="w-full text-[13px] font-sans">
           <thead>
             <tr className="border-b border-[#E4E4E7] bg-[#F4F4F4]">

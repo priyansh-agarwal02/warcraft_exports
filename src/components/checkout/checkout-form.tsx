@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
+import { motion, AnimatePresence } from "framer-motion"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
@@ -61,13 +62,6 @@ export function CheckoutForm() {
       if (!user) return
 
       try {
-        // Fetch user profile info
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("full_name, phone")
-          .eq("id", user.id)
-          .single()
-
         // Fetch addresses via our secure API route (RLS-proof)
         const res = await fetch("/api/addresses")
         const data = await res.json()
@@ -81,6 +75,19 @@ export function CheckoutForm() {
         const address = allAddresses.find((a: any) => a.is_default) || allAddresses[0]
         if (address) {
           setSelectedAddressId(address.id)
+        }
+
+        // Fetch user profile info separately so it doesn't block addresses
+        let profile = null
+        try {
+          const { data: profileData } = await supabase
+            .from("profiles")
+            .select("full_name, phone")
+            .eq("id", user.id)
+            .single()
+          profile = profileData
+        } catch (profileErr) {
+          console.error("Failed to load user profile info:", profileErr)
         }
 
         setForm((prev) => ({
@@ -104,6 +111,7 @@ export function CheckoutForm() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [formValidated, setFormValidated] = useState(false)
+  const [errorKey, setErrorKey] = useState(0) // increments on each new error to re-trigger shake
 
   // Find matching shipping rate for selected country name
   const activeRate = dbRates.find(
@@ -165,26 +173,32 @@ export function CheckoutForm() {
 
     if (!form.fullName.trim() || !form.email.trim() || !form.phone.trim()) {
       setError("Please fill in all contact information fields.")
+      setErrorKey((k) => k + 1)
       return false
     }
     if (!EMAIL_RE.test(form.email.trim())) {
       setError("Please enter a valid email address.")
+      setErrorKey((k) => k + 1)
       return false
     }
     if (!PHONE_RE.test(form.phone.trim())) {
       setError("Please enter a valid phone number (digits, spaces, dashes, with optional country code).")
+      setErrorKey((k) => k + 1)
       return false
     }
     if (!form.address1.trim() || !form.city.trim() || !form.postalCode.trim()) {
       setError("Please fill in all address fields.")
+      setErrorKey((k) => k + 1)
       return false
     }
     if (form.postalCode.trim().length < 3 || form.postalCode.trim().length > 10) {
       setError("Please enter a valid postal code (3–10 characters).")
+      setErrorKey((k) => k + 1)
       return false
     }
     if (items.length === 0) {
       setError("Your cart is empty.")
+      setErrorKey((k) => k + 1)
       return false
     }
     setError(null)
@@ -319,6 +333,17 @@ export function CheckoutForm() {
                           postalCode: addr.postal_code || "",
                           country: addr.country || "United States",
                         }))
+                      } else {
+                        // "Choose an address..." selected — clear all address fields
+                        setForm((prev) => ({
+                          ...prev,
+                          address1: "",
+                          address2: "",
+                          city: "",
+                          state: "",
+                          postalCode: "",
+                          country: "United States",
+                        }))
                       }
                     }}
                     value={selectedAddressId}
@@ -444,15 +469,42 @@ export function CheckoutForm() {
               <span className="font-bold text-leather">{currency}</span>.
             </p>
 
-            {error && (
-              <div className="mb-4 border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700 rounded-sm">
-                {error}
-              </div>
-            )}
+            <AnimatePresence mode="wait">
+              {error && (
+                <motion.div
+                  key={errorKey}
+                  initial={{ opacity: 0, x: 0, y: -4 }}
+                  animate={{
+                    opacity: 1,
+                    x: [0, -10, 10, -8, 8, -5, 5, 0],
+                    y: 0,
+                    transition: {
+                      opacity: { duration: 0.2 },
+                      x: { duration: 0.5, ease: "easeInOut" },
+                      y: { duration: 0.2 },
+                    },
+                  }}
+                  exit={{ opacity: 0, y: -4, transition: { duration: 0.2 } }}
+                  className="mb-4 border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700 rounded-sm flex items-start gap-2.5"
+                >
+                  {/* Warning icon */}
+                  <svg className="flex-shrink-0 mt-0.5" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  <span>{error}</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-            <div className="flex flex-col gap-6">
+             {/* MOTION: Payment methods stagger in */}
+             <motion.div
+               className="flex flex-col gap-6"
+               initial="hidden"
+               animate="visible"
+               variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.12, delayChildren: 0.1 } } }}
+             >
               {/* PayPal - Priority Global Payment Method */}
-              <div onClick={() => { if (!handlePaymentButtonClick()) return }}>
+              <motion.div
+                variants={{ hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 280, damping: 22 } } }}
+              >
                 <PayPalCheckout
                   totalUsd={totalUsd}
                   currency={currency}
@@ -462,11 +514,14 @@ export function CheckoutForm() {
                   customerAddress={form}
                   onSuccess={(paymentId) => handlePaymentSuccess(paymentId, "paypal")}
                   onError={handlePaymentError}
+                  onClick={handlePaymentButtonClick}
                 />
-              </div>
+              </motion.div>
 
               {/* Razorpay - Local Indian / UPI Alternative */}
-              <div onClick={() => { if (!handlePaymentButtonClick()) return }}>
+              <motion.div
+                variants={{ hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 280, damping: 22 } } }}
+              >
                 <div className="w-full border border-khaki/40 bg-canvas rounded-sm overflow-hidden shadow-sm relative z-0">
                   {/* Tab Header styled in Warcraft Heritage scheme */}
                   <div className="flex border-b border-khaki/40">
@@ -488,11 +543,12 @@ export function CheckoutForm() {
                       onSuccess={(paymentId) => handlePaymentSuccess(paymentId, "razorpay")}
                       onError={handlePaymentError}
                       onProcessing={setProcessingState}
+                      onClick={handlePaymentButtonClick}
                     />
                   </div>
                 </div>
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
 
             <p className="text-[10px] font-sans text-khaki text-center mt-4">
               Taxes and duties may apply on import — buyer is responsible.

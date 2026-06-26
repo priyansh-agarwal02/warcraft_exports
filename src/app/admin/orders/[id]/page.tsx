@@ -92,7 +92,7 @@ export default async function AdminOrderDetailPage({ params }: Props) {
   if (!order) notFound()
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-8">
       <div className="flex items-center gap-3 mb-6">
         <Link href="/admin/orders" className="text-[12px] font-sans font-bold text-[#71717A] hover:text-[#18181B] uppercase tracking-wide">← Orders</Link>
         <span className="text-[#D4D4D8]">/</span>
