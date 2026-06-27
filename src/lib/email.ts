@@ -2,10 +2,9 @@ import { Resend } from "resend"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 const isProd = process.env.NODE_ENV === "production" || !!process.env.NEXT_PUBLIC_APP_URL
-const FROM_ORDERS = process.env.EMAIL_FROM || (isProd ? "Warcraft Exports <orders@warcraftexports.com>" : "Warcraft Exports <onboarding@resend.dev>")
-const FROM_NEWSLETTER = isProd ? "Warcraft Exports <newsletter@warcraftexports.com>" : "Warcraft Exports <onboarding@resend.dev>"
-const FROM_HELLO = isProd ? "Warcraft Exports <hello@warcraftexports.com>" : "Warcraft Exports <onboarding@resend.dev>"
-const FROM_SUPPORT = isProd ? "Warcraft Exports <support@warcraftexports.com>" : "Warcraft Exports <onboarding@resend.dev>"
+const FROM_ORDERS = process.env.EMAIL_FROM_ORDERS || process.env.EMAIL_FROM || (isProd ? "Warcraft Exports <orders@warcraftexports.com>" : "Warcraft Exports <onboarding@resend.dev>")
+const FROM_NEWSLETTER = process.env.EMAIL_FROM_NEWSLETTER || (isProd ? "Warcraft Exports <newsletter@warcraftexports.com>" : "Warcraft Exports <onboarding@resend.dev>")
+const FROM_HELLO = process.env.EMAIL_FROM_HELLO || (isProd ? "Warcraft Exports <hello@warcraftexports.com>" : "Warcraft Exports <onboarding@resend.dev>")
 
 export interface OrderEmailData {
   orderNumber: string
@@ -319,7 +318,7 @@ export async function sendOrderConfirmation(data: OrderEmailData) {
 export async function sendWelcomeEmail(name: string, email: string) {
   try {
     await resend.emails.send({
-      from: FROM_ORDERS,
+      from: FROM_HELLO,
       to: email,
       replyTo: "warcraftexports@gmail.com",
       subject: "Welcome to Warcraft Exports",
@@ -333,7 +332,7 @@ export async function sendWelcomeEmail(name: string, email: string) {
 export async function sendGuestWelcomeEmail(name: string, email: string, tempPassword: string) {
   try {
     await resend.emails.send({
-      from: FROM_ORDERS,
+      from: FROM_HELLO,
       to: email,
       replyTo: "warcraftexports@gmail.com",
       subject: "Your Account Credentials — Warcraft Exports",
