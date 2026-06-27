@@ -13,11 +13,6 @@ const CATEGORIES = [
   { name: "Field Equipment", slug: "equipment" },
   { name: "Military Cases", slug: "military-cases" },
   { name: "Belts & Straps", slug: "belts-straps" },
-  { name: "Headgear", slug: "headgear" },
-  { name: "Bags & Satchels", slug: "bags-satchels" },
-  { name: "Uniforms", slug: "uniforms" },
-  { name: "Canvas Gear", slug: "canvas-gear" },
-  { name: "Optics & Accessories", slug: "optics-accessories" },
 ]
 
 const panelVariants: Variants = {
