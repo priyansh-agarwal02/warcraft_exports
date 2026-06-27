@@ -1,7 +1,11 @@
 import { Resend } from "resend"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
-const FROM = process.env.EMAIL_FROM || "Warcraft Exports <onboarding@resend.dev>"
+const isProd = process.env.NODE_ENV === "production" || !!process.env.NEXT_PUBLIC_APP_URL
+const FROM_ORDERS = process.env.EMAIL_FROM || (isProd ? "Warcraft Exports <orders@warcraftexports.com>" : "Warcraft Exports <onboarding@resend.dev>")
+const FROM_NEWSLETTER = isProd ? "Warcraft Exports <newsletter@warcraftexports.com>" : "Warcraft Exports <onboarding@resend.dev>"
+const FROM_HELLO = isProd ? "Warcraft Exports <hello@warcraftexports.com>" : "Warcraft Exports <onboarding@resend.dev>"
+const FROM_SUPPORT = isProd ? "Warcraft Exports <support@warcraftexports.com>" : "Warcraft Exports <onboarding@resend.dev>"
 
 export interface OrderEmailData {
   orderNumber: string
@@ -292,16 +296,18 @@ export async function sendOrderConfirmation(data: OrderEmailData) {
   try {
     // 1. Send confirmation to Customer
     await resend.emails.send({
-      from: FROM,
+      from: FROM_ORDERS,
       to: data.customerEmail,
+      replyTo: "warcraftexports@gmail.com",
       subject: `Order Confirmed — #${data.orderNumber} | Warcraft Exports`,
       html: orderConfirmationHtml(data),
     })
 
     // 2. Send notification to Seller (warcraftexports@gmail.com)
     await resend.emails.send({
-      from: FROM,
+      from: FROM_ORDERS,
       to: "warcraftexports@gmail.com",
+      replyTo: data.customerEmail,
       subject: `[New Order] #${data.orderNumber} placed by ${data.customerName}`,
       html: sellerOrderNotificationHtml(data),
     })
@@ -313,8 +319,9 @@ export async function sendOrderConfirmation(data: OrderEmailData) {
 export async function sendWelcomeEmail(name: string, email: string) {
   try {
     await resend.emails.send({
-      from: FROM,
+      from: FROM_ORDERS,
       to: email,
+      replyTo: "warcraftexports@gmail.com",
       subject: "Welcome to Warcraft Exports",
       html: welcomeHtml(name, email),
     })
@@ -326,8 +333,9 @@ export async function sendWelcomeEmail(name: string, email: string) {
 export async function sendGuestWelcomeEmail(name: string, email: string, tempPassword: string) {
   try {
     await resend.emails.send({
-      from: FROM,
+      from: FROM_ORDERS,
       to: email,
+      replyTo: "warcraftexports@gmail.com",
       subject: "Your Account Credentials — Warcraft Exports",
       html: guestWelcomeHtml(name, email, tempPassword),
     })
@@ -339,8 +347,9 @@ export async function sendGuestWelcomeEmail(name: string, email: string, tempPas
 export async function sendNewsletterWelcome(email: string) {
   try {
     await resend.emails.send({
-      from: FROM,
+      from: FROM_NEWSLETTER,
       to: email,
+      replyTo: "warcraftexports@gmail.com",
       subject: "You're subscribed — Warcraft Exports",
       html: newsletterWelcomeHtml(email),
     })
@@ -348,12 +357,61 @@ export async function sendNewsletterWelcome(email: string) {
     console.error("sendNewsletterWelcome error:", err)
   }
 }
+function contactAutoresponderHtml(name: string, subject: string, message: string): string {
+  return `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#F2EAD3;font-family:Georgia,serif;">
+  <div style="max-width:600px;margin:32px auto;background:#fff;border:1px solid #e8dcc8;">
+    <div style="background:#3B2A1A;padding:28px 32px;text-align:center;">
+      <h1 style="margin:0;font-size:24px;color:#F2EAD3;letter-spacing:2px;text-transform:uppercase;">Warcraft Exports</h1>
+      <p style="margin:6px 0 0;font-size:12px;color:#C3B091;letter-spacing:1px;text-transform:uppercase;">Message Received</p>
+    </div>
+
+    <div style="padding:32px;">
+      <p style="font-size:15px;color:#3B2A1A;margin-top:0;">Dear ${name},</p>
+      <p style="font-size:14px;color:#6B5A3E;line-height:1.6;">
+        We have received your message regarding "<strong>${subject}</strong>". 
+        Our team will review your enquiry and respond within 24 hours.
+      </p>
+
+      <h2 style="font-size:13px;text-transform:uppercase;letter-spacing:1px;color:#3B2A1A;margin:24px 0 12px;border-bottom:2px solid #C3B091;padding-bottom:8px;">Copy of Your Inquiry</h2>
+
+      <div style="background:#F2EAD3;padding:16px;font-size:13px;color:#3B2A1A;line-height:1.5;white-space:pre-wrap;border:1px solid #e8dcc8;">${message}</div>
+
+      <p style="font-size:13px;color:#6B5A3E;line-height:1.6;margin-top:24px;margin-bottom:0;">
+        If you need to add any details, simply reply directly to this email or contact us at <a href="mailto:warcraftexports@gmail.com" style="color:#8B4513;">warcraftexports@gmail.com</a>.
+      </p>
+    </div>
+
+    <div style="background:#3B2A1A;padding:16px 32px;text-align:center;">
+      <p style="margin:0;font-size:11px;color:#C3B091;">© ${new Date().getFullYear()} RAAS Enterprises · Kanpur, India · <a href="https://warcraftexports.com" style="color:#C3B091;">warcraftexports.com</a></p>
+    </div>
+  </div>
+</body>
+</html>`
+}
+
+export async function sendContactAutoresponder(name: string, email: string, subject: string, message: string) {
+  try {
+    await resend.emails.send({
+      from: FROM_HELLO,
+      to: email,
+      replyTo: "warcraftexports@gmail.com",
+      subject: `We received your message — Warcraft Exports`,
+      html: contactAutoresponderHtml(name, subject, message),
+    })
+  } catch (err) {
+    console.error("sendContactAutoresponder error:", err)
+  }
+}
 
 export async function sendContactNotification(name: string, email: string, subject: string, message: string) {
   try {
     await resend.emails.send({
-      from: FROM,
+      from: FROM_HELLO,
       to: "warcraftexports@gmail.com",
+      replyTo: email,
       subject: `New Contact Form Submission: ${subject}`,
       html: `
         <div style="font-family:sans-serif;padding:20px;color:#333;">
@@ -383,8 +441,9 @@ export async function sendWholesaleNotification(data: {
 }) {
   try {
     await resend.emails.send({
-      from: FROM,
+      from: FROM_HELLO,
       to: "warcraftexports@gmail.com",
+      replyTo: data.email,
       subject: `New B2B Wholesale Inquiry — ${data.company}`,
       html: `
         <div style="font-family:sans-serif;padding:20px;color:#333;">
@@ -563,8 +622,9 @@ export async function sendOrderShippedEmail(orderId: string) {
     }))
 
     await resend.emails.send({
-      from: FROM,
+      from: FROM_ORDERS,
       to: order.customer_email,
+      replyTo: "warcraftexports@gmail.com",
       subject: `Your order #${order.order_number} has been shipped! | Warcraft Exports`,
       html: orderShippedHtml({
         orderNumber: order.order_number,

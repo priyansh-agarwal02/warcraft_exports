@@ -22,7 +22,7 @@ export default async function ReviewsPage() {
   const { data: dbReviews } = await supabase
     .from("reviews")
     .select("id, reviewer_name, rating, body, source, created_at")
-    .eq("is_featured", true)
+    .eq("featured", true)
     .order("created_at", { ascending: false })
 
   const reviews = (dbReviews && dbReviews.length > 0) ? dbReviews : STATIC_REVIEWS

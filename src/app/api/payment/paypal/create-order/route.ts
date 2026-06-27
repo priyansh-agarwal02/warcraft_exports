@@ -8,8 +8,14 @@ function formatAmount(amount: number, currency: string): string {
   return ZERO_DECIMAL.has(currency) ? String(Math.round(amount)) : amount.toFixed(2)
 }
 
+function getPayPalBaseUrl(): string {
+  if (process.env.PAYPAL_API_URL) return process.env.PAYPAL_API_URL
+  const isVercelProd = process.env.VERCEL_ENV === "production" || (process.env.NODE_ENV === "production" && !process.env.NEXT_PUBLIC_APP_URL?.includes("localhost"))
+  return isVercelProd ? "https://api-m.paypal.com" : "https://api-m.sandbox.paypal.com"
+}
+
 async function getPayPalAccessToken(clientId: string, clientSecret: string): Promise<string> {
-  const base = process.env.PAYPAL_API_URL ?? "https://api-m.sandbox.paypal.com"
+  const base = getPayPalBaseUrl()
   const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString("base64")
   const res = await fetch(`${base}/v1/oauth2/token`, {
     method: "POST",
@@ -80,7 +86,7 @@ export async function POST(req: NextRequest) {
     formattedAmount = formatAmount(convertedAmount, targetCurrency)
   }
 
-  const base = process.env.PAYPAL_API_URL ?? "https://api-m.sandbox.paypal.com"
+  const base = getPayPalBaseUrl()
   const accessToken = await getPayPalAccessToken(CLIENT_ID, CLIENT_SECRET)
 
   const ppRes = await fetch(`${base}/v2/checkout/orders`, {

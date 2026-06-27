@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server"
 import { createServiceClient } from "@/lib/supabase/service"
 import Link from "next/link"
 import Image from "next/image"
+import { headers } from "next/headers"
+import { checkRateLimit } from "@/lib/rate-limit"
 
 export const metadata: Metadata = {
   title: "Track Your Order — Warcraft Exports",
@@ -62,8 +64,18 @@ const STEP_LABELS: Record<string, string> = {
 
 export default async function TrackOrderPage({ searchParams }: { searchParams: SP }) {
   const sp = await searchParams
-  const order = sp.order_number && sp.email ? await getOrder(sp.order_number, sp.email) : null
-  const notFound = sp.order_number && sp.email && !order
+  
+  let rateLimited = false
+  if (sp.order_number && sp.email) {
+    const headersList = await headers()
+    const ip = headersList.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown"
+    if (!checkRateLimit(`track-order:${ip}`, 10, 60_000)) {
+      rateLimited = true
+    }
+  }
+
+  const order = sp.order_number && sp.email && !rateLimited ? await getOrder(sp.order_number, sp.email) : null
+  const notFound = sp.order_number && sp.email && !rateLimited && !order
 
   // Check if user is logged in to conditionally show dashboard details link
   const userSupabase = await createClient()
@@ -104,6 +116,12 @@ export default async function TrackOrderPage({ searchParams }: { searchParams: S
         {notFound && (
           <div className="bg-red-50 border border-red-200 text-red-700 font-sans text-sm p-4 text-center">
             No order found. Check your order number and email and try again.
+          </div>
+        )}
+
+        {rateLimited && (
+          <div className="bg-amber-50 border border-amber-200 text-amber-800 font-sans text-sm p-4 text-center">
+            Too many tracking attempts. Please wait a minute and try again.
           </div>
         )}
 

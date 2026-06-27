@@ -87,6 +87,8 @@ export async function POST(req: NextRequest) {
 
     const supabase = await createClient()
     const serviceClient = createServiceClient()
+    const { data: { user: currentUser } } = await supabase.auth.getUser()
+    const currentUserId = currentUser?.id || null
 
     // Server-side price recalculation — never trust client amounts
     const productIds = [...new Set(items.map((i) => i.productId))]
@@ -164,6 +166,32 @@ export async function POST(req: NextRequest) {
         const isUnderLimit = !dbCoupon.usage_limit || (dbCoupon.times_used ?? 0) < dbCoupon.usage_limit
 
         if (isNotExpired && isMinOrderMet && isUnderLimit) {
+          // Check if current user has already used this coupon
+          if (currentUserId) {
+            const { count: userCouponUses, error: countErr1 } = await serviceClient
+              .from("coupon_uses")
+              .select("id", { count: "exact", head: true })
+              .eq("coupon_id", dbCoupon.id)
+              .eq("user_id", currentUserId)
+            
+            if (!countErr1 && userCouponUses && userCouponUses > 0) {
+              return NextResponse.json({ error: "You have already used this coupon." }, { status: 400 })
+            }
+          }
+
+          // Check if customer email has already used this coupon
+          if (customer?.email) {
+            const { count: emailCouponUses, error: countErr2 } = await serviceClient
+              .from("orders")
+              .select("id", { count: "exact", head: true })
+              .eq("customer_email", customer.email.trim())
+              .eq("coupon_id", dbCoupon.id)
+
+            if (!countErr2 && emailCouponUses && emailCouponUses > 0) {
+              return NextResponse.json({ error: "You have already used this coupon." }, { status: 400 })
+            }
+          }
+
           couponId = dbCoupon.id
           couponType = dbCoupon.type
           couponValue = Number(dbCoupon.value)
@@ -218,8 +246,7 @@ export async function POST(req: NextRequest) {
       country: customer.country,
     }
 
-    const { data: { user } } = await supabase.auth.getUser()
-    let orderUserId = user?.id || null
+    let orderUserId = currentUserId
     let tempPasswordCreated: string | null = null
 
     if (!orderUserId && customer.email) {

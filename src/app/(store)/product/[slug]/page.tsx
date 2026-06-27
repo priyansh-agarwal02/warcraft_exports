@@ -7,6 +7,7 @@ import { ProductActions } from "@/components/product/product-actions"
 import { ProductTabs } from "@/components/product/product-tabs"
 import { ProductCard } from "@/components/products/product-card"
 import { QuickSpecs } from "@/components/product/quick-specs"
+import { createClient } from "@/lib/supabase/server"
 
 export const dynamic = "force-dynamic"
 
@@ -64,6 +65,51 @@ export default async function ProductPage({ params }: Props) {
   const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://warcraftexports.com"
   const heroImage = product.images.find((img) => img.is_hero)?.url ?? product.images[0]?.url ?? null
 
+  // Fetch reviews for this product from the database
+  let dbReviews: any[] = []
+  try {
+    const supabase = await createClient()
+    const { data } = await supabase
+      .from("reviews")
+      .select("reviewer_name, rating, title, body, created_at")
+      .eq("product_id", product.id)
+      .eq("is_visible", true)
+      .order("created_at", { ascending: false })
+    if (data) dbReviews = data
+  } catch (err) {
+    console.error("Failed to fetch product reviews for JSON-LD:", err)
+  }
+
+  const reviewsCount = dbReviews.length
+  const avgRating = reviewsCount > 0
+    ? Math.round((dbReviews.reduce((sum, r) => sum + r.rating, 0) / reviewsCount) * 10) / 10
+    : 5
+
+  const aggregateRating = reviewsCount > 0 ? {
+    "@type": "AggregateRating",
+    ratingValue: String(avgRating),
+    reviewCount: String(reviewsCount),
+    bestRating: "5",
+    worstRating: "1",
+  } : undefined
+
+  const reviewsJsonLd = reviewsCount > 0 ? dbReviews.map((r) => ({
+    "@type": "Review",
+    reviewRating: {
+      "@type": "Rating",
+      ratingValue: String(r.rating),
+      bestRating: "5",
+      worstRating: "1",
+    },
+    author: {
+      "@type": "Person",
+      name: r.reviewer_name || "Verified Collector",
+    },
+    datePublished: r.created_at ? new Date(r.created_at).toISOString().split("T")[0] : undefined,
+    reviewBody: r.body || "",
+    name: r.title || "",
+  })) : undefined
+
   // JSON-LD Product structured data for Google Shopping & AI citation
   const productJsonLd = {
     "@context": "https://schema.org",
@@ -92,6 +138,8 @@ export default async function ProductPage({ params }: Props) {
     },
     ...(product.material ? { material: product.material } : {}),
     ...(product.nation ? { audience: { "@type": "Audience", audienceType: `${product.nation} militaria collectors` } } : {}),
+    ...(aggregateRating ? { aggregateRating } : {}),
+    ...(reviewsJsonLd ? { review: reviewsJsonLd } : {}),
   }
 
   // Breadcrumb JSON-LD

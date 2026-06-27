@@ -9,7 +9,7 @@ async function toggleFeatured(id: string, featured: boolean) {
   "use server"
   const { createServiceClient } = await import("@/lib/supabase/service")
   const supabase = createServiceClient()
-  await supabase.from("reviews").update({ is_featured: !featured }).eq("id", id)
+  await supabase.from("reviews").update({ featured: !featured }).eq("id", id)
   revalidatePath("/admin/reviews")
 }
 
@@ -22,7 +22,7 @@ async function addReview(formData: FormData) {
     rating: Number(formData.get("rating")),
     body: formData.get("body") as string,
     source: formData.get("source") as string,
-    is_featured: false,
+    featured: false,
   })
   revalidatePath("/admin/reviews")
 }
@@ -44,7 +44,7 @@ export default async function AdminReviewsPage() {
   const supabase = await createClient()
   const { data: reviews } = await supabase
     .from("reviews")
-    .select("id, reviewer_name, rating, body, source, is_featured, created_at")
+    .select("id, reviewer_name, rating, body, source, featured, created_at")
     .order("created_at", { ascending: false })
 
   return (
@@ -57,21 +57,21 @@ export default async function AdminReviewsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Review list */}
         <div className="lg:col-span-2 space-y-3">
-          {(reviews ?? []).map((r: { id: string; reviewer_name: string | null; rating: number | null; body: string | null; source: string | null; is_featured: boolean | null; created_at: string }) => (
-            <div key={r.id} className={`bg-white border p-4 flex gap-4 ${r.is_featured ? "border-[#BBAC48]" : "border-[#E4E4E7]"}`}>
+          {(reviews ?? []).map((r: { id: string; reviewer_name: string | null; rating: number | null; body: string | null; source: string | null; featured: boolean | null; created_at: string }) => (
+            <div key={r.id} className={`bg-white border p-4 flex gap-4 ${r.featured ? "border-[#BBAC48]" : "border-[#E4E4E7]"}`}>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-3 mb-1">
                   <p className="font-sans font-bold text-[13px] text-[#18181B]">{r.reviewer_name ?? "Anonymous"}</p>
                   <StarRating rating={r.rating ?? 0} />
                   {r.source && <span className="text-[10px] font-sans text-[#A1A1AA] uppercase">{r.source}</span>}
-                  {r.is_featured && <span className="text-[10px] font-bold font-sans bg-[#BBAC48] text-[#484000] px-1.5 py-0.5 uppercase">Featured</span>}
+                  {r.featured && <span className="text-[10px] font-bold font-sans bg-[#BBAC48] text-[#484000] px-1.5 py-0.5 uppercase">Featured</span>}
                 </div>
                 <p className="font-sans text-[12px] text-[#71717A] line-clamp-2">{r.body ?? "—"}</p>
                 <p className="font-sans text-[11px] text-[#A1A1AA] mt-1">{new Date(r.created_at).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" })}</p>
               </div>
-              <form action={toggleFeatured.bind(null, r.id, r.is_featured ?? false)} className="flex-shrink-0">
-                <button type="submit" className={`text-[11px] font-sans font-bold uppercase tracking-wide px-3 py-1.5 border transition-colors ${r.is_featured ? "border-[#BBAC48] text-[#484000] hover:bg-[#BBAC48]/10" : "border-[#E4E4E7] text-[#71717A] hover:border-[#BBAC48]"}`}>
-                  {r.is_featured ? "Unfeature" : "Feature"}
+              <form action={toggleFeatured.bind(null, r.id, r.featured ?? false)} className="flex-shrink-0">
+                <button type="submit" className={`text-[11px] font-sans font-bold uppercase tracking-wide px-3 py-1.5 border transition-colors ${r.featured ? "border-[#BBAC48] text-[#484000] hover:bg-[#BBAC48]/10" : "border-[#E4E4E7] text-[#71717A] hover:border-[#BBAC48]"}`}>
+                  {r.featured ? "Unfeature" : "Feature"}
                 </button>
               </form>
             </div>

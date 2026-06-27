@@ -20,6 +20,7 @@ async function saveSeoSettings(formData: FormData) {
   for (const [key, value] of Object.entries(settings)) {
     await supabase.from("site_settings").upsert({ key, value }, { onConflict: "key" })
   }
+  revalidatePath("/", "layout")
   revalidatePath("/admin/seo")
 }
 
@@ -31,6 +32,7 @@ async function savePageMeta(formData: FormData) {
   const meta_description = formData.get("meta_description") as string
   if (!page) return
   await supabase.from("page_seo").upsert({ page, meta_title, meta_description }, { onConflict: "page" })
+  revalidatePath("/", "layout")
   revalidatePath("/admin/seo")
 }
 

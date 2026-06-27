@@ -2,7 +2,7 @@ export const siteConfig = {
   name: "Warcraft Exports®",
   tagline: "Historical Reproduction Gear — Crafted in India, Shipped Worldwide",
   url: process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
-  email: "warcraftexports@gmail.com",
+  email: "support@warcraftexports.com",
   phone: "+91 9839035193",
   address: "Fazalgunj, Kanpur, Uttar Pradesh 208012, India",
 

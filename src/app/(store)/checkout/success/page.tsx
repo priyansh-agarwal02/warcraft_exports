@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server"
 
 export const metadata: Metadata = { title: "Order Confirmed — Warcraft Exports" }
 
-type SP = Promise<{ order_id?: string }>
+type SP = Promise<{ order_id?: string; payment_id?: string }>
 
 // Calculate estimated arrival date range
 function calculateEstimatedArrival(createdAtStr: string, standardDays: string): string {
@@ -34,7 +34,7 @@ function calculateEstimatedArrival(createdAtStr: string, standardDays: string): 
 }
 
 export default async function CheckoutSuccessPage({ searchParams }: { searchParams: SP }) {
-  const { order_id } = await searchParams
+  const { order_id, payment_id } = await searchParams
   let order = null
   let isOwner = false
   let shippingMethod = "Standard Shipping"
@@ -45,18 +45,22 @@ export default async function CheckoutSuccessPage({ searchParams }: { searchPara
     const serviceClient = createServiceClient()
     const { data } = await serviceClient
       .from("orders")
-      .select("id, order_number, total_usd, shipping_usd, created_at, customer_name, shipping_address, user_id, order_items(id, quantity, unit_price_usd, price_usd, product_snapshot, product:products(name, sku, images:product_images(url, is_hero)))")
+      .select("id, order_number, total_usd, shipping_usd, created_at, customer_name, shipping_address, user_id, payment_intent_id, order_items(id, quantity, unit_price_usd, price_usd, product_snapshot, product:products(name, sku, images:product_images(url, is_hero)))")
       .eq("id", order_id)
       .single()
     
     if (data) {
       order = data
 
-      // Verify ownership — only the order owner sees full PII
+      // Verify ownership — only the order owner or customer with matching payment_intent_id sees the order
       try {
         const supabase = await createClient()
         const { data: { user } } = await supabase.auth.getUser()
-        isOwner = !!(user && (data as any).user_id && user.id === (data as any).user_id)
+        
+        const isUserMatch = !!(user && (data as any).user_id && user.id === (data as any).user_id)
+        const isPaymentMatch = !!(payment_id && (data as any).payment_intent_id && payment_id === (data as any).payment_intent_id)
+        
+        isOwner = isUserMatch || isPaymentMatch
       } catch {
         isOwner = false
       }
@@ -103,7 +107,7 @@ export default async function CheckoutSuccessPage({ searchParams }: { searchPara
     }
   }
 
-  if (!order) {
+  if (!order || !isOwner) {
     return (
       <div className="bg-parchment min-h-screen pt-24 pb-32 px-4 font-sans flex flex-col items-center justify-center text-center">
         <h1 className="font-serif font-extrabold text-[32px] text-[#33450D] uppercase mb-4 tracking-tight">

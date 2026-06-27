@@ -1,5 +1,7 @@
 import type { Metadata } from "next"
 import { createClient } from "@/lib/supabase/server"
+import { headers } from "next/headers"
+import { checkRateLimit } from "@/lib/rate-limit"
 
 export const metadata: Metadata = {
   title: "Wholesale Enquiry — Warcraft Exports",
@@ -21,6 +23,16 @@ async function submitWholesaleAction(data: {
   message: string
 }) {
   "use server"
+  if (!data.name?.trim() || !data.country?.trim() || !data.email?.trim() || !data.phone?.trim() || !data.volume) {
+    return { success: false, error: "Missing required fields" }
+  }
+
+  const headersList = await headers()
+  const ip = headersList.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown"
+  if (!checkRateLimit(`wholesale:${ip}`, 5, 3600_000)) {
+    return { success: false, error: "Too many submissions. Please try again in an hour." }
+  }
+
   const supabase = await createClient()
 
   const formattedMessage = [
@@ -30,10 +42,10 @@ async function submitWholesaleAction(data: {
 
   const { error } = await supabase.from("wholesale_inquiries").insert({
     contact_name: data.name,
-    company_name: data.company,
+    company_name: data.company?.trim() || "N/A",
     country: data.country,
     email: data.email,
-    phone: data.phone || null,
+    phone: data.phone,
     estimated_monthly_volume: data.volume,
     message: formattedMessage || null,
   })
@@ -79,7 +91,7 @@ const BENEFITS = [
   },
   {
     icon: "🏅",
-    title: "Trusted Since 2014",
+    title: "Trusted Since 2018",
     desc: "Over 70,000 orders fulfilled. Museums, film productions, and collectors trust our quality.",
   },
 ]
@@ -108,15 +120,15 @@ export default function WholesalePage() {
         {/* Hero */}
         <div className="text-center mb-14">
           <p className="text-[10px] font-sans font-700 uppercase tracking-[0.2em] text-leather mb-2">
-            For Retailers &amp; Distributors
+            For Retailers, Distributors &amp; Bulk Buyers
           </p>
           <h1 className="font-heading text-4xl sm:text-5xl text-leather-dark mb-4">
             Partner Directly with the Manufacturer
           </h1>
           <p className="font-sans text-leather/80 max-w-2xl mx-auto text-base leading-relaxed">
             RAAS Enterprises has supplied historical reproduction gear to retailers, reenactment
-            groups, and collectors in 20+ countries since 2014. Submit an enquiry and our team
-            will respond within 2 business days.
+            groups, and collectors in 20+ countries since 2018. Submit an enquiry and our team
+            will respond within 24 hours.
           </p>
         </div>
 

@@ -22,7 +22,7 @@ const nextConfig: NextConfig = {
           // Control referrer info
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           // Disable unnecessary browser features
-          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=()" },
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
           // Force HTTPS for 1 year (enable when deployed to production on HTTPS)
           { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
           // Legacy XSS protection for older browsers

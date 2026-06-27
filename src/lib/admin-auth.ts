@@ -25,11 +25,17 @@ export async function requireAdmin(): Promise<AdminAuthResult> {
   }
 
   if (profile?.role !== "admin") {
-    console.error("[requireAdmin] user is not admin. Role:", profile?.role, "Email:", profile?.email);
+    if (process.env.NODE_ENV !== "production") {
+      console.error("[requireAdmin] user is not admin. Role:", profile?.role, "Email:", profile?.email);
+    } else {
+      console.error("[requireAdmin] user is not admin. Access denied.");
+    }
     return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }), userId: null }
   }
 
-  console.log("[requireAdmin] admin authorization successful for:", profile.email);
+  if (process.env.NODE_ENV !== "production") {
+    console.log("[requireAdmin] admin authorization successful for:", profile.email);
+  }
   return { error: null, userId: user.id }
 }
 

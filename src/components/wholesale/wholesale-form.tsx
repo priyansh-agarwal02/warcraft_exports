@@ -69,7 +69,7 @@ export function WholesaleForm({ onSubmit }: WholesaleFormProps) {
     setError(null)
     setSuccess(false)
 
-    if (!form.name.trim() || !form.company.trim() || !form.country.trim() || !form.email.trim() || !form.volume) {
+    if (!form.name.trim() || !form.country.trim() || !form.email.trim() || !form.phone.trim() || !form.volume) {
       setError("Please fill in all required fields.")
       return
     }
@@ -116,7 +116,7 @@ export function WholesaleForm({ onSubmit }: WholesaleFormProps) {
 
       {success && (
         <div className="mb-6 p-4 bg-green-50 border border-green-200 text-green-800 text-sm font-sans rounded-sm">
-          Thank you! Your wholesale inquiry has been submitted successfully. Our B2B team will review your application and respond within 2 business days.
+          Thank you! Your wholesale inquiry has been submitted successfully. Our B2B team will review your application and respond within 24 Hours.
         </div>
       )}
 
@@ -146,13 +146,12 @@ export function WholesaleForm({ onSubmit }: WholesaleFormProps) {
           </div>
           <div>
             <label htmlFor="company" className="block text-[10px] font-sans font-700 uppercase tracking-[0.15em] text-leather mb-2">
-              Company Name *
+              Company Name
             </label>
             <input
               id="company"
               name="company"
               type="text"
-              required
               disabled={isPending}
               value={form.company}
               onChange={handleChange}
@@ -199,12 +198,13 @@ export function WholesaleForm({ onSubmit }: WholesaleFormProps) {
 
         <div>
           <label htmlFor="phone" className="block text-[10px] font-sans font-700 uppercase tracking-[0.15em] text-leather mb-2">
-            Phone Number
+            Phone Number *
           </label>
           <input
             id="phone"
             name="phone"
             type="tel"
+            required
             disabled={isPending}
             value={form.phone}
             onChange={handleChange}
@@ -286,7 +286,7 @@ export function WholesaleForm({ onSubmit }: WholesaleFormProps) {
         </button>
 
         <p className="text-center font-sans text-[11px] text-khaki">
-          We typically respond within 2 business days. No automated replies — a human reads every enquiry.
+          We typically respond within 24 Hours. No automated replies — a human reads every enquiry.
         </p>
       </form>
     </div>

@@ -2,6 +2,8 @@ import type { Metadata } from "next"
 import { Mail, Phone, MapPin, Clock } from "lucide-react"
 import { createClient } from "@/lib/supabase/server"
 import { siteConfig } from "@/config/site.config"
+import { headers } from "next/headers"
+import { checkRateLimit } from "@/lib/rate-limit"
 
 export const metadata: Metadata = {
   title: "Contact Us — Warcraft Exports",
@@ -9,11 +11,17 @@ export const metadata: Metadata = {
     "Get in touch with Warcraft Exports. Questions about orders, products, or wholesale enquiries — our team responds within 2 business days.",
 }
 
-import { sendContactNotification } from "@/lib/email"
+import { sendContactNotification, sendContactAutoresponder } from "@/lib/email"
 import { ContactForm } from "@/components/contact/contact-form"
 
 async function submitContactAction(name: string, email: string, subject: string, message: string) {
   "use server"
+  const headersList = await headers()
+  const ip = headersList.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown"
+  if (!checkRateLimit(`contact:${ip}`, 5, 3600_000)) {
+    return { success: false, error: "Too many submissions. Please try again in an hour." }
+  }
+
   const supabase = await createClient()
   const { error } = await supabase.from("contact_messages").insert({
     name,
@@ -27,6 +35,7 @@ async function submitContactAction(name: string, email: string, subject: string,
   }
   try {
     await sendContactNotification(name, email, subject, message)
+    await sendContactAutoresponder(name, email, subject, message)
   } catch (emailErr: any) {
     console.error("Email notification failed:", emailErr.message)
   }

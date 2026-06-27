@@ -29,80 +29,105 @@ const merriweather = Merriweather({
 
 const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://warcraftexports.com"
 
-export const metadata: Metadata = {
-  metadataBase: new URL(BASE_URL),
-  icons: {
-    icon: [
-      { url: "/favicon.ico", sizes: "any" },
-      { url: "/favicon.svg", type: "image/svg+xml" },
-      { url: "/favicon-96x96.png", sizes: "96x96", type: "image/png" },
-    ],
-    apple: [
-      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
-    ],
-  },
-  manifest: "/site.webmanifest",
-  title: {
-    template: "%s | Warcraft Exports",
-    default: "Warcraft Exports — WW1 & WW2 Historical Reproduction Military Gear",
-  },
-  description:
-    "Manufacturer and global exporter of WW1 & WW2 historical reproduction military gear. Leather holsters, canvas pouches, belts, slings and reenactment kits. 10+ years, 50,000+ orders, ships to 20+ countries from Kanpur, India.",
-  keywords: [
-    "WW1 reproduction gear",
-    "WW2 military reproductions",
-    "historical military holsters",
-    "leather holster manufacturer",
-    "canvas military pouches",
-    "reenactment gear",
-    "military surplus reproductions",
-    "WW2 collectibles",
-    "US militaria",
-    "German militaria",
-    "British militaria",
-    "military leather goods India",
-    "wholesale military gear",
-  ],
-  authors: [{ name: "Warcraft Exports", url: BASE_URL }],
-  creator: "Warcraft Exports (RAAS ENTERPRISES)",
-  publisher: "Warcraft Exports",
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: { index: true, follow: true, "max-video-preview": -1, "max-image-preview": "large", "max-snippet": -1 },
-  },
-  openGraph: {
-    type: "website",
-    locale: "en_US",
-    url: BASE_URL,
-    siteName: "Warcraft Exports",
-    title: "Warcraft Exports — WW1 & WW2 Historical Reproduction Military Gear",
+import { createServiceClient } from "@/lib/supabase/service";
+
+export async function generateMetadata(): Promise<Metadata> {
+  let googleVerification = ""
+  let bingVerification = ""
+  try {
+    const supabase = createServiceClient()
+    const { data: rows } = await supabase
+      .from("site_settings")
+      .select("key, value")
+      .in("key", ["seo_google_verification", "seo_bing_verification"])
+    
+    if (rows) {
+      const googleRow = rows.find((r) => r.key === "seo_google_verification")
+      const bingRow = rows.find((r) => r.key === "seo_bing_verification")
+      if (googleRow?.value) googleVerification = googleRow.value
+      if (bingRow?.value) bingVerification = bingRow.value
+    }
+  } catch (err) {
+    console.error("Failed to load global verification codes:", err)
+  }
+
+  return {
+    metadataBase: new URL(BASE_URL),
+    icons: {
+      icon: [
+        { url: "/favicon.ico", sizes: "any" },
+        { url: "/favicon.svg", type: "image/svg+xml" },
+        { url: "/favicon-96x96.png", sizes: "96x96", type: "image/png" },
+      ],
+      apple: [
+        { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+      ],
+    },
+    manifest: "/site.webmanifest",
+    title: {
+      template: "%s | Warcraft Exports",
+      default: "Warcraft Exports — WW1 & WW2 Historical Reproduction Military Gear",
+    },
     description:
-      "Manufacturer-direct WW1 & WW2 reproduction military gear. Leather holsters, canvas equipment, uniforms and collector items. Ships worldwide from Kanpur, India.",
-    images: [
-      {
-        url: "/og-image.jpg",
-        width: 1200,
-        height: 630,
-        alt: "Warcraft Exports — Historical Reproduction Military Gear",
-      },
+      "Shop 300+ WW1 & WW2 reproduction military gear. Leather holsters, canvas pouches, belts & reenactment kits. Manufacturer-direct, ships to 20+ countries.",
+    keywords: [
+      "WW1 reproduction gear",
+      "WW2 military reproductions",
+      "historical military holsters",
+      "leather holster manufacturer",
+      "canvas military pouches",
+      "reenactment gear",
+      "military surplus reproductions",
+      "WW2 collectibles",
+      "US militaria",
+      "German militaria",
+      "British militaria",
+      "military leather goods India",
+      "wholesale military gear",
     ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Warcraft Exports — WW1 & WW2 Historical Reproduction Military Gear",
-    description:
-      "Manufacturer-direct WW1 & WW2 reproduction military gear. Ships worldwide from Kanpur, India.",
-    images: ["/og-image.jpg"],
-  },
-  alternates: {
-    canonical: BASE_URL,
-  },
-  verification: {
-    // Add Google Search Console verification code here when available
-    // google: "your-verification-code",
-  },
-};
+    authors: [{ name: "Warcraft Exports", url: BASE_URL }],
+    creator: "Warcraft Exports (RAAS ENTERPRISES)",
+    publisher: "Warcraft Exports",
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: { index: true, follow: true, "max-video-preview": -1, "max-image-preview": "large", "max-snippet": -1 },
+    },
+    openGraph: {
+      type: "website",
+      locale: "en_US",
+      url: BASE_URL,
+      siteName: "Warcraft Exports",
+      title: "Warcraft Exports — WW1 & WW2 Historical Reproduction Military Gear",
+      description:
+        "Shop 300+ WW1 & WW2 reproduction military gear. Leather holsters, canvas pouches, belts & reenactment kits. Ships worldwide from India.",
+      images: [
+        {
+          url: "/images/og_image.png",
+          width: 1200,
+          height: 630,
+          alt: "Warcraft Exports — Historical Reproduction Military Gear",
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: "Warcraft Exports — WW1 & WW2 Historical Reproduction Military Gear",
+      description:
+        "Shop 300+ WW1 & WW2 reproduction military gear. Leather holsters, canvas pouches & reenactment kits. Ships worldwide.",
+      images: ["/images/og_image.png"],
+    },
+    alternates: {
+      canonical: BASE_URL,
+    },
+    verification: {
+      google: googleVerification || undefined,
+      other: bingVerification ? {
+        "msvalidate.01": bingVerification,
+      } : undefined,
+    },
+  };
+}
 
 export default function RootLayout({
   children,
