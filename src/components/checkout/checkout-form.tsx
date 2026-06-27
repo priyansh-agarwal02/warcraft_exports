@@ -61,49 +61,63 @@ export function CheckoutForm() {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) return
 
+      // 1. Immediately set email and basic metadata so fields populate instantly
+      const metaName = user.user_metadata?.full_name || user.user_metadata?.name || ""
+      const metaPhone = user.user_metadata?.phone || ""
+      setForm((prev) => ({
+        ...prev,
+        email: user.email || prev.email,
+        fullName: prev.fullName || metaName,
+        phone: prev.phone || metaPhone,
+      }))
+
+      // 2. Load addresses separately (non-blocking)
       try {
-        // Fetch addresses via our secure API route (RLS-proof)
         const res = await fetch("/api/addresses")
-        const data = await res.json()
-        const allAddresses = data.addresses || []
+        if (res.ok) {
+          const data = await res.json()
+          const allAddresses = data.addresses || []
 
-        if (allAddresses.length > 0) {
-          setSavedAddresses(allAddresses)
+          if (allAddresses.length > 0) {
+            setSavedAddresses(allAddresses)
+            const address = allAddresses.find((a: any) => a.is_default) || allAddresses[0]
+            if (address) {
+              setSelectedAddressId(address.id)
+              setForm((prev) => ({
+                ...prev,
+                fullName: address.full_name || prev.fullName || metaName,
+                phone: address.phone || prev.phone || metaPhone,
+                address1: address.line1 || prev.address1,
+                address2: address.line2 || prev.address2,
+                city: address.city || prev.city,
+                state: address.state || prev.state,
+                postalCode: address.postal_code || prev.postalCode,
+                country: address.country || prev.country,
+              }))
+            }
+          }
         }
-
-        // Define address using the default address or fallback to the first saved address
-        const address = allAddresses.find((a: any) => a.is_default) || allAddresses[0]
-        if (address) {
-          setSelectedAddressId(address.id)
-        }
-
-        // Fetch user profile info separately so it doesn't block addresses
-        let profile = null
-        try {
-          const { data: profileData } = await supabase
-            .from("profiles")
-            .select("full_name, phone")
-            .eq("id", user.id)
-            .single()
-          profile = profileData
-        } catch (profileErr) {
-          console.error("Failed to load user profile info:", profileErr)
-        }
-
-        setForm((prev) => ({
-          ...prev,
-          fullName: profile?.full_name || prev.fullName,
-          email: user.email || prev.email,
-          phone: profile?.phone || prev.phone || "",
-          address1: address?.line1 || prev.address1,
-          address2: address?.line2 || prev.address2,
-          city: address?.city || prev.city,
-          state: address?.state || prev.state,
-          postalCode: address?.postal_code || prev.postalCode,
-          country: address?.country || prev.country,
-        }))
       } catch (err) {
         console.error("Failed to load user address for checkout:", err)
+      }
+
+      // 3. Load database profile information separately (non-blocking)
+      try {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("full_name, phone")
+          .eq("id", user.id)
+          .single()
+
+        if (profile) {
+          setForm((prev) => ({
+            ...prev,
+            fullName: profile.full_name || prev.fullName || metaName,
+            phone: profile.phone || prev.phone || metaPhone,
+          }))
+        }
+      } catch (profileErr) {
+        console.error("Failed to load user profile info:", profileErr)
       }
     })
   }, [])

@@ -24,6 +24,7 @@ export default async function SearchPage({ searchParams }: { searchParams: SP })
     search: q,
     nation: typeof sp.nation === "string" ? sp.nation : undefined,
     era: typeof sp.era === "string" ? sp.era : undefined,
+    category: typeof sp.category === "string" ? sp.category : undefined,
     price_min: sp.min ? Number(sp.min) : undefined,
     price_max: sp.max ? Number(sp.max) : undefined,
     in_stock: sp.stock === "1",

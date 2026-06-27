@@ -19,8 +19,11 @@ async function updateOrderStatus(formData: FormData) {
   const supabase = createServiceClient()
   const id = formData.get("order_id") as string
   const status = formData.get("status") as string
+  const redirectTo = (formData.get("redirect_to") as string) || "/admin/orders"
   await supabase.from("orders").update({ status }).eq("id", id)
   revalidatePath("/admin/orders")
+  const { redirect } = await import("next/navigation")
+  redirect(redirectTo)
 }
 const STATUS_COLORS: Record<string, string> = {
   confirmed: "bg-amber-100 text-amber-800",
@@ -54,6 +57,8 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
     Object.entries(merged).forEach(([k, v]) => { if (v) base.set(k, v) })
     return `/admin/orders?${base.toString()}`
   }
+
+  const currentPath = buildUrl({})
 
   return (
     <div className="p-4 sm:p-8">
@@ -110,6 +115,7 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
                     <div className="flex items-center justify-center gap-2">
                       <form action={updateOrderStatus} className="flex items-center gap-1">
                         <input type="hidden" name="order_id" value={o.id} />
+                        <input type="hidden" name="redirect_to" value={currentPath} />
                         <select
                           name="status"
                           defaultValue={status}

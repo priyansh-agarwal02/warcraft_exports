@@ -8,13 +8,16 @@ import { motion, AnimatePresence, type Variants } from "framer-motion"
 
 const CATEGORIES = [
   { name: "Holsters", slug: "holsters" },
-  { name: "Ammunition Pouches", slug: "ammunition-pouches" },
-  { name: "Belts & Straps", slug: "belts-straps" },
-  { name: "Canvas Gear", slug: "canvas-gear" },
-  { name: "Leather Gear", slug: "leather-gear" },
   { name: "Slings", slug: "slings" },
-  { name: "Reenactment Sets", slug: "reenactment-sets" },
+  { name: "Collectibles", slug: "collectibles" },
+  { name: "Field Equipment", slug: "equipment" },
+  { name: "Military Cases", slug: "military-cases" },
+  { name: "Belts & Straps", slug: "belts-straps" },
+  { name: "Headgear", slug: "headgear" },
+  { name: "Bags & Satchels", slug: "bags-satchels" },
   { name: "Uniforms", slug: "uniforms" },
+  { name: "Canvas Gear", slug: "canvas-gear" },
+  { name: "Optics & Accessories", slug: "optics-accessories" },
 ]
 
 const panelVariants: Variants = {
@@ -105,7 +108,7 @@ export function MegaMenu() {
                   By Era
                 </p>
                 <ul className="space-y-1.5">
-                  {siteConfig.eras.slice(0, 4).map((e) => (
+                  {siteConfig.eras.slice(0, 2).map((e) => (
                     <motion.li key={e} variants={linkVariant}>
                       <Link
                         href={`/shop/era/${e.toLowerCase().replace(/\s+/g, "-")}`}
@@ -124,7 +127,7 @@ export function MegaMenu() {
                   By Category
                 </p>
                 <ul className="space-y-1.5">
-                  {CATEGORIES.slice(0, 6).map((c) => (
+                  {CATEGORIES.map((c) => (
                     <motion.li key={c.slug} variants={linkVariant}>
                       <Link
                         href={`/shop/category/${c.slug}`}

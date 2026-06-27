@@ -9,31 +9,45 @@ export const metadata: Metadata = { title: "SEO — Warcraft Exports Admin" }
 // Global SEO settings stored in site_settings table (key: seo_*)
 async function saveSeoSettings(formData: FormData) {
   "use server"
-  const supabase = createServiceClient()
-  const settings = {
-    seo_site_title: formData.get("seo_site_title") as string,
-    seo_site_description: formData.get("seo_site_description") as string,
-    seo_og_image: formData.get("seo_og_image") as string,
-    seo_google_verification: formData.get("seo_google_verification") as string,
-    seo_bing_verification: formData.get("seo_bing_verification") as string,
-  }
-  for (const [key, value] of Object.entries(settings)) {
-    await supabase.from("site_settings").upsert({ key, value }, { onConflict: "key" })
+  try {
+    const supabase = createServiceClient()
+    const settings = {
+      seo_site_title: formData.get("seo_site_title") as string,
+      seo_site_description: formData.get("seo_site_description") as string,
+      seo_og_image: formData.get("seo_og_image") as string,
+      seo_google_verification: formData.get("seo_google_verification") as string,
+      seo_bing_verification: formData.get("seo_bing_verification") as string,
+    }
+    for (const [key, value] of Object.entries(settings)) {
+      const { error } = await supabase.from("site_settings").upsert({ key, value }, { onConflict: "key" })
+      if (error) throw error
+    }
+  } catch (err: any) {
+    console.error("Failed to save SEO settings:", err?.message || err)
   }
   revalidatePath("/", "layout")
   revalidatePath("/admin/seo")
+  const { redirect } = await import("next/navigation")
+  redirect("/admin/seo")
 }
 
 async function savePageMeta(formData: FormData) {
   "use server"
-  const supabase = createServiceClient()
-  const page = formData.get("page") as string
-  const meta_title = formData.get("meta_title") as string
-  const meta_description = formData.get("meta_description") as string
-  if (!page) return
-  await supabase.from("page_seo").upsert({ page, meta_title, meta_description }, { onConflict: "page" })
+  try {
+    const supabase = createServiceClient()
+    const page = formData.get("page") as string
+    const meta_title = formData.get("meta_title") as string
+    const meta_description = formData.get("meta_description") as string
+    if (!page) return
+    const { error } = await supabase.from("page_seo").upsert({ page, meta_title, meta_description }, { onConflict: "page" })
+    if (error) throw error
+  } catch (err: any) {
+    console.error("Failed to save page meta override:", err?.message || err)
+  }
   revalidatePath("/", "layout")
   revalidatePath("/admin/seo")
+  const { redirect } = await import("next/navigation")
+  redirect("/admin/seo")
 }
 
 const TRACKED_PAGES = [

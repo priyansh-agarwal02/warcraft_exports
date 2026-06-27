@@ -63,6 +63,7 @@ export default async function EraPage({
   const filters: ShopFilters = {
     era,
     nation: typeof sp.nation === "string" ? sp.nation : undefined,
+    category: typeof sp.category === "string" ? sp.category : undefined,
     price_min: sp.min ? Number(sp.min) : undefined,
     price_max: sp.max ? Number(sp.max) : undefined,
     in_stock: sp.stock === "1",

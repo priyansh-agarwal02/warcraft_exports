@@ -5,6 +5,20 @@ import { useRouter, useSearchParams, usePathname } from "next/navigation"
 import { X, SlidersHorizontal } from "lucide-react"
 import { siteConfig } from "@/config/site.config"
 
+const CATEGORIES = [
+  { name: "Holsters", slug: "holsters" },
+  { name: "Slings", slug: "slings" },
+  { name: "Collectibles", slug: "collectibles" },
+  { name: "Field Equipment", slug: "equipment" },
+  { name: "Military Cases", slug: "military-cases" },
+  { name: "Belts & Straps", slug: "belts-straps" },
+  { name: "Headgear", slug: "headgear" },
+  { name: "Bags & Satchels", slug: "bags-satchels" },
+  { name: "Uniforms", slug: "uniforms" },
+  { name: "Canvas Gear", slug: "canvas-gear" },
+  { name: "Optics & Accessories", slug: "optics-accessories" },
+]
+
 interface FilterSidebarProps {
   lockedNation?: string
   lockedEra?: string
@@ -56,25 +70,33 @@ function CheckRow({
 function ActiveChips({
   currentNation,
   currentEra,
+  currentCategory,
   currentStock,
   currentMin,
   currentMax,
   lockedNation,
   lockedEra,
+  lockedCategory,
   onRemove,
 }: {
   currentNation: string
   currentEra: string
+  currentCategory: string
   currentStock: boolean
   currentMin: string
   currentMax: string
   lockedNation?: string
   lockedEra?: string
+  lockedCategory?: string
   onRemove: (key: string) => void
 }) {
   const chips: { key: string; label: string }[] = []
   if (!lockedNation && currentNation) chips.push({ key: "nation", label: `Nation: ${currentNation}` })
   if (!lockedEra && currentEra) chips.push({ key: "era", label: `Era: ${currentEra}` })
+  if (!lockedCategory && currentCategory) {
+    const catName = CATEGORIES.find(c => c.slug === currentCategory)?.name || currentCategory
+    chips.push({ key: "category", label: `Category: ${catName}` })
+  }
   if (currentStock) chips.push({ key: "stock", label: "In Stock" })
   if (currentMin) chips.push({ key: "min", label: `Min $${currentMin}` })
   if (currentMax) chips.push({ key: "max", label: `Max $${currentMax}` })
@@ -100,10 +122,12 @@ function ActiveChips({
 function FilterContent({
   lockedNation,
   lockedEra,
+  lockedCategory,
   onClearAll,
 }: {
   lockedNation?: string
   lockedEra?: string
+  lockedCategory?: string
   onClearAll: () => void
 }) {
   const router = useRouter()
@@ -112,6 +136,7 @@ function FilterContent({
 
   const currentNation = searchParams.get("nation") ?? ""
   const currentEra = searchParams.get("era") ?? ""
+  const currentCategory = searchParams.get("category") ?? ""
   const currentStock = searchParams.get("stock") === "1"
   const currentMin = searchParams.get("min") ?? ""
   const currentMax = searchParams.get("max") ?? ""
@@ -135,6 +160,7 @@ function FilterContent({
   const hasActiveFilters = [
     !lockedNation && currentNation,
     !lockedEra && currentEra,
+    !lockedCategory && currentCategory,
     currentStock,
     currentMin,
     currentMax,
@@ -161,11 +187,13 @@ function FilterContent({
       <ActiveChips
         currentNation={currentNation}
         currentEra={currentEra}
+        currentCategory={currentCategory}
         currentStock={currentStock}
         currentMin={currentMin}
         currentMax={currentMax}
         lockedNation={lockedNation}
         lockedEra={lockedEra}
+        lockedCategory={lockedCategory}
         onRemove={removeChip}
       />
 
@@ -201,6 +229,25 @@ function FilterContent({
                 label={era}
                 checked={currentEra === era}
                 onChange={(checked) => updateParam("era", checked ? era : null)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Category */}
+      {!lockedCategory && (
+        <div>
+          <p className="text-[11px] font-sans font-bold uppercase tracking-[0.12em] text-leather-dark border-b border-khaki pb-1 mb-3">
+            Category
+          </p>
+          <div className="space-y-2.5 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+            {CATEGORIES.map((c) => (
+              <CheckRow
+                key={c.slug}
+                label={c.name}
+                checked={currentCategory === c.slug}
+                onChange={(checked) => updateParam("category", checked ? c.slug : null)}
               />
             ))}
           </div>
@@ -271,6 +318,7 @@ export function FilterSidebar({ lockedNation, lockedEra, lockedCategory }: Filte
           <FilterContent
             lockedNation={lockedNation}
             lockedEra={lockedEra}
+            lockedCategory={lockedCategory}
             onClearAll={clearAll}
           />
         </div>
@@ -309,6 +357,7 @@ export function FilterSidebar({ lockedNation, lockedEra, lockedCategory }: Filte
             <FilterContent
               lockedNation={lockedNation}
               lockedEra={lockedEra}
+              lockedCategory={lockedCategory}
               onClearAll={clearAll}
             />
             <button

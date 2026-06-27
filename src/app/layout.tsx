@@ -34,22 +34,43 @@ import { createServiceClient } from "@/lib/supabase/service";
 export async function generateMetadata(): Promise<Metadata> {
   let googleVerification = ""
   let bingVerification = ""
+  let defaultTitle = "Warcraft Exports — WW1 & WW2 Historical Reproduction Military Gear"
+  let defaultDesc = "Shop 300+ WW1 & WW2 reproduction military gear. Leather holsters, canvas pouches, belts & reenactment kits. Manufacturer-direct, ships to 20+ countries."
+  let ogImage = "/images/og_image.png"
+
   try {
     const supabase = createServiceClient()
     const { data: rows } = await supabase
       .from("site_settings")
       .select("key, value")
-      .in("key", ["seo_google_verification", "seo_bing_verification"])
+      .in("key", [
+        "seo_google_verification",
+        "seo_bing_verification",
+        "seo_site_title",
+        "seo_site_description",
+        "seo_og_image",
+      ])
     
     if (rows) {
       const googleRow = rows.find((r) => r.key === "seo_google_verification")
       const bingRow = rows.find((r) => r.key === "seo_bing_verification")
+      const titleRow = rows.find((r) => r.key === "seo_site_title")
+      const descRow = rows.find((r) => r.key === "seo_site_description")
+      const ogRow = rows.find((r) => r.key === "seo_og_image")
+
       if (googleRow?.value) googleVerification = googleRow.value
       if (bingRow?.value) bingVerification = bingRow.value
+      if (titleRow?.value) defaultTitle = titleRow.value
+      if (descRow?.value) defaultDesc = descRow.value
+      if (ogRow?.value) ogImage = ogRow.value
     }
   } catch (err) {
     console.error("Failed to load global verification codes:", err)
   }
+
+  const absoluteOgImage = ogImage.startsWith("http")
+    ? ogImage
+    : `${BASE_URL}${ogImage.startsWith("/") ? "" : "/"}${ogImage}`
 
   return {
     metadataBase: new URL(BASE_URL),
@@ -66,10 +87,9 @@ export async function generateMetadata(): Promise<Metadata> {
     manifest: "/site.webmanifest",
     title: {
       template: "%s | Warcraft Exports",
-      default: "Warcraft Exports — WW1 & WW2 Historical Reproduction Military Gear",
+      default: defaultTitle,
     },
-    description:
-      "Shop 300+ WW1 & WW2 reproduction military gear. Leather holsters, canvas pouches, belts & reenactment kits. Manufacturer-direct, ships to 20+ countries.",
+    description: defaultDesc,
     keywords: [
       "WW1 reproduction gear",
       "WW2 military reproductions",
@@ -98,24 +118,22 @@ export async function generateMetadata(): Promise<Metadata> {
       locale: "en_US",
       url: BASE_URL,
       siteName: "Warcraft Exports",
-      title: "Warcraft Exports — WW1 & WW2 Historical Reproduction Military Gear",
-      description:
-        "Shop 300+ WW1 & WW2 reproduction military gear. Leather holsters, canvas pouches, belts & reenactment kits. Ships worldwide from India.",
+      title: defaultTitle,
+      description: defaultDesc,
       images: [
         {
-          url: "/images/og_image.png",
+          url: absoluteOgImage,
           width: 1200,
           height: 630,
-          alt: "Warcraft Exports — Historical Reproduction Military Gear",
+          alt: defaultTitle,
         },
       ],
     },
     twitter: {
       card: "summary_large_image",
-      title: "Warcraft Exports — WW1 & WW2 Historical Reproduction Military Gear",
-      description:
-        "Shop 300+ WW1 & WW2 reproduction military gear. Leather holsters, canvas pouches & reenactment kits. Ships worldwide.",
-      images: ["/images/og_image.png"],
+      title: defaultTitle,
+      description: defaultDesc,
+      images: [absoluteOgImage],
     },
     alternates: {
       canonical: BASE_URL,

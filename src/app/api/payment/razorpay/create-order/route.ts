@@ -22,14 +22,28 @@ async function getRate(currency: string): Promise<number> {
   }
 }
 
+function getRazorpayKeys() {
+  const isVercelProd = process.env.VERCEL_ENV === "production" || (process.env.NODE_ENV === "production" && !process.env.NEXT_PUBLIC_APP_URL?.includes("localhost"))
+  if (isVercelProd) {
+    return {
+      keyId: process.env.RAZORPAY_KEY_ID_LIVE || process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+      keySecret: process.env.RAZORPAY_KEY_SECRET_LIVE || process.env.RAZORPAY_KEY_SECRET
+    }
+  } else {
+    return {
+      keyId: process.env.RAZORPAY_KEY_ID_TEST || process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+      keySecret: process.env.RAZORPAY_KEY_SECRET_TEST || process.env.RAZORPAY_KEY_SECRET
+    }
+  }
+}
+
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown"
   if (!checkRateLimit(`rzp-order:${ip}`, 10, 60_000)) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 })
   }
 
-  const KEY_ID = process.env.RAZORPAY_KEY_ID ?? process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID
-  const KEY_SECRET = process.env.RAZORPAY_KEY_SECRET
+  const { keyId: KEY_ID, keySecret: KEY_SECRET } = getRazorpayKeys()
 
   if (!KEY_ID || !KEY_SECRET) {
     return NextResponse.json(

@@ -75,6 +75,7 @@ export default async function NationPage({
   const filters: ShopFilters = {
     nation: normalizedNation,
     era: typeof sp.era === "string" ? sp.era : undefined,
+    category: typeof sp.category === "string" ? sp.category : undefined,
     price_min: sp.min ? Number(sp.min) : undefined,
     price_max: sp.max ? Number(sp.max) : undefined,
     in_stock: sp.stock === "1",

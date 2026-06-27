@@ -100,7 +100,7 @@ export function MobileDrawer() {
                   >{n}</Link>
                 ))}
                 <p className="text-[9px] text-khaki uppercase tracking-widest mt-2 mb-1">By Era</p>
-                {siteConfig.eras.slice(0, 4).map((e) => (
+                {siteConfig.eras.slice(0, 2).map((e) => (
                   <Link key={e} href={`/shop/era/${e.toLowerCase().replace(/\s+/g, "-")}`} onClick={() => setOpen(false)}
                     className="block py-1.5 text-xs text-leather-dark hover:text-leather"
                   >{e}</Link>

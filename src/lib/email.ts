@@ -638,3 +638,101 @@ export async function sendOrderShippedEmail(orderId: string) {
     console.error("sendOrderShippedEmail error:", err)
   }
 }
+
+function orderDeliveredHtml(data: {
+  orderNumber: string
+  customerName: string
+  items: { name: string; quantity: number; sku: string }[]
+}): string {
+  const itemRows = data.items
+    .map(
+      (item) =>
+        `<tr>
+          <td style="padding:8px 12px;border-bottom:1px solid #e8dcc8;font-size:14px;color:#3B2A1A;">${item.name} <span style="color:#8B7355;font-size:12px;">(${item.sku})</span></td>
+          <td style="padding:8px 12px;border-bottom:1px solid #e8dcc8;text-align:center;font-size:14px;color:#3B2A1A;">${item.quantity}</td>
+        </tr>`
+    )
+    .join("")
+
+  return `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#F2EAD3;font-family:Georgia,serif;">
+  <div style="max-width:600px;margin:32px auto;background:#fff;border:1px solid #e8dcc8;">
+    <div style="background:#3B2A1A;padding:28px 32px;text-align:center;">
+      <h1 style="margin:0;font-size:24px;color:#F2EAD3;letter-spacing:2px;text-transform:uppercase;">Warcraft Exports</h1>
+      <p style="margin:6px 0 0;font-size:12px;color:#C3B091;letter-spacing:1px;text-transform:uppercase;">Order Delivered</p>
+    </div>
+
+    <div style="padding:32px;">
+      <p style="font-size:15px;color:#3B2A1A;margin-top:0;">Dear ${data.customerName},</p>
+      <p style="font-size:14px;color:#6B5A3E;line-height:1.6;">
+        Exciting news! Your order <strong style="color:#3B2A1A;">#${data.orderNumber}</strong> has been delivered successfully. 
+        We hope you love your new historical reproduction gear!
+      </p>
+
+      <h2 style="font-size:14px;text-transform:uppercase;letter-spacing:1px;color:#3B2A1A;margin-bottom:12px;border-bottom:2px solid #C3B091;padding-bottom:8px;">Delivered Items</h2>
+
+      <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
+        <thead>
+          <tr style="background:#F2EAD3;">
+            <th style="padding:8px 12px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#8B7355;">Item</th>
+            <th style="padding:8px 12px;text-align:center;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#8B7355;width:80px;">Qty</th>
+          </tr>
+        </thead>
+        <tbody>${itemRows}</tbody>
+      </table>
+
+      <p style="font-size:13px;color:#6B5A3E;line-height:1.6;margin-bottom:8px;">
+        If you have any questions, feedback, or need help with a return or replacement, please reach out to us.
+      </p>
+      <p style="font-size:13px;color:#6B5A3E;line-height:1.6;margin:0;">
+        Email us directly at <a href="mailto:warcraftexports@gmail.com" style="color:#8B4513;">warcraftexports@gmail.com</a>
+      </p>
+    </div>
+
+    <div style="background:#3B2A1A;padding:16px 32px;text-align:center;">
+      <p style="margin:0;font-size:11px;color:#C3B091;">© ${new Date().getFullYear()} RAAS Enterprises · Kanpur, India · <a href="https://warcraftexports.com" style="color:#C3B091;">warcraftexports.com</a></p>
+    </div>
+  </div>
+</body>
+</html>`
+}
+
+export async function sendOrderDeliveredEmail(orderId: string) {
+  try {
+    const { createServiceClient } = await import("@/lib/supabase/service")
+    const supabase = createServiceClient()
+
+    const { data: order, error } = await supabase
+      .from("orders")
+      .select("id, order_number, customer_name, customer_email, order_items(id, quantity, product:products(name, sku))")
+      .eq("id", orderId)
+      .single()
+
+    if (error || !order) {
+      console.error("Order not found for delivered email:", error)
+      return
+    }
+
+    const items = (order.order_items as any[]).map((item) => ({
+      name: item.product?.name || "Product Item",
+      sku: item.product?.sku || "N/A",
+      quantity: item.quantity,
+    }))
+
+    await resend.emails.send({
+      from: FROM_ORDERS,
+      to: order.customer_email,
+      replyTo: "warcraftexports@gmail.com",
+      subject: `Your order #${order.order_number} has been delivered! | Warcraft Exports`,
+      html: orderDeliveredHtml({
+        orderNumber: order.order_number,
+        customerName: order.customer_name,
+        items,
+      }),
+    })
+  } catch (err) {
+    console.error("sendOrderDeliveredEmail error:", err)
+  }
+}

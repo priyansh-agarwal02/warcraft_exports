@@ -28,8 +28,19 @@ async function updateOrderStatus(formData: FormData) {
     }
   }
 
+  if (status === "delivered") {
+    try {
+      const { sendOrderDeliveredEmail } = await import("@/lib/email")
+      await sendOrderDeliveredEmail(id)
+    } catch (err) {
+      console.error("Failed to send delivered email on status update:", err)
+    }
+  }
+
   revalidatePath("/admin/orders")
   revalidatePath(`/admin/orders/${id}`)
+  const { redirect } = await import("next/navigation")
+  redirect(`/admin/orders/${id}`)
 }
 
 async function updateTracking(formData: FormData) {
@@ -77,6 +88,8 @@ async function updateTracking(formData: FormData) {
   revalidatePath(`/admin/orders/${id}`)
   revalidatePath("/account/orders")
   revalidatePath(`/account/orders/${id}`)
+  const { redirect } = await import("next/navigation")
+  redirect(`/admin/orders/${id}`)
 }
 
 export default async function AdminOrderDetailPage({ params }: Props) {

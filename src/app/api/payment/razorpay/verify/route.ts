@@ -2,13 +2,26 @@ import { NextRequest, NextResponse } from "next/server"
 import crypto from "crypto"
 import { checkRateLimit } from "@/lib/rate-limit"
 
+function getRazorpayKeys() {
+  const isVercelProd = process.env.VERCEL_ENV === "production" || (process.env.NODE_ENV === "production" && !process.env.NEXT_PUBLIC_APP_URL?.includes("localhost"))
+  if (isVercelProd) {
+    return {
+      keySecret: process.env.RAZORPAY_KEY_SECRET_LIVE || process.env.RAZORPAY_KEY_SECRET
+    }
+  } else {
+    return {
+      keySecret: process.env.RAZORPAY_KEY_SECRET_TEST || process.env.RAZORPAY_KEY_SECRET
+    }
+  }
+}
+
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown"
   if (!checkRateLimit(`rzp-verify:${ip}`, 10, 60_000)) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 })
   }
 
-  const KEY_SECRET = process.env.RAZORPAY_KEY_SECRET
+  const { keySecret: KEY_SECRET } = getRazorpayKeys()
   if (!KEY_SECRET) {
     return NextResponse.json({ error: "Payment not configured" }, { status: 503 })
   }
