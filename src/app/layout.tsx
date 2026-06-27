@@ -4,6 +4,7 @@ import localFont from "next/font/local";
 import { Suspense } from "react";
 import Script from "next/script";
 import { PostHogProvider } from "@/components/providers/PostHogProvider";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 const arupalaGrotesk = localFont({
@@ -288,6 +289,7 @@ export default function RootLayout({
           src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"
           strategy="afterInteractive"
         />
+        <Analytics />
       </body>
     </html>
   );
