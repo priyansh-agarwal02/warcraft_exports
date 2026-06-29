@@ -7,12 +7,16 @@ import { getProducts } from "@/lib/queries/products"
 import type { ShopFilters, SortOption } from "@/types/product"
 import type { Metadata } from "next"
 
+import { getPageSeo } from "@/lib/queries/seo"
+
 export const dynamic = "force-dynamic"
 
-export const metadata: Metadata = {
-  title: "Shop All — Warcraft Exports",
-  description:
-    "Browse 300+ WW1 & WW2 historical reproduction gear items. Filter by nation, era, price. Ships worldwide.",
+export async function generateMetadata(): Promise<Metadata> {
+  const seo = await getPageSeo("shop")
+  return {
+    title: seo?.meta_title || "Shop WW1 & WW2 Military Reproduction Gear | Warcraft Exports",
+    description: seo?.meta_description || "Browse 300+ WW1 & WW2 historical reproduction gear items. Handcrafted leather holsters, canvas webbing, belts, slings & helmets. Direct from manufacturer.",
+  }
 }
 
 type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>

@@ -5,10 +5,16 @@ import { siteConfig } from "@/config/site.config"
 import { headers } from "next/headers"
 import { checkRateLimit } from "@/lib/rate-limit"
 
-export const metadata: Metadata = {
-  title: "Contact Us — Warcraft Exports",
-  description:
-    "Get in touch with Warcraft Exports. Questions about orders, products, or wholesale enquiries — our team responds within 2 business days.",
+import { getPageSeo } from "@/lib/queries/seo"
+
+export const dynamic = "force-dynamic"
+
+export async function generateMetadata(): Promise<Metadata> {
+  const seo = await getPageSeo("contact")
+  return {
+    title: seo?.meta_title || "Contact Us — Warcraft Exports",
+    description: seo?.meta_description || "Get in touch with Warcraft Exports. Questions about orders, products, or wholesale enquiries — our team responds within 2 business days.",
+  }
 }
 
 import { sendContactNotification, sendContactAutoresponder } from "@/lib/email"

@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import { siteConfig } from "@/config/site.config"
+import { getPageSeo } from "@/lib/queries/seo"
 
 function IconAmazon({ className }: { className?: string }) {
   return (
@@ -32,10 +33,14 @@ function IconWalmart({ className }: { className?: string }) {
 }
 
 
-export const metadata: Metadata = {
-  title: "About Us — Warcraft Exports",
-  description:
-    "RAAS Enterprises — manufacturing WW1 & WW2 historical reproduction gear in Kanpur, India since 2014. Factory-direct, hand-crafted, shipped to 20+ countries.",
+export const dynamic = "force-dynamic"
+
+export async function generateMetadata(): Promise<Metadata> {
+  const seo = await getPageSeo("about")
+  return {
+    title: seo?.meta_title || "About Us — Warcraft Exports",
+    description: seo?.meta_description || "RAAS Enterprises — manufacturing WW1 & WW2 historical reproduction gear in Kanpur, India since 2014. Factory-direct, hand-crafted, shipped to 20+ countries.",
+  }
 }
 
 const STATS = [

@@ -11,12 +11,16 @@ import { getProducts } from "@/lib/queries/products"
 import Link from "next/link"
 import type { Metadata } from "next"
 
+import { getPageSeo } from "@/lib/queries/seo"
+
 export const dynamic = "force-dynamic"
 
-export const metadata: Metadata = {
-  title: "Warcraft Exports — Historical Reproduction Military Gear",
-  description:
-    "Manufacturer-direct WW1 & WW2 historical reproduction gear. 300+ products. Ships worldwide from Kanpur, India.",
+export async function generateMetadata(): Promise<Metadata> {
+  const seo = await getPageSeo("home")
+  return {
+    title: seo?.meta_title || "Warcraft Exports — Historical Reproduction Military Gear",
+    description: seo?.meta_description || "Manufacturer-direct WW1 & WW2 historical reproduction gear. 300+ products. Ships worldwide from Kanpur, India.",
+  }
 }
 
 export default async function HomePage() {

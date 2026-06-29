@@ -1,16 +1,22 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 
-export const metadata: Metadata = {
-  title: "Fit Guide & Kit Selector — Warcraft Exports",
-  description:
-    "Interactive kit selector for WW1 & WW2 reproduction military gear. Browse leather holsters, canvas pouches, and historical collector items by era and nation.",
-  keywords: [
-    "reproduction gear fit guide",
-    "WW1 military kit selector",
-    "WW2 military kit selector",
-    "historical reenactment gear builder",
-  ],
+import { getPageSeo } from "@/lib/queries/seo"
+
+export const dynamic = "force-dynamic"
+
+export async function generateMetadata(): Promise<Metadata> {
+  const seo = await getPageSeo("fit-guide")
+  return {
+    title: seo?.meta_title || "Fit Guide & Kit Selector — Warcraft Exports",
+    description: seo?.meta_description || "Interactive kit selector for WW1 & WW2 reproduction military gear. Browse leather holsters, canvas pouches, and historical collector items by era and nation.",
+    keywords: [
+      "reproduction gear fit guide",
+      "WW1 military kit selector",
+      "WW2 military kit selector",
+      "historical reenactment gear builder",
+    ],
+  }
 }
 
 const NATIONS = [

@@ -2,17 +2,23 @@ import type { Metadata } from "next"
 import { FAQList } from "@/components/faq/faq-list"
 import { FAQS } from "@/lib/faq-data"
 
-export const metadata: Metadata = {
-  title: "Frequently Asked Questions — Warcraft Exports",
-  description:
-    "Find answers to commonly asked questions about shipping times, customs duties, materials, return policy, and wholesale military gear reproductions.",
-  keywords: [
-    "Warcraft Exports FAQ",
-    "militaria shipping speed",
-    "leather gear care",
-    "reproduction gear returns",
-    "wholesale military reproductions",
-  ],
+import { getPageSeo } from "@/lib/queries/seo"
+
+export const dynamic = "force-dynamic"
+
+export async function generateMetadata(): Promise<Metadata> {
+  const seo = await getPageSeo("faq")
+  return {
+    title: seo?.meta_title || "Frequently Asked Questions — Warcraft Exports",
+    description: seo?.meta_description || "Find answers to commonly asked questions about shipping times, customs duties, materials, return policy, and wholesale military gear reproductions.",
+    keywords: [
+      "Warcraft Exports FAQ",
+      "militaria shipping speed",
+      "leather gear care",
+      "reproduction gear returns",
+      "wholesale military reproductions",
+    ],
+  }
 }
 
 export default function FAQPage() {

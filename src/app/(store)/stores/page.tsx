@@ -2,9 +2,16 @@ import type { Metadata } from "next"
 import { ExternalLink } from "lucide-react"
 import { siteConfig } from "@/config/site.config"
 
-export const metadata: Metadata = {
-  title: "Where to Find Us — Warcraft Exports",
-  description: "Shop Warcraft Exports on Amazon, eBay, Walmart, and Google Shopping. Official stores with full buyer protection.",
+import { getPageSeo } from "@/lib/queries/seo"
+
+export const dynamic = "force-dynamic"
+
+export async function generateMetadata(): Promise<Metadata> {
+  const seo = await getPageSeo("stores")
+  return {
+    title: seo?.meta_title || "Where to Find Us — Warcraft Exports",
+    description: seo?.meta_description || "Shop Warcraft Exports on Amazon, eBay, Walmart, and Google Shopping. Official stores with full buyer protection.",
+  }
 }
 
 const STORES = [

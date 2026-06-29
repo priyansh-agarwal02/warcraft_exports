@@ -2,11 +2,16 @@ import type { Metadata } from "next"
 import { createClient } from "@/lib/supabase/server"
 import { headers } from "next/headers"
 import { checkRateLimit } from "@/lib/rate-limit"
+import { getPageSeo } from "@/lib/queries/seo"
 
-export const metadata: Metadata = {
-  title: "Wholesale Enquiry — Warcraft Exports",
-  description:
-    "Partner directly with the manufacturer. Factory-direct pricing on WW1 & WW2 historical reproduction gear. Submit a wholesale enquiry today.",
+export const dynamic = "force-dynamic"
+
+export async function generateMetadata(): Promise<Metadata> {
+  const seo = await getPageSeo("wholesale")
+  return {
+    title: seo?.meta_title || "Wholesale Historical Reenactment Gear & Military Props | Warcraft Exports",
+    description: seo?.meta_description || "Buy WW1 & WW2 reproduction military gear in bulk. Factory-direct supplier for theatre shows, movies, reenactor clubs, and retail shops. Custom leather & canvas manufacturing from Kanpur, India.",
+  }
 }
 
 import { sendWholesaleNotification } from "@/lib/email"
@@ -144,6 +149,32 @@ export default function WholesalePage() {
               <p className="font-sans text-xs text-leather/70 leading-relaxed">{b.desc}</p>
             </div>
           ))}
+        </div>
+
+        {/* B2B Segments and Keywords Section */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16 border-t border-b border-khaki/30 py-12">
+          <div>
+            <h2 className="font-heading text-2xl text-leather-dark mb-4">
+              Theatrical Plays, Stage Shows &amp; Film Production Supplies
+            </h2>
+            <p className="font-sans text-sm text-leather/80 leading-relaxed mb-4">
+              Warcraft Exports is a trusted B2B partner for theater groups, movie set prop masters, drama societies, and television costume directors. We specialize in supplying bulk historical reproductions of WW1 and WW2 military gear, enabling production companies to achieve complete period-accuracy.
+            </p>
+            <p className="font-sans text-sm text-leather/80 leading-relaxed">
+              Whether outfitting a full platoon of actors for a stage play, outfitting extras for a feature film, or looking for specific vintage leather goods and canvas web accessories, we provide custom bulk solutions tailored to your production timeline.
+            </p>
+          </div>
+          <div>
+            <h2 className="font-heading text-2xl text-leather-dark mb-4">
+              Wholesale Reenactment Gear &amp; Exporter Services
+            </h2>
+            <p className="font-sans text-sm text-leather/80 leading-relaxed mb-4">
+              As the direct retail brand of RAAS Enterprises in Fazalgunj, Kanpur, we are a leading exporter of handcrafted leather military goods. Our facility supports custom production runs, pattern replication, and bulk wholesale logistics for international distributors, military surplus stores, and living history organizations.
+            </p>
+            <p className="font-sans text-sm text-leather/80 leading-relaxed">
+              Our B2B catalog spans US, German, British, Soviet, and Japanese military gear reproductions. We handle export documentation, customs clearance, and global air/ocean freight to ensure seamless delivery to your retail warehouse or club address.
+            </p>
+          </div>
         </div>
 
         {/* Inquiry form */}

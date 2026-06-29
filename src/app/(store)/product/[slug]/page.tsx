@@ -23,8 +23,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const description = product.short_description ?? `Buy ${product.name} — WW1 & WW2 reproduction military gear from Warcraft Exports. Ships worldwide.`
   const price = product.sale_price_usd ?? product.price_usd
 
+  const eraLabel = product.era ? ` ${product.era}` : ""
+  const nationLabel = product.nation && product.nation !== "Universal" ? ` ${product.nation}` : ""
+  const title = `${product.name}${nationLabel}${eraLabel} Reproduction | Warcraft Exports`
+
   return {
-    title: `${product.name} — Warcraft Exports`,
+    title,
     description,
     keywords: [
       product.name,
@@ -37,7 +41,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     ].filter(Boolean),
     openGraph: {
       type: "website",
-      title: `${product.name} — Warcraft Exports`,
+      title,
       description,
       url: `${BASE_URL}/product/${slug}`,
       siteName: "Warcraft Exports",
@@ -45,7 +49,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     },
     twitter: {
       card: "summary_large_image",
-      title: `${product.name} — Warcraft Exports`,
+      title,
       description,
       images: heroImage ? [heroImage] : [],
     },

@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { createClient } from "@/lib/supabase/server"
 import { createServiceClient } from "@/lib/supabase/service"
 import { revalidatePath } from "next/cache"
+import { redirect } from "next/navigation"
 import { Globe, Search, FileText, Check, AlertCircle } from "lucide-react"
 
 export const metadata: Metadata = { title: "SEO — Warcraft Exports Admin" }
@@ -9,8 +10,10 @@ export const metadata: Metadata = { title: "SEO — Warcraft Exports Admin" }
 // Global SEO settings stored in site_settings table (key: seo_*)
 async function saveSeoSettings(formData: FormData) {
   "use server"
+  let redirectUrl = "/admin/seo?success=true"
   try {
-    const supabase = createServiceClient()
+    // Try user client first (uses user's admin auth session)
+    let supabase = await createClient()
     const settings = {
       seo_site_title: formData.get("seo_site_title") as string,
       seo_site_description: formData.get("seo_site_description") as string,
@@ -18,36 +21,50 @@ async function saveSeoSettings(formData: FormData) {
       seo_google_verification: formData.get("seo_google_verification") as string,
       seo_bing_verification: formData.get("seo_bing_verification") as string,
     }
+    
+    // Check if auth is working, otherwise fallback to service client
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      supabase = createServiceClient()
+    }
+
     for (const [key, value] of Object.entries(settings)) {
       const { error } = await supabase.from("site_settings").upsert({ key, value }, { onConflict: "key" })
       if (error) throw error
     }
   } catch (err: any) {
     console.error("Failed to save SEO settings:", err?.message || err)
+    redirectUrl = `/admin/seo?error=${encodeURIComponent(err?.message || "Unknown error occurred")}`
   }
   revalidatePath("/", "layout")
   revalidatePath("/admin/seo")
-  const { redirect } = await import("next/navigation")
-  redirect("/admin/seo")
+  redirect(redirectUrl)
 }
 
 async function savePageMeta(formData: FormData) {
   "use server"
+  let redirectUrl = "/admin/seo?success=true"
   try {
-    const supabase = createServiceClient()
+    let supabase = await createClient()
     const page = formData.get("page") as string
     const meta_title = formData.get("meta_title") as string
     const meta_description = formData.get("meta_description") as string
     if (!page) return
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      supabase = createServiceClient()
+    }
+
     const { error } = await supabase.from("page_seo").upsert({ page, meta_title, meta_description }, { onConflict: "page" })
     if (error) throw error
   } catch (err: any) {
     console.error("Failed to save page meta override:", err?.message || err)
+    redirectUrl = `/admin/seo?error=${encodeURIComponent(err?.message || "Unknown error occurred")}`
   }
   revalidatePath("/", "layout")
   revalidatePath("/admin/seo")
-  const { redirect } = await import("next/navigation")
-  redirect("/admin/seo")
+  redirect(redirectUrl)
 }
 
 const TRACKED_PAGES = [
@@ -64,7 +81,13 @@ const TRACKED_PAGES = [
 const LABEL = "block text-[10px] font-sans font-bold uppercase tracking-[0.15em] text-[#71717A] mb-1"
 const INPUT = "w-full border border-[#E4E4E7] px-3 py-2 text-[13px] font-sans focus:border-[#33450D] focus:outline-none bg-white"
 
-export default async function AdminSeoPage() {
+type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>
+
+export default async function AdminSeoPage({ searchParams }: { searchParams: SearchParams }) {
+  const sp = await searchParams
+  const success = sp.success === "true"
+  const error = typeof sp.error === "string" ? sp.error : undefined
+
   const supabase = await createClient()
 
   // Load global settings
@@ -87,6 +110,19 @@ export default async function AdminSeoPage() {
           Control meta tags, open graph settings, and per-page SEO overrides.
         </p>
       </div>
+
+      {success && (
+        <div className="mb-6 bg-emerald-50 border border-emerald-500/20 text-emerald-800 px-4 py-3 rounded-sm text-[13px] font-sans flex items-center gap-2">
+          <Check size={16} className="text-emerald-600 flex-shrink-0" />
+          <span>SEO settings saved successfully! Page caches have been revalidated.</span>
+        </div>
+      )}
+      {error && (
+        <div className="mb-6 bg-rose-50 border border-rose-500/20 text-rose-800 px-4 py-3 rounded-sm text-[13px] font-sans flex items-center gap-2">
+          <AlertCircle size={16} className="text-rose-600 flex-shrink-0" />
+          <span>Failed to save settings: {error}</span>
+        </div>
+      )}
 
       {/* Info cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
