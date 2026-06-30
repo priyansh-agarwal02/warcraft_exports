@@ -54,47 +54,37 @@ export function CartIcon() {
       className="relative inline-block"
     >
       <DropdownMenu open={isOpen} onOpenChange={setIsOpen} modal={false}>
-        <DropdownMenuTrigger asChild>
+        <DropdownMenuTrigger className="relative p-1.5 sm:p-2.5 text-leather-dark hover:text-leather transition-colors cursor-pointer outline-none block focus:outline-none" aria-label="Cart">
           {/* MOTION: Icon scales slightly on hover, taps down on click */}
           <motion.div
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.92 }}
             transition={{ type: "spring", stiffness: 400, damping: 17 }}
+            className="relative"
           >
-            <Link
-              href="/cart"
-              onClick={(e) => {
-                if (typeof window !== "undefined" && window.innerWidth < 1024) {
-                  e.preventDefault()
-                }
-              }}
-              className="relative p-1.5 sm:p-2.5 text-leather-dark hover:text-leather transition-colors cursor-pointer outline-none block"
-              aria-label="Cart"
+            {/* MOTION: Bag icon bounces when item is added */}
+            <motion.div
+              animate={bounce ? { scale: [1, 1.35, 0.9, 1.1, 1] } : { scale: 1 }}
+              transition={{ duration: 0.45, ease: "easeInOut" }}
             >
-              {/* MOTION: Bag icon bounces when item is added */}
-              <motion.div
-                animate={bounce ? { scale: [1, 1.35, 0.9, 1.1, 1] } : { scale: 1 }}
-                transition={{ duration: 0.45, ease: "easeInOut" }}
-              >
-                <ShoppingBag size={20} />
-              </motion.div>
+              <ShoppingBag size={20} />
+            </motion.div>
 
-              {/* MOTION: Badge pops in/out with spring */}
-              <AnimatePresence>
-                {mounted && totalItems > 0 && (
-                  <motion.span
-                    key={totalItems}
-                    initial={{ scale: 0, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0, opacity: 0 }}
-                    transition={{ type: "spring", stiffness: 500, damping: 20 }}
-                    className="absolute top-1 right-1 min-w-[16px] h-4 bg-leather text-parchment text-[9px] font-bold rounded-full flex items-center justify-center px-0.5"
-                  >
-                    {totalItems > 99 ? "99+" : totalItems}
-                  </motion.span>
-                )}
-              </AnimatePresence>
-            </Link>
+            {/* MOTION: Badge pops in/out with spring */}
+            <AnimatePresence>
+              {mounted && totalItems > 0 && (
+                <motion.span
+                  key={totalItems}
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0, opacity: 0 }}
+                  transition={{ type: "spring", stiffness: 500, damping: 20 }}
+                  className="absolute -top-1 -right-1 min-w-[16px] h-4 bg-leather text-parchment text-[9px] font-bold rounded-full flex items-center justify-center px-0.5"
+                >
+                  {totalItems > 99 ? "99+" : totalItems}
+                </motion.span>
+              )}
+            </AnimatePresence>
           </motion.div>
         </DropdownMenuTrigger>
 

@@ -69,7 +69,7 @@ export function MobileDrawer() {
           <span className="font-heading text-lg font-black text-[#18181B] tracking-[-0.04em] uppercase">
             WARCRAFT EXPORTS ®
           </span>
-          <button onClick={() => setOpen(false)} className="p-1 text-leather-dark">
+          <button onClick={() => setOpen(false)} className="p-1 text-leather-dark" aria-label="Close menu">
             <X size={20} />
           </button>
         </div>

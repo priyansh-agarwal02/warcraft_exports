@@ -142,29 +142,18 @@ export function UserIcon() {
       className="relative inline-block"
     >
       <DropdownMenu open={isOpen} onOpenChange={setIsOpen} modal={false}>
-        <DropdownMenuTrigger asChild>
+        <DropdownMenuTrigger className="relative p-1.5 sm:p-2.5 text-[#18181B] hover:text-leather transition-colors cursor-pointer outline-none block focus:outline-none" aria-label={user ? "User menu" : "Sign in / Register"}>
           {/* MOTION: Icon scales slightly on hover, taps down on click */}
-          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.92 }} transition={{ type: "spring", stiffness: 400, damping: 17 }}>
-            <Link
-              href={user ? "/account" : "/auth/login"}
-              onClick={(e) => {
-                if (typeof window !== "undefined" && window.innerWidth < 1024) {
-                  e.preventDefault()
-                }
-              }}
-              className="relative p-1.5 sm:p-2.5 text-[#18181B] hover:text-leather transition-colors cursor-pointer outline-none block"
-              aria-label={user ? "User menu" : "Sign in / Register"}
-            >
-              <User size={20} />
-              {user && (
-                <motion.span
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: "spring", stiffness: 500, damping: 20 }}
-                  className="absolute top-2 right-2 w-2 h-2 bg-[#BBAC48] border border-[#FAFAF9] rounded-full"
-                />
-              )}
-            </Link>
+          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.92 }} transition={{ type: "spring", stiffness: 400, damping: 17 }} className="relative">
+            <User size={20} />
+            {user && (
+              <motion.span
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring", stiffness: 500, damping: 20 }}
+                className="absolute top-0 right-0 w-2 h-2 bg-[#BBAC48] border border-[#FAFAF9] rounded-full"
+              />
+            )}
           </motion.div>
         </DropdownMenuTrigger>
 

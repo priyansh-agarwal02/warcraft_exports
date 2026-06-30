@@ -192,7 +192,7 @@ export function Footer() {
             Manufacturer and global exporter of WW1 &amp; WW2 historical reproduction gear.
             Crafted in Kanpur, India since 2014.
           </p>
-          <div className="space-y-2 mb-4">
+          <div className="space-y-2 mb-5">
             <a href={`mailto:${siteConfig.email}`} className="flex items-center gap-2 text-xs hover:text-gold transition-colors">
               <Mail size={12} className="text-gold flex-shrink-0" />
               {siteConfig.email}
@@ -206,54 +206,78 @@ export function Footer() {
               <span>{siteConfig.address}</span>
             </div>
           </div>
+
+          {/* Follow Us social links merged under the address details (Mobile Only) */}
+          <div className="mt-4 md:hidden">
+            <p className="text-[10px] font-sans font-bold uppercase tracking-[0.15em] text-gold mb-2.5">
+              Follow Us
+            </p>
+            <div className="flex gap-2">
+              {SOCIAL_LINKS.map(({ href, icon: Icon, label }) => (
+                <a
+                  key={label}
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={label}
+                  className="w-7 h-7 flex items-center justify-center border border-parchment/15 text-parchment/50 hover:border-gold hover:text-gold hover:bg-[#1A120B] transition-all duration-200"
+                >
+                  <Icon />
+                </a>
+              ))}
+            </div>
+          </div>
         </div>
 
-        {/* Top Row — Column 2: Shop */}
-        <div>
-          <p className={FOOTER_TITLE}>
-            Shop
-          </p>
-          <ul className="space-y-2">
-            {SHOP_LINKS.map(({ href, label }) => (
-              <li key={href}>
-                <Link href={href} className="text-xs text-parchment/60 hover:text-gold transition-colors">
-                  {label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
+        {/* Shop, Information, and Policies Columns: Horizontally Aligned on Mobile, contents on Desktop */}
+        <div className="grid grid-cols-3 gap-x-2 gap-y-4 col-span-1 md:contents lg:contents border-t border-b border-parchment/10 py-6 my-2 md:border-none md:py-0 md:my-0">
+          {/* Top Row — Column 2: Shop */}
+          <div>
+            <p className={FOOTER_TITLE}>
+              Shop
+            </p>
+            <ul className="space-y-2.5 sm:space-y-2">
+              {SHOP_LINKS.map(({ href, label }) => (
+                <li key={href}>
+                  <Link href={href} className="text-[11px] sm:text-xs text-parchment/60 hover:text-gold transition-colors block py-0.5">
+                    {label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
 
-        {/* Top Row — Column 3: Information */}
-        <div>
-          <p className={FOOTER_TITLE}>
-            Information
-          </p>
-          <ul className="space-y-2">
-            {INFO_LINKS.map(({ href, label }) => (
-              <li key={href}>
-                <Link href={href} className="text-xs text-parchment/60 hover:text-gold transition-colors">
-                  {label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
+          {/* Top Row — Column 3: Information */}
+          <div>
+            <p className={FOOTER_TITLE}>
+              Information
+            </p>
+            <ul className="space-y-2.5 sm:space-y-2">
+              {INFO_LINKS.map(({ href, label }) => (
+                <li key={href}>
+                  <Link href={href} className="text-[11px] sm:text-xs text-parchment/60 hover:text-gold transition-colors block py-0.5">
+                    {label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
 
-        {/* Top Row — Column 4: Policies */}
-        <div>
-          <p className={FOOTER_TITLE}>
-            Policies
-          </p>
-          <ul className="space-y-2">
-            {POLICY_LINKS.map(({ href, label }) => (
-              <li key={href}>
-                <Link href={href} className="text-xs text-parchment/60 hover:text-gold transition-colors">
-                  {label}
-                </Link>
-              </li>
-            ))}
-          </ul>
+          {/* Top Row — Column 4: Policies */}
+          <div>
+            <p className={FOOTER_TITLE}>
+              Policies
+            </p>
+            <ul className="space-y-2.5 sm:space-y-2">
+              {POLICY_LINKS.map(({ href, label }) => (
+                <li key={href}>
+                  <Link href={href} className="text-[11px] sm:text-xs text-parchment/60 hover:text-gold transition-colors block py-0.5">
+                    {label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
 
         {/* Top Row — Column 5: Newsletter & Available At */}
@@ -315,8 +339,8 @@ export function Footer() {
         {/* Row Divider spanning all columns */}
         <div className="md:col-span-2 lg:col-span-5 border-t border-parchment/10 my-2" />
 
-        {/* Bottom Row — Column 1: Follow Us */}
-        <div>
+        {/* Bottom Row — Column 1: Follow Us (Desktop Only) */}
+        <div className="hidden md:block">
           <h4 className={FOOTER_TITLE}>
             Follow Us
           </h4>
@@ -403,14 +427,14 @@ export function Footer() {
 
       {/* Bottom bar */}
       <div className="border-t border-parchment/10 py-3.5 px-4 bg-[#0A0705]">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-[10px] text-parchment/40">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-[10px] text-parchment/70">
           <p>© {new Date().getFullYear()} Warcraft Exports. All rights reserved.</p>
           <div className="flex items-center gap-4">
-            <a href={siteConfig.social.amazon} target="_blank" rel="noopener noreferrer" className="hover:text-parchment/70 transition-colors">Amazon Store</a>
+            <a href={siteConfig.social.amazon} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Amazon Store</a>
             <span>·</span>
-            <a href={siteConfig.social.ebay} target="_blank" rel="noopener noreferrer" className="hover:text-parchment/70 transition-colors">eBay Store</a>
+            <a href={siteConfig.social.ebay} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">eBay Store</a>
             <span>·</span>
-            <a href={siteConfig.social.walmart} target="_blank" rel="noopener noreferrer" className="hover:text-parchment/70 transition-colors">Walmart Store</a>
+            <a href={siteConfig.social.walmart} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Walmart Store</a>
           </div>
         </div>
       </div>
