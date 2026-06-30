@@ -4,13 +4,14 @@ import Link from "next/link"
 import { ArrowRight } from "lucide-react"
 import { useRef } from "react"
 import { motion, useInView, type Variants } from "framer-motion"
+import Image from "next/image"
 
 const NATION_CATEGORIES = [
-  { nation: "us", label: "American Gear", code: "US", image: "/Category/american.jpeg" },
-  { nation: "german", label: "German Gear", code: "DE", image: "/Category/german.jpeg" },
-  { nation: "british", label: "British Gear", code: "GB", image: "/Category/british.jpeg" },
-  { nation: "soviet", label: "Soviet Gear", code: "SU", image: "/Category/soviet.jpeg" },
-  { nation: "japanese", label: "Japanese Gear", code: "JP", image: "/Category/japenese.jpeg" },
+  { nation: "us", label: "American Gear", code: "US", image: "/Category/american.webp" },
+  { nation: "german", label: "German Gear", code: "DE", image: "/Category/german.webp" },
+  { nation: "british", label: "British Gear", code: "GB", image: "/Category/british.webp" },
+  { nation: "soviet", label: "Soviet Gear", code: "SU", image: "/Category/soviet.webp" },
+  { nation: "japanese", label: "Japanese Gear", code: "JP", image: "/Category/japenese.webp" },
 ]
 
 // MOTION: Staggered grid reveal
@@ -69,10 +70,12 @@ export function FeaturedCategories() {
               >
                 {/* Background Image */}
                 <div className="absolute inset-0">
-                  <img
+                  <Image
                     src={image}
                     alt={label}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    fill
+                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+                    className="object-cover transition-transform duration-700 group-hover:scale-105"
                   />
                   <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors duration-500" />
                 </div>

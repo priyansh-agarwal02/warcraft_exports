@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next"
-import { createClient } from "@/lib/supabase/server"
+import { createClient } from "@/lib/supabase/client"
 import { siteConfig } from "@/config/site.config"
 
 export const revalidate = 3600 // regenerate every hour
@@ -73,13 +73,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     const { data: categories } = await supabase
       .from("categories")
-      .select("slug, updated_at")
+      .select("slug")
       .eq("is_active", true)
 
     if (categories) {
-      categoryPages = categories.map((c: { slug: string; updated_at: string }) => ({
+      categoryPages = categories.map((c: { slug: string }) => ({
         url: `${baseUrl}/shop/category/${c.slug}`,
-        lastModified: new Date(c.updated_at),
+        lastModified: new Date(),
         changeFrequency: "weekly" as const,
         priority: 0.75,
       }))

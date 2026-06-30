@@ -1,11 +1,12 @@
 "use client"
 import { useState, useEffect } from "react"
 import Link from "next/link"
+import Image from "next/image"
 
 const slides = [
   {
     type: "image",
-    src: "/hero/hero-1.jpeg",
+    src: "/hero/hero-1.webp",
     eyebrow: "WW2 Collection · 2026 Archive",
     heading: "AUTHENTIC\nWARTIME\nREPRODUCTIONS",
     lede: "Manufacturer-direct leather holsters, canvas gear, and military equipment. Hand-crafted in Kanpur, India. Ships to 50+ countries.",
@@ -14,7 +15,7 @@ const slides = [
   },
   {
     type: "image",
-    src: "/hero/hero-2.jpeg",
+    src: "/hero/hero-2.webp",
     eyebrow: "WW1 Collection · Great War Archive",
     heading: "THE GREAT\nWAR\nARCHIVE",
     lede: "1914–1918 reproduction gear from all major powers. US, British, French, German, and Imperial forces accurately reproduced.",
@@ -23,7 +24,7 @@ const slides = [
   },
   {
     type: "image",
-    src: "/hero/hero-3.jpeg",
+    src: "/hero/hero-3.webp",
     eyebrow: "By Nation · Browse Collections",
     heading: "SEVEN\nNATIONS\nONE MAKER",
     lede: "US, German, British, Soviet, Japanese, French & Italian forces. Every nation's gear reproduced to museum standard.",
@@ -32,7 +33,7 @@ const slides = [
   },
   {
     type: "image",
-    src: "/hero/hero-4.jpeg",
+    src: "/hero/hero-4.webp",
     eyebrow: "Wholesale · Trade Buyers",
     heading: "GLOBAL\nTRADE\nPARTNER",
     lede: "Factory-direct pricing. No middlemen. Trusted by reenactment suppliers, film productions, and collectors worldwide.",
@@ -64,10 +65,14 @@ export function HeroSection() {
           style={{ opacity: i === current ? 1 : 0 }}
         >
           <>
-            <img
-              src={(slide as { src: string }).src}
+            <Image
+              src={slide.src}
               alt=""
-              className="w-full h-full object-cover"
+              fill
+              priority={i === 0}
+              fetchPriority={i === 0 ? "high" : "low"}
+              sizes="100vw"
+              className="object-cover"
               style={{ filter: "sepia(0.15) saturate(0.9)" }}
             />
             <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.55) 60%, rgba(0,0,0,0.82) 100%)" }} />

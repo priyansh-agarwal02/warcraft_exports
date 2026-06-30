@@ -330,7 +330,7 @@ export default async function CheckoutSuccessPage({ searchParams }: { searchPara
               {/* Image with saturations / filters */}
               <div className="relative w-full aspect-[477/266] bg-[#EEEEEE] overflow-hidden">
                 <img 
-                  src="/hero/hero-3.jpeg" 
+                  src="/hero/hero-3.webp" 
                   alt="Warcraft Exports Historical Archive photo" 
                   className="w-full h-full object-cover filter saturate-[0.12] contrast-[1.1] sepia-[0.35]"
                 />

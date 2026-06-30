@@ -100,9 +100,10 @@ export function WholesaleSection() {
           >
             <div className="absolute inset-0 bg-leather-dark/20 z-10" />
             <Image
-              src="/Category/Wholesale.jpeg"
+              src="/Category/Wholesale.webp"
               alt="Wholesale Production Facility"
               fill
+              sizes="(max-width: 1024px) 100vw, 50vw"
               className="object-cover border border-parchment/20"
               style={{ filter: "sepia(0.15) saturate(0.9)" }}
             />
