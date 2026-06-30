@@ -41,18 +41,18 @@ export default async function HomePage() {
       {products.length > 0 && (
         <section className="pt-6 pb-16 bg-parchment">
           <div className="max-w-[1280px] mx-auto px-4 sm:px-8">
-            <div className="flex justify-between items-end border-b-2 border-khaki pb-6 mb-12">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4 border-b-2 border-khaki pb-6 mb-12">
               <div>
                 <p className="text-[12px] font-sans font-bold uppercase tracking-[0.12em] text-khaki mb-2">
                   Latest Arrivals
                 </p>
-                <h2 className="font-heading text-[48px] leading-[1.05] tracking-[-0.02em] uppercase text-leather-dark font-black">
+                <h2 className="font-heading text-[32px] sm:text-[48px] leading-[1.05] tracking-[-0.02em] uppercase text-leather-dark font-black">
                   Hot Selling
                 </h2>
               </div>
               <Link
                 href="/shop"
-                className="text-[11px] font-sans font-bold uppercase tracking-[0.12em] text-khaki hover:text-leather-dark whitespace-nowrap transition-colors"
+                className="text-[11px] font-sans font-bold uppercase tracking-[0.12em] text-khaki hover:text-leather-dark whitespace-nowrap transition-colors mt-1 sm:mt-0"
               >
                 View All Products →
               </Link>

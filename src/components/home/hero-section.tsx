@@ -44,8 +44,10 @@ const slides = [
 
 export function HeroSection() {
   const [current, setCurrent] = useState(0)
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
+    setMounted(true)
     const timer = setInterval(() => {
       setCurrent((c) => (c + 1) % slides.length)
     }, 5000)
@@ -58,27 +60,34 @@ export function HeroSection() {
   return (
     <section className="relative h-[550px] bg-[#18181B] overflow-hidden isolate">
       {/* Slides */}
-      {slides.map((slide, i) => (
-        <div
-          key={i}
-          className="absolute inset-0 transition-opacity duration-[1200ms] ease-in-out"
-          style={{ opacity: i === current ? 1 : 0 }}
-        >
-          <>
-            <Image
-              src={slide.src}
-              alt=""
-              fill
-              priority={i === 0}
-              fetchPriority={i === 0 ? "high" : "low"}
-              sizes="100vw"
-              className="object-cover"
-              style={{ filter: "sepia(0.15) saturate(0.9)" }}
-            />
-            <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.55) 60%, rgba(0,0,0,0.82) 100%)" }} />
-          </>
-        </div>
-      ))}
+      {slides.map((slide, i) => {
+        // Only load other slide images after hydration when they are needed or adjacent to prefetch
+        const shouldRenderImage = i === 0 || i === current || (mounted && (i === (current + 1) % slides.length || i === (current - 1 + slides.length) % slides.length))
+
+        return (
+          <div
+            key={i}
+            className="absolute inset-0 transition-opacity duration-[1200ms] ease-in-out"
+            style={{ opacity: i === current ? 1 : 0 }}
+          >
+            {shouldRenderImage && (
+              <>
+                <Image
+                  src={slide.src}
+                  alt=""
+                  fill
+                  priority={i === 0}
+                  fetchPriority={i === 0 ? "high" : "low"}
+                  sizes="(max-width: 768px) 100vw, 100vw"
+                  className="object-cover"
+                  style={{ filter: "sepia(0.15) saturate(0.9)" }}
+                />
+                <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.55) 60%, rgba(0,0,0,0.82) 100%)" }} />
+              </>
+            )}
+          </div>
+        )
+      })}
 
       {/* Content */}
       <div className="relative z-10 h-full flex items-end pb-[160px]">

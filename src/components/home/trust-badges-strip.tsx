@@ -5,7 +5,7 @@ import { motion, useInView, type Variants } from "framer-motion"
 
 const BADGES = [
   { emoji: "🚚", title: "Free Domestic Shipping", sub: "on orders $500+" },
-  { emoji: "↩", title: "Hassle Free 30 Day", sub: "Return Period" },
+  { emoji: "🔄", title: "Hassle Free 30 Day", sub: "Return Period" },
   { emoji: "🛒", title: "100% Safe", sub: "Secure Checkout" },
   { emoji: "🏅", title: "Guaranteed Authentic", sub: "to the Historical Period" },
 ]
