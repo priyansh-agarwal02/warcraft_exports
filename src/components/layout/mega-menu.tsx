@@ -65,13 +65,13 @@ export function MegaMenu() {
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="absolute top-full left-0 mt-0 pt-2 z-50 w-[680px]"
+            className="absolute top-full left-0 mt-0 pt-2 z-50 w-[520px]"
           >
             <motion.div
               variants={itemVariants}
               initial="hidden"
               animate="visible"
-              className="bg-parchment border border-khaki shadow-xl rounded-sm p-6 grid grid-cols-3 gap-6"
+              className="bg-parchment border border-khaki shadow-xl rounded-sm p-5 grid grid-cols-3 gap-5"
             >
               {/* By Nation */}
               <div>
