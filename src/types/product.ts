@@ -23,6 +23,7 @@ export type ProductDetail = {
   variants: { id: string; color: string | null; size: string | null; sku_suffix: string | null; price_override: number | null; stock_quantity: number; is_active: boolean }[]
   features: string[]
   specifications: Record<string, string>
+  tags?: string[]
 }
 
 export type ProductListItem = {

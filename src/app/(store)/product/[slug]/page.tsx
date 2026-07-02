@@ -18,7 +18,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const product = await getProductBySlug(slug)
   if (!product) return { title: "Product Not Found — Warcraft Exports" }
 
-  const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://warcraftexports.com"
+  const BASE_URL = process.env.NODE_ENV === "production"
+    ? "https://www.warcraftexports.com"
+    : (process.env.NEXT_PUBLIC_APP_URL ?? "https://www.warcraftexports.com")
   const heroImage = product.images.find((img) => img.is_hero)?.url ?? product.images[0]?.url
   const description = product.short_description ?? `Buy ${product.name} — WW1 & WW2 reproduction military gear from Warcraft Exports. Ships worldwide.`
   const price = product.sale_price_usd ?? product.price_usd
@@ -27,18 +29,73 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const nationLabel = product.nation && product.nation !== "Universal" ? ` ${product.nation}` : ""
   const title = `${product.name}${nationLabel}${eraLabel} Reproduction | Warcraft Exports`
 
+  // Smart Keyword Generation
+  const keywordSet = new Set<string>()
+  if (product.name) {
+    keywordSet.add(product.name.toLowerCase())
+    const nameWords = product.name.split(/\s+/).map(w => w.replace(/[^a-zA-Z0-9]/g, "").trim()).filter(w => w.length > 1)
+    nameWords.forEach(w => {
+      const lower = w.toLowerCase()
+      if (lower !== "and" && lower !== "with" && lower !== "for" && lower !== "reproduction" && lower !== "gear") {
+        keywordSet.add(lower)
+      }
+    })
+    for (let i = 0; i < nameWords.length - 1; i++) {
+      keywordSet.add(`${nameWords[i]} ${nameWords[i+1]}`.toLowerCase())
+    }
+  }
+
+  const nation = product.nation ?? ""
+  const era = product.era ?? ""
+  const material = product.material ?? ""
+  const style = product.style ?? ""
+  const categoryName = product.category?.name ?? ""
+
+  if (nation && nation !== "Universal") {
+    keywordSet.add(nation.toLowerCase())
+    keywordSet.add(`${nation} militaria`.toLowerCase())
+    keywordSet.add(`${nation} reproduction`.toLowerCase())
+  }
+  if (era && era !== "Universal") {
+    keywordSet.add(era.toLowerCase())
+    keywordSet.add(`${era} reproduction`.toLowerCase())
+  }
+  if (nation && era && nation !== "Universal" && era !== "Universal") {
+    keywordSet.add(`${era} ${nation}`.toLowerCase())
+    keywordSet.add(`${era} ${nation} gear`.toLowerCase())
+    keywordSet.add(`${era} ${nation} reproduction`.toLowerCase())
+  }
+  if (material) {
+    keywordSet.add(material.toLowerCase())
+    if (categoryName) keywordSet.add(`${material} ${categoryName}`.toLowerCase())
+  }
+  if (style) {
+    keywordSet.add(style.toLowerCase())
+  }
+  if (era && nation && categoryName && nation !== "Universal" && era !== "Universal") {
+    keywordSet.add(`${era} ${nation} ${categoryName}`.toLowerCase())
+  }
+  if (product.tags && Array.isArray(product.tags)) {
+    product.tags.forEach((tag: string) => {
+      if (tag) {
+        const cleanTag = tag.trim().toLowerCase()
+        keywordSet.add(cleanTag)
+        keywordSet.add(`warcraft exports ${cleanTag}`)
+      }
+    })
+  }
+
+  keywordSet.add("historical reproduction")
+  keywordSet.add("military reenactment gear")
+  keywordSet.add("militaria collectibles")
+  keywordSet.add("reenactor equipment")
+
+  const finalKeywords = Array.from(keywordSet).filter(Boolean).slice(0, 30)
+
   return {
     title,
     description,
-    keywords: [
-      product.name,
-      product.nation ? `${product.nation} militaria` : "",
-      product.era ?? "",
-      product.material ?? "",
-      "historical reproduction",
-      "military gear",
-      "reenactment",
-    ].filter(Boolean),
+    keywords: finalKeywords,
     openGraph: {
       type: "website",
       title,
@@ -66,7 +123,9 @@ export default async function ProductPage({ params }: Props) {
   const product = await getProductBySlug(slug)
   if (!product) notFound()
 
-  const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://warcraftexports.com"
+  const BASE_URL = process.env.NODE_ENV === "production"
+    ? "https://www.warcraftexports.com"
+    : (process.env.NEXT_PUBLIC_APP_URL ?? "https://www.warcraftexports.com")
   const heroImage = product.images.find((img) => img.is_hero)?.url ?? product.images[0]?.url ?? null
 
   // Fetch reviews for this product from the database

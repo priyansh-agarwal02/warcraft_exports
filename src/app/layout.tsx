@@ -4,6 +4,7 @@ import localFont from "next/font/local";
 import { Suspense } from "react";
 import Script from "next/script";
 import { PostHogProvider } from "@/components/providers/PostHogProvider";
+import { GoogleAnalytics } from "@next/third-parties/google";
 import "./globals.css";
 
 const arupalaGrotesk = localFont({
@@ -27,7 +28,9 @@ const merriweather = Merriweather({
   weight: ["400", "700"],
 });
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://warcraftexports.com"
+const BASE_URL = process.env.NODE_ENV === "production"
+  ? "https://www.warcraftexports.com"
+  : (process.env.NEXT_PUBLIC_APP_URL ?? "https://www.warcraftexports.com");
 
 import { createServiceClient } from "@/lib/supabase/service";
 
@@ -76,9 +79,8 @@ export async function generateMetadata(): Promise<Metadata> {
     metadataBase: new URL(BASE_URL),
     icons: {
       icon: [
-        { url: "/favicon.ico", sizes: "any" },
-        { url: "/favicon.svg", type: "image/svg+xml" },
         { url: "/favicon-96x96.png", sizes: "96x96", type: "image/png" },
+        { url: "/favicon.ico", sizes: "32x32", type: "image/x-icon" },
       ],
       shortcut: "/favicon.ico",
       apple: [
@@ -281,6 +283,7 @@ export default function RootLayout({
         <Suspense fallback={null}>
           <PostHogProvider>{children}</PostHogProvider>
         </Suspense>
+        <GoogleAnalytics gaId="G-0SZPRVLY3R" />
 
         {/* Google Translate Hidden Element and Script */}
         <div id="google_translate_element" className="absolute opacity-0 pointer-events-none w-0 h-0 overflow-hidden" />

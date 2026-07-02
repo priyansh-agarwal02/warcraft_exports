@@ -186,7 +186,7 @@ export async function getProductBySlug(slug: string): Promise<ProductDetail | nu
         `id, name, slug, sku, short_description, description, historical_quote,
          price_usd, sale_price_usd,
          nation, era, material, style, weight_kg,
-         is_featured, stock_quantity, features, specifications,
+         is_featured, stock_quantity, features, specifications, tags,
          category:categories!category_id(name, slug),
          ships_from_usa`
       )
@@ -256,6 +256,7 @@ export async function getProductBySlug(slug: string): Promise<ProductDetail | nu
       features: Array.isArray(p.features) ? p.features : [],
       specifications: p.specifications ?? {},
       ships_from_usa: p.ships_from_usa ?? false,
+      tags: p.tags ?? [],
     } as ProductDetail
   } catch (err) {
     console.error("getProductBySlug error:", err)
