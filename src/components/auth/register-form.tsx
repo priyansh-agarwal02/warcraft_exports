@@ -1,17 +1,64 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
-import { createClient } from "@/lib/supabase/client"
+import Script from "next/script"
+import { PhoneInput } from "@/components/ui/phone-input"
+import { COUNTRY_PREFIXES } from "@/lib/phone"
 
-export function RegisterForm() {
+interface RegisterFormProps {
+  defaultCountry?: string
+}
+
+export function RegisterForm({ defaultCountry = "US" }: RegisterFormProps) {
   const [fullName, setFullName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
+  const [countryCode, setCountryCode] = useState("US")
+  const [phonePrefix, setPhonePrefix] = useState("+1")
+  const [phoneNumber, setPhoneNumber] = useState("")
+  const [turnstileToken, setTurnstileToken] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [loading, setLoading] = useState(false)
+
+  // Initialize values based on defaultCountry prop
+  useEffect(() => {
+    const matched = COUNTRY_PREFIXES.find(c => c.code === defaultCountry) || COUNTRY_PREFIXES.find(c => c.code === "US")!
+    setCountryCode(matched.code)
+    setPhonePrefix(matched.prefix)
+  }, [defaultCountry])
+
+  // Explicitly render the Turnstile widget
+  useEffect(() => {
+    let intervalId: any
+
+    const tryRender = () => {
+      if (typeof window !== "undefined" && (window as any).turnstile) {
+        try {
+          (window as any).turnstile.render("#turnstile-widget", {
+            sitekey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "1x00000000000000000000AA",
+            callback: (token: string) => {
+              setTurnstileToken(token)
+            },
+            "expired-callback": () => {
+              setTurnstileToken("")
+            },
+            "error-callback": () => {
+              setTurnstileToken("")
+            },
+          })
+          clearInterval(intervalId)
+        } catch {
+          // Container might not be ready yet, retry on next interval
+        }
+      }
+    }
+
+    intervalId = setInterval(tryRender, 200)
+    return () => clearInterval(intervalId)
+  }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -27,33 +74,58 @@ export function RegisterForm() {
       return
     }
 
-    setLoading(true)
-    const supabase = createClient()
-
-    const { data, error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { full_name: fullName },
-      },
-    })
-
-    if (signUpError) {
-      setError(signUpError.message)
-      setLoading(false)
+    if (!phoneNumber.trim()) {
+      setError("Please enter your phone number.")
       return
     }
 
-    if (data.user) {
+    if (!turnstileToken) {
+      setError("Please complete the security check.")
+      return
+    }
+
+    setLoading(true)
+
+    try {
+      const fullPhoneNumber = `${phonePrefix}${phoneNumber.trim().replace(/\s+/g, "")}`
+
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fullName,
+          email,
+          password,
+          phone: fullPhoneNumber,
+          turnstileToken,
+        }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        setError(data.error || "Failed to create account.")
+        if ((window as any).turnstile) {
+          (window as any).turnstile.reset("#turnstile-widget")
+        }
+        setTurnstileToken("")
+        setLoading(false)
+        return
+      }
+
+      // Automatically send the welcome email on success
       fetch("/api/auth/welcome", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: fullName, email }),
       }).catch(() => null)
-    }
 
-    setSuccess(true)
-    setLoading(false)
+      setSuccess(true)
+    } catch {
+      setError("An unexpected error occurred. Please try again.")
+    } finally {
+      setLoading(false)
+    }
   }
 
   if (success) {
@@ -75,6 +147,9 @@ export function RegisterForm() {
 
   return (
     <div className="bg-canvas border border-khaki/30 rounded-sm p-8 w-full max-w-md mx-auto mt-16">
+      {/* Cloudflare Turnstile script */}
+      <Script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" strategy="afterInteractive" />
+
       <h1 className="font-heading text-2xl text-leather-dark mb-6">Create Account</h1>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -110,6 +185,25 @@ export function RegisterForm() {
           />
         </div>
 
+        {/* Phone number prefix + digits */}
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="phone" className="text-xs font-sans font-semibold uppercase tracking-widest text-leather-dark">
+            Phone / WhatsApp
+          </label>
+          <PhoneInput
+            id="phone"
+            required={true}
+            countryCode={countryCode}
+            numberValue={phoneNumber}
+            onCountryChange={(code, prefix) => {
+              setCountryCode(code)
+              setPhonePrefix(prefix)
+            }}
+            onNumberChange={setPhoneNumber}
+            placeholder="555 000 0000"
+          />
+        </div>
+
         <div className="flex flex-col gap-1.5">
           <label htmlFor="password" className="text-xs font-sans font-semibold uppercase tracking-widest text-leather-dark">
             Password
@@ -140,6 +234,11 @@ export function RegisterForm() {
             className="w-full px-3 py-2.5 text-sm font-sans bg-parchment border border-khaki rounded-sm focus:outline-none focus:border-leather text-leather-dark placeholder:text-khaki"
             placeholder="Repeat password"
           />
+        </div>
+
+        {/* Cloudflare Turnstile Container */}
+        <div className="my-2 flex justify-center min-h-[65px]">
+          <div id="turnstile-widget"></div>
         </div>
 
         {error && (

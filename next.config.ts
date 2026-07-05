@@ -34,8 +34,8 @@ const nextConfig: NextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              // Scripts: allow self, Vercel Analytics, Google Translate, Razorpay, PayPal
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://translate.googleapis.com https://translate.google.com https://translate-pa.googleapis.com https://www.googletagmanager.com https://www.google-analytics.com https://ssl.google-analytics.com https://va.vercel-scripts.com https://checkout.razorpay.com https://www.paypal.com https://www.paypalobjects.com https://www.sandbox.paypal.com https://us-assets.i.posthog.com https://app.posthog.com",
+              // Scripts: allow self, Vercel Analytics, Google Translate, Razorpay, PayPal, Cloudflare Turnstile
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://translate.googleapis.com https://translate.google.com https://translate-pa.googleapis.com https://www.googletagmanager.com https://www.google-analytics.com https://ssl.google-analytics.com https://va.vercel-scripts.com https://checkout.razorpay.com https://www.paypal.com https://www.paypalobjects.com https://www.sandbox.paypal.com https://us-assets.i.posthog.com https://app.posthog.com",
               // Styles: allow self, inline (needed for Tailwind), Google Fonts, Google Translate
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://translate.googleapis.com https://www.gstatic.com",
               // Fonts: allow self + Google Fonts
@@ -44,12 +44,12 @@ const nextConfig: NextConfig = {
               "img-src 'self' data: blob: https: http://*.google.com http://*.gstatic.com",
               // Media: allow self
               "media-src 'self' blob: https:",
-              // Connect: Supabase, Groq, exchangerate API, Vercel, Google Translate, Razorpay, PayPal, Google Analytics
-              `connect-src 'self' https://*.supabase.co https://*.supabase.io wss://*.supabase.co https://api.groq.com https://api.exchangerate-api.com https://vitals.vercel-insights.com https://translate.googleapis.com https://translate.google.com https://translate-pa.googleapis.com https://api.razorpay.com https://lumberjack.razorpay.com https://www.paypal.com https://www.sandbox.paypal.com https://*.paypal.com https://*.paypalobjects.com https://app.posthog.com https://us.i.posthog.com https://*.google-analytics.com https://*.analytics.google.com https://stats.g.doubleclick.net`,
-              // Workers: none
-              "worker-src 'none'",
-              // Frames: self, Google Translate, Razorpay, PayPal
-              "frame-src 'self' https://translate.google.com https://translate.googleapis.com https://api.razorpay.com https://checkout.razorpay.com https://www.paypal.com https://www.sandbox.paypal.com",
+              // Connect: Supabase, Groq, exchangerate API, Vercel, Google Translate, Razorpay, PayPal, Google Analytics, Cloudflare Turnstile
+              `connect-src 'self' https://challenges.cloudflare.com https://*.supabase.co https://*.supabase.io wss://*.supabase.co https://api.groq.com https://api.exchangerate-api.com https://vitals.vercel-insights.com https://translate.googleapis.com https://translate.google.com https://translate-pa.googleapis.com https://api.razorpay.com https://lumberjack.razorpay.com https://www.paypal.com https://www.sandbox.paypal.com https://*.paypal.com https://*.paypalobjects.com https://app.posthog.com https://us.i.posthog.com https://*.google-analytics.com https://*.analytics.google.com https://stats.g.doubleclick.net`,
+              // Workers: allow self and blob (required by Turnstile verification scripts)
+              "worker-src 'self' blob:",
+              // Frames: self, Google Translate, Razorpay, PayPal, Cloudflare Turnstile
+              "frame-src 'self' https://challenges.cloudflare.com https://translate.google.com https://translate.googleapis.com https://api.razorpay.com https://checkout.razorpay.com https://www.paypal.com https://www.sandbox.paypal.com",
               // Objects: none
               "object-src 'none'",
               // Base URI: self only

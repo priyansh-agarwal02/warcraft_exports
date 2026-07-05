@@ -11,6 +11,8 @@ import { useCurrency } from "@/lib/currency"
 import { RazorpayButton } from "./razorpay-button"
 import { PayPalCheckout } from "./paypal-button"
 import { createClient } from "@/lib/supabase/client"
+import { PhoneInput } from "@/components/ui/phone-input"
+import { parsePhoneNumber } from "@/lib/phone"
 
 const COUNTRIES = [
   "United States", "United Kingdom", "Canada", "Australia", "Germany", "France",
@@ -38,6 +40,18 @@ export function CheckoutForm() {
   const { format, currency } = useCurrency()
   const [form, setForm] = useState<FormData>(INITIAL)
   const [mounted, setMounted] = useState(false)
+  const [countryCode, setCountryCode] = useState("US")
+  const [phonePrefix, setPhonePrefix] = useState("+1")
+  const [phoneNumber, setPhoneNumber] = useState("")
+
+  useEffect(() => {
+    if (form.phone && form.phone !== `${phonePrefix}${phoneNumber}`) {
+      const parsed = parsePhoneNumber(form.phone)
+      setCountryCode(parsed.code)
+      setPhonePrefix(parsed.prefix)
+      setPhoneNumber(parsed.number)
+    }
+  }, [form.phone])
   const [savedAddresses, setSavedAddresses] = useState<any[]>([])
   const [selectedAddressId, setSelectedAddressId] = useState<string>("")
   const [processingState, setProcessingState] = useState<"verifying" | "recording" | "redirecting" | null>(null)
@@ -249,7 +263,7 @@ export function CheckoutForm() {
     }).then((order) => {
       if (!order) {
         setProcessingState(null)
-        setError("Payment received but order recording failed. Please contact support@warcraftexports.com with your payment ID: " + paymentId)
+        setError("Payment received but order recording failed. Please contact warcraftexports@gmail.com with your payment ID: " + paymentId)
         return
       }
       setProcessingState("redirecting")
@@ -316,7 +330,28 @@ export function CheckoutForm() {
               </div>
               <div>
                 <label htmlFor="phone" className={labelClass}>Phone *</label>
-                <input id="phone" name="phone" type="tel" required maxLength={20} value={form.phone} onChange={handleChange} placeholder="+1 or +91 — include country code" className={inputClass} />
+                <PhoneInput
+                  id="phone"
+                  required={true}
+                  countryCode={countryCode}
+                  numberValue={phoneNumber}
+                  onCountryChange={(code, prefix) => {
+                    setCountryCode(code)
+                    setPhonePrefix(prefix)
+                    setForm(prev => ({
+                      ...prev,
+                      phone: `${prefix}${phoneNumber.replace(/\s+/g, "")}`
+                    }))
+                  }}
+                  onNumberChange={(num) => {
+                    setPhoneNumber(num)
+                    setForm(prev => ({
+                      ...prev,
+                      phone: `${phonePrefix}${num.replace(/\s+/g, "")}`
+                    }))
+                  }}
+                  placeholder="555 000 0000"
+                />
               </div>
             </div>
           </section>
@@ -346,6 +381,7 @@ export function CheckoutForm() {
                           state: addr.state || "",
                           postalCode: addr.postal_code || "",
                           country: addr.country || "United States",
+                          phone: addr.phone || prev.phone,
                         }))
                       } else {
                         // "Choose an address..." selected — clear all address fields

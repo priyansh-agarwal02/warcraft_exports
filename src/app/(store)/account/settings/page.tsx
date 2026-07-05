@@ -3,6 +3,7 @@ import { redirect } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
+import { ProfileForm } from "@/components/account/profile-form"
 
 export const metadata: Metadata = { title: "Profile Settings — Warcraft Exports" }
 
@@ -68,26 +69,14 @@ export default async function SettingsPage() {
           <section className="lg:col-span-2 flex flex-col gap-6">
             <div className="bg-canvas border border-khaki/30 rounded-sm p-6">
               <h2 className="font-heading text-xl text-leather-dark mb-5 uppercase font-black">Profile Settings</h2>
-              <form action={updateProfile} className="space-y-5">
-                <div>
-                  <label className="block text-[10px] font-sans font-bold uppercase tracking-[0.15em] text-leather mb-1.5">Full Name</label>
-                  <input name="full_name" type="text" defaultValue={profile?.full_name ?? ""} placeholder="John Smith" className={INPUT} />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-sans font-bold uppercase tracking-[0.15em] text-leather mb-1.5">Email Address</label>
-                  <input type="email" value={displayEmail} disabled className={`${INPUT} opacity-60 cursor-not-allowed`} readOnly />
-                  <p className="text-[11px] font-sans text-khaki mt-1">Email cannot be changed here. Contact support to update.</p>
-                </div>
-                <div>
-                  <label className="block text-[10px] font-sans font-bold uppercase tracking-[0.15em] text-leather mb-1.5">Phone / WhatsApp</label>
-                  <input name="phone" type="tel" defaultValue={(profile as { phone?: string })?.phone ?? ""} placeholder="+1 555 000 0000" className={INPUT} />
-                </div>
-                <div className="pt-2">
-                  <button type="submit" className="bg-leather text-parchment font-sans font-bold text-[12px] uppercase tracking-[0.15em] px-8 py-3 hover:bg-leather-dark transition-colors">
-                    Save Changes
-                  </button>
-                </div>
-              </form>
+              <ProfileForm
+                initialProfile={{
+                  full_name: profile?.full_name ?? null,
+                  email: displayEmail,
+                  phone: profile?.phone ?? null,
+                }}
+                updateAction={updateProfile}
+              />
             </div>
 
             <div className="bg-canvas border border-khaki/30 rounded-sm p-6">

@@ -143,7 +143,7 @@ export function RazorpayButton({
               onSuccess(response.razorpay_payment_id)
             } else {
               onProcessing?.(null)
-              onError("Payment verification failed. Please contact support@warcraftexports.com.")
+              onError("Payment verification failed. Please contact warcraftexports@gmail.com.")
             }
           } catch (err: any) {
             onProcessing?.(null)

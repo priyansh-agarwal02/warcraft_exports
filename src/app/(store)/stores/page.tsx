@@ -16,8 +16,8 @@ export async function generateMetadata(): Promise<Metadata> {
 
 const STORES = [
   { name: "Amazon", region: "United States", url: siteConfig.social.amazon, live: true, note: "Our primary storefront. Full product range with Amazon Prime shipping for US buyers." },
-  { name: "Amazon UK", region: "United Kingdom", url: null, live: false, note: "Coming soon. For UK orders, please use our main website or Amazon US." },
-  { name: "Amazon DE", region: "Germany", url: null, live: false, note: "Coming soon. European orders ship from our Kanpur factory." },
+  { name: "Amazon UK", region: "United Kingdom", url: "https://www.amazon.co.uk/stores/Warcraft+Exports/page/39F818AE-3A14-44D6-A2D4-0534C55D6533?lp_asin=B0863SL3PQ&ref_=ast_bln", live: true, note: "Our official Amazon UK storefront. Buy reproductions with fast local shipping across the United Kingdom." },
+  { name: "Amazon DE", region: "Germany", url: "https://www.amazon.de/-/en/stores/Warcraft+Exports/page/FA49B017-2EBD-4E08-904E-1E16BEEEC7DB?lp_asin=B09B4SDZCT&ref_=ast_bln", live: true, note: "Our official Amazon Germany storefront. Serving European collectors and reenactors directly." },
   { name: "eBay", region: "United States", url: siteConfig.social.ebay || null, live: false, note: "eBay store URL will be listed here once active." },
   { name: "Walmart Marketplace", region: "United States", url: siteConfig.social.walmart || null, live: false, note: "Walmart listing coming soon." },
 ]
