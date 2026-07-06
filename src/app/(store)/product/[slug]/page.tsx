@@ -173,13 +173,18 @@ export default async function ProductPage({ params }: Props) {
     name: r.title || "",
   })) : undefined
 
+  const safeSku = (product.sku && product.sku.trim())
+    ? product.sku.trim()
+    : `WE-${slug.toUpperCase().replace(/[^A-Z0-9-]/g, "")}`
+
   // JSON-LD Product structured data for Google Shopping & AI citation
   const productJsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
     name: product.name,
     description: product.short_description ?? product.description ?? "",
-    sku: product.sku,
+    sku: safeSku,
+    mpn: safeSku,
     image: product.images.map((img: { url: string }) => img.url),
     url: `${BASE_URL}/product/${slug}`,
     brand: {
@@ -200,7 +205,6 @@ export default async function ProductPage({ params }: Props) {
       seller: { "@type": "Organization", name: "Warcraft Exports" },
     },
     ...(product.material ? { material: product.material } : {}),
-    ...(product.nation ? { audience: { "@type": "Audience", audienceType: `${product.nation} militaria collectors` } } : {}),
     ...(aggregateRating ? { aggregateRating } : {}),
     ...(reviewsJsonLd ? { review: reviewsJsonLd } : {}),
   }
