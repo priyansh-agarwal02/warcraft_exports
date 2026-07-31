@@ -228,7 +228,7 @@ export default function RootLayout({
                 },
               ],
               email: "warcraftexports@gmail.com",
-              foundingDate: "2015",
+              foundingDate: "2018",
               numberOfEmployees: { "@type": "QuantitativeValue", value: 50 },
               sameAs: [
                 "https://www.amazon.com/stores/WarcraftExports",

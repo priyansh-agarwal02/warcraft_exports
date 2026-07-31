@@ -39,7 +39,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const seo = await getPageSeo("about")
   return {
     title: seo?.meta_title || "About Us — Warcraft Exports",
-    description: seo?.meta_description || "RAAS Enterprises — manufacturing WW1 & WW2 historical reproduction gear in Kanpur, India since 2014. Factory-direct, hand-crafted, shipped to 20+ countries.",
+    description: seo?.meta_description || "RAAS Enterprises — manufacturing WW1 & WW2 historical reproduction gear in Kanpur, India since 2018. Factory-direct, hand-crafted, shipped to 20+ countries.",
     alternates: { canonical: "https://www.warcraftexports.com/about" },
   }
 }
@@ -85,7 +85,7 @@ export default function AboutPage() {
             Our Story
           </p>
           <h1 className="font-heading text-4xl sm:text-5xl text-leather-dark mb-5">
-            Crafted in Kanpur Since 2014
+            Crafted in Kanpur Since 2018
           </h1>
           <p className="font-sans text-leather/80 max-w-2xl mx-auto text-base leading-relaxed">
             RAAS Enterprises began as a small leather workshop in the heart of Fazalgunj, Kanpur —

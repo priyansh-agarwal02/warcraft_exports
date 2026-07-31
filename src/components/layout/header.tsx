@@ -39,7 +39,7 @@ export function Header() {
                   WARCRAFT<br /><span className="text-[#18181B] tracking-[-0.04em]">EXPORTS ®</span>
                 </span>
                 <span className="text-[9px] font-sans font-medium tracking-[0.15em] text-leather uppercase mt-1">
-                  Est. India · Since 2017
+                  Est. India · Since 2018
                 </span>
               </Link>
             </motion.div>

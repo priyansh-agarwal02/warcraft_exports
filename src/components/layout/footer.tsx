@@ -190,7 +190,7 @@ export function Footer() {
           </Link>
           <p className="text-xs leading-relaxed text-parchment/60 mb-4">
             Manufacturer and global exporter of WW1 &amp; WW2 historical reproduction gear.
-            Crafted in Kanpur, India since 2014.
+            Crafted in Kanpur, India since 2018.
           </p>
           <div className="space-y-2 mb-5">
             <a href={`mailto:${siteConfig.email}`} className="flex items-center gap-2 text-xs hover:text-gold transition-colors">
