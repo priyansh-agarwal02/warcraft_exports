@@ -44,6 +44,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   return {
     title: `${meta.label} — Warcraft Exports`,
     description: meta.description,
+    alternates: { canonical: `https://www.warcraftexports.com/shop/era/${era.toLowerCase()}` },
   }
 }
 

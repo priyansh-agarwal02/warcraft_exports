@@ -46,6 +46,7 @@ export function PayPalCheckout({
   const initialOptions = {
     clientId,
     currency: activeCurrency,
+    intent: "capture",
     components: "buttons",
     "enable-funding": "venmo",
   }

@@ -22,6 +22,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
     description:
       category.description ??
       `Browse ${category.name} historical reproduction gear. Manufacturer-direct from Kanpur, India.`,
+    alternates: { canonical: `https://www.warcraftexports.com/shop/category/${slug}` },
   }
 }
 

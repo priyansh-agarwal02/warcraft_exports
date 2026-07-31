@@ -13,7 +13,6 @@ export default function robots(): MetadataRoute.Robots {
           "/account/",
           "/api/",
           "/checkout/",
-          "/_next/",
         ],
       },
       // Allow AI/search bots to crawl and cite the public store

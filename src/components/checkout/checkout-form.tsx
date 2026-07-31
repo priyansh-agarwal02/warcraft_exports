@@ -37,7 +37,7 @@ export function CheckoutForm() {
   const subtotalUsd = useCartStore((s) => s.subtotalUsd())
   const appliedCoupon = useCartStore((s) => s.appliedCoupon)
   const clearCart = useCartStore((s) => s.clearCart)
-  const { format, currency } = useCurrency()
+  const { format, currency, rates } = useCurrency()
   const [form, setForm] = useState<FormData>(INITIAL)
   const [mounted, setMounted] = useState(false)
   const [countryCode, setCountryCode] = useState("US")
@@ -67,73 +67,135 @@ export function CheckoutForm() {
       })
       .catch(() => {})
 
-    // Set default shipping method: express if any US Warehouse item is in cart
     const hasUsa = items.some((item) => item.shipsFromUsa)
     setShippingMethod(hasUsa ? "express" : "standard")
 
     const supabase = createClient()
-    supabase.auth.getUser().then(async ({ data: { user } }) => {
+
+    async function loadUserData() {
+      // Tier 1: Instant client auth resolution so fields populate in 1ms
+      let user = (await supabase.auth.getUser()).data?.user
+      let session = (await supabase.auth.getSession()).data?.session
+
+      if (!user && session?.user) {
+        user = session.user
+      }
+
       if (!user) return
 
-      // 1. Immediately set email and basic metadata so fields populate instantly
       const metaName = user.user_metadata?.full_name || user.user_metadata?.name || ""
       const metaPhone = user.user_metadata?.phone || ""
+      const userEmail = user.email || ""
+
       setForm((prev) => ({
         ...prev,
-        email: user.email || prev.email,
+        email: prev.email || userEmail,
         fullName: prev.fullName || metaName,
         phone: prev.phone || metaPhone,
       }))
 
-      // 2. Load addresses separately (non-blocking)
+      // Tier 2: Fetch profile and addresses from server API using Bearer token
+      let token = session?.access_token
+      if (!token) {
+        const refreshed = await supabase.auth.refreshSession()
+        token = refreshed.data.session?.access_token
+      }
+
       try {
-        const res = await fetch("/api/addresses")
+        const headers: Record<string, string> = {}
+        if (token) {
+          headers["Authorization"] = `Bearer ${token}`
+        }
+
+        const res = await fetch("/api/checkout/user-data", {
+          headers,
+          cache: "no-store",
+        })
+
         if (res.ok) {
-          const data = await res.json()
-          const allAddresses = data.addresses || []
+          const { user: serverUser, profile, addresses, recentOrder } = await res.json()
+          const roAddr = recentOrder?.shipping_address
+          const resolvedName = profile?.full_name || serverUser?.metaName || recentOrder?.customer_name || metaName
+          const resolvedPhone = profile?.phone || serverUser?.metaPhone || recentOrder?.customer_phone || metaPhone
+          const resolvedEmail = serverUser?.email || profile?.email || recentOrder?.customer_email || userEmail
+
+          const allAddresses = (addresses as any[]) || []
+          const defaultAddr = allAddresses.find((a: any) => a.is_default) || allAddresses[0]
 
           if (allAddresses.length > 0) {
             setSavedAddresses(allAddresses)
-            const address = allAddresses.find((a: any) => a.is_default) || allAddresses[0]
-            if (address) {
-              setSelectedAddressId(address.id)
-              setForm((prev) => ({
-                ...prev,
-                fullName: address.full_name || prev.fullName || metaName,
-                phone: address.phone || prev.phone || metaPhone,
-                address1: address.line1 || prev.address1,
-                address2: address.line2 || prev.address2,
-                city: address.city || prev.city,
-                state: address.state || prev.state,
-                postalCode: address.postal_code || prev.postalCode,
-                country: address.country || prev.country,
-              }))
+            if (defaultAddr) {
+              setSelectedAddressId(defaultAddr.id)
             }
           }
-        }
-      } catch (err) {
-        console.error("Failed to load user address for checkout:", err)
-      }
 
-      // 3. Load database profile information separately (non-blocking)
-      try {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("full_name, phone")
-          .eq("id", user.id)
-          .single()
-
-        if (profile) {
           setForm((prev) => ({
             ...prev,
-            fullName: profile.full_name || prev.fullName || metaName,
-            phone: profile.phone || prev.phone || metaPhone,
+            email: resolvedEmail || prev.email,
+            fullName: defaultAddr?.full_name || resolvedName || prev.fullName,
+            phone: defaultAddr?.phone || resolvedPhone || prev.phone,
+            address1: defaultAddr?.line1 || roAddr?.line1 || prev.address1,
+            address2: defaultAddr?.line2 || roAddr?.line2 || prev.address2,
+            city: defaultAddr?.city || roAddr?.city || prev.city,
+            state: defaultAddr?.state || roAddr?.state || prev.state,
+            postalCode: defaultAddr?.postal_code || roAddr?.postal_code || prev.postalCode,
+            country: defaultAddr?.country || roAddr?.country || prev.country || "United States",
           }))
+          return
         }
-      } catch (profileErr) {
-        console.error("Failed to load user profile info:", profileErr)
+      } catch (apiErr) {
+        console.warn("Server API fetch failed, trying direct browser query fallback", apiErr)
+      }
+
+      // Tier 3: Direct browser query safety net if server API returned non-200
+      try {
+        const [{ data: profile }, { data: addresses }] = await Promise.all([
+          supabase.from("profiles").select("full_name, phone, email").eq("id", user.id).maybeSingle(),
+          supabase.from("addresses").select("*").eq("user_id", user.id).order("is_default", { ascending: false }),
+        ])
+
+        const resolvedName = profile?.full_name || metaName
+        const resolvedPhone = profile?.phone || metaPhone
+        const resolvedEmail = userEmail || profile?.email || ""
+
+        const allAddresses = (addresses as any[]) || []
+        const defaultAddr = allAddresses.find((a: any) => a.is_default) || allAddresses[0]
+
+        if (allAddresses.length > 0) {
+          setSavedAddresses(allAddresses)
+          if (defaultAddr) {
+            setSelectedAddressId(defaultAddr.id)
+          }
+        }
+
+        setForm((prev) => ({
+          ...prev,
+          email: resolvedEmail || prev.email,
+          fullName: defaultAddr?.full_name || resolvedName || prev.fullName,
+          phone: defaultAddr?.phone || resolvedPhone || prev.phone,
+          address1: defaultAddr?.line1 || prev.address1,
+          address2: defaultAddr?.line2 || prev.address2,
+          city: defaultAddr?.city || prev.city,
+          state: defaultAddr?.state || prev.state,
+          postalCode: defaultAddr?.postal_code || prev.postalCode,
+          country: defaultAddr?.country || prev.country || "United States",
+        }))
+      } catch (fallbackErr) {
+        console.error("All user data loading methods exhausted:", fallbackErr)
+      }
+    }
+
+    loadUserData()
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        loadUserData()
       }
     })
+
+    return () => {
+      authListener.subscription.unsubscribe()
+    }
   }, [])
 
   const [submitting, setSubmitting] = useState(false)
@@ -247,6 +309,8 @@ export function CheckoutForm() {
         })),
         shippingMethod,
         couponCode: appliedCoupon?.code || null,
+        displayCurrency: currency,
+        exchangeRate: rates[currency] ?? 1,
         ...paymentDetails,
       }),
     })

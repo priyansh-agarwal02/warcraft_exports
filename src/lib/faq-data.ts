@@ -17,7 +17,7 @@ export const FAQS = [
   },
   {
     q: "Do you ship internationally?",
-    a: "Yes — we ship to 20+ countries via DHL Express, FedEx International, Ship Global, Bombino Express, and USPS Priority. Free worldwide shipping is available on orders over $150. All international shipments include full export documentation.",
+    a: "Yes — we ship to 20+ countries via DHL Express, FedEx International, Ship Global, Bombino Express, and USPS Priority. Free worldwide shipping is available on orders over $50. All international shipments include full export documentation.",
   },
   {
     q: "Will I have to pay customs duties or import taxes?",

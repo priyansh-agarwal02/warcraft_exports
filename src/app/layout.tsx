@@ -138,9 +138,6 @@ export async function generateMetadata(): Promise<Metadata> {
       description: defaultDesc,
       images: [absoluteOgImage],
     },
-    alternates: {
-      canonical: BASE_URL,
-    },
     verification: {
       google: googleVerification || undefined,
       other: bingVerification ? {

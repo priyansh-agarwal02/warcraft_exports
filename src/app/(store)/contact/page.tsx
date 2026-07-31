@@ -14,6 +14,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: seo?.meta_title || "Contact Us — Warcraft Exports",
     description: seo?.meta_description || "Get in touch with Warcraft Exports. Questions about orders, products, or wholesale enquiries — our team responds within 2 business days.",
+    alternates: { canonical: "https://www.warcraftexports.com/contact" },
   }
 }
 

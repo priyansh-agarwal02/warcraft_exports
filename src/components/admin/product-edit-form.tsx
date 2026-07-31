@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { Save, Trash2, Plus, X, Eye } from "lucide-react"
 import { DuplicateProductButton } from "@/components/admin/duplicate-product-button"
 import { ImageUploader } from "@/components/admin/image-uploader"
+import { VariantManager } from "@/components/admin/variant-manager"
 
 const NATIONS = ["British", "German", "US", "Japanese", "Soviet", "Italian", "French"]
 const ERAS = ["WW1", "WW2"]
@@ -386,20 +387,9 @@ export function ProductEditForm({ product, categories }: Props) {
             />
           </section>
 
-          {/* Variants summary */}
-          {variants.length > 0 && (
-            <section className="bg-white border border-[#E4E4E7] p-5">
-              <h2 className="font-heading text-[14px] text-[#18181B] uppercase tracking-wide mb-3">Variants ({variants.length})</h2>
-              <div className="space-y-2">
-                {variants.slice(0, 5).map(v => (
-                  <div key={v.id} className="flex items-center justify-between text-[12px]">
-                    <span className="text-[#18181B]">{v.color ?? v.size ?? v.sku_suffix ?? "Variant"}</span>
-                    <span className="text-[#71717A]">Qty: {v.stock_quantity}</span>
-                  </div>
-                ))}
-                {variants.length > 5 && <p className="text-[11px] text-[#A1A1AA]">+{variants.length - 5} more</p>}
-              </div>
-            </section>
+          {/* Interactive Variant Manager */}
+          {product?.id && (
+            <VariantManager productId={product.id} initialVariants={variants} productImages={images} />
           )}
 
           {/* Actions */}

@@ -33,6 +33,8 @@ export async function POST(req: NextRequest) {
       paymentIntentId?: string
       shippingMethod?: "standard" | "express"
       couponCode?: string | null
+      displayCurrency?: string
+      exchangeRate?: number
     }
 
     // Server determines order status — never trust client
@@ -314,6 +316,9 @@ export async function POST(req: NextRequest) {
         shipping_usd: shipping,
         discount_usd: discountUsd,
         total_usd: total,
+        display_currency: body.displayCurrency || "USD",
+        exchange_rate: body.exchangeRate || 1,
+        total_display: body.exchangeRate ? Number((total * body.exchangeRate).toFixed(2)) : total,
         coupon_id: couponId,
         status: status || "confirmed",
         payment_method: paymentMethod || null,
@@ -361,8 +366,15 @@ export async function POST(req: NextRequest) {
             is_default: isDefault,
           })
         }
+        // Auto-update profile with customer full name and phone number
+        await serviceClient.from("profiles").upsert({
+          id: orderUserId,
+          full_name: customer.fullName,
+          phone: customer.phone || null,
+          email: customer.email,
+        }, { onConflict: "id" })
       } catch (addrErr) {
-        console.error("Failed to auto-save customer address:", addrErr)
+        console.error("Failed to auto-save customer address/profile:", addrErr)
       }
     }
 

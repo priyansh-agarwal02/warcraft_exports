@@ -26,7 +26,7 @@ export default async function AdminProductEditPage({ params }: Props) {
 
   const { data: product } = await supabase
     .from("products")
-    .select(`*, category:categories!category_id(id, name, slug), images:product_images(id, url, alt_text, sort_order, is_hero), variants:product_variants(id, color, size, sku_suffix, price_override, stock_quantity, is_active)`)
+    .select(`*, category:categories!category_id(id, name, slug), images:product_images(id, url, alt_text, sort_order, is_hero), variants:product_variants(id, color, size, sku_suffix, price_override, stock_quantity, is_active, image_url)`)
     .eq("id", id)
     .single()
 

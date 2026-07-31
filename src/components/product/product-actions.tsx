@@ -37,8 +37,8 @@ export function ProductActions({
   }, [])
 
   const selectedVariant = variants.find((v) => v.id === selectedVariantId)
-  const effectivePrice = selectedVariant?.price_override ?? salePriceUsd ?? priceUsd
-  const hasPriceOverride = selectedVariant?.price_override != null && selectedVariant.price_override !== priceUsd
+  const isSale = salePriceUsd != null && salePriceUsd < priceUsd
+  const effectivePrice = selectedVariant?.price_override ?? (isSale ? salePriceUsd! : priceUsd)
 
   const variantLabel = selectedVariant
     ? [selectedVariant.color, selectedVariant.size].filter(Boolean).join(" / ")
@@ -52,15 +52,15 @@ export function ProductActions({
           <span className="font-sans font-bold text-[28px] text-leather-dark">
             {format(effectivePrice)}
           </span>
-          {(hasPriceOverride || salePriceUsd) && effectivePrice !== priceUsd && (
-            <span className="font-sans text-[18px] text-khaki line-through">
-              {format(priceUsd)}
-            </span>
-          )}
-          {(hasPriceOverride || salePriceUsd) && (
-            <span className="text-[11px] font-sans font-bold bg-[#18181B] text-white px-2 py-0.5 uppercase tracking-wide">
-              {hasPriceOverride ? "Variant Price" : "Sale"}
-            </span>
+          {isSale && !selectedVariant?.price_override && (
+            <>
+              <span className="font-sans text-[18px] text-khaki line-through">
+                {format(priceUsd)}
+              </span>
+              <span className="text-[11px] font-sans font-bold bg-[#18181B] text-white px-2 py-0.5 uppercase tracking-wide">
+                Sale
+              </span>
+            </>
           )}
         </div>
 

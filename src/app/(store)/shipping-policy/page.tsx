@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 
 export const metadata: Metadata = {
   title: "Shipping Policy — Warcraft Exports",
-  description: "Warcraft Exports worldwide shipping policy. DHL, FedEx, Ship Global. Free shipping over $150.",
+  description: "Warcraft Exports worldwide shipping policy. DHL, FedEx, Ship Global. Free shipping over $50.",
 }
 
 const H2 = "font-heading text-[18px] font-black text-leather-dark uppercase mb-3 mt-8"
@@ -56,7 +56,7 @@ export default function ShippingPolicyPage() {
           <p className="font-sans text-xs text-khaki mb-6">Times are estimates and may vary due to customs processing, carrier delays, or public holidays.</p>
 
           <h2 className={H2}>Shipping Rates</h2>
-          <p className={P}><strong>Free worldwide shipping</strong> on all orders over $150 USD. For orders under $150, shipping rates are calculated at checkout based on weight, dimensions, and destination.</p>
+          <p className={P}><strong>Free worldwide shipping</strong> on all orders over $50 USD. For orders under $50, shipping rates are calculated at checkout based on weight, dimensions, and destination.</p>
 
           <h2 className={H2}>Customs, Duties &amp; Taxes</h2>
           <p className={P}>Import duties, taxes, and customs fees are the buyer&apos;s sole responsibility. We declare all shipments accurately with correct values and cannot mark parcels as &ldquo;gifts&rdquo;. Most countries have a de minimis threshold &mdash; consult your local customs authority for details.</p>

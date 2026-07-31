@@ -16,6 +16,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: seo?.meta_title || "Shop WW1 & WW2 Military Reproduction Gear | Warcraft Exports",
     description: seo?.meta_description || "Browse 300+ WW1 & WW2 historical reproduction gear items. Handcrafted leather holsters, canvas webbing, belts, slings & helmets. Direct from manufacturer.",
+    alternates: { canonical: "https://www.warcraftexports.com/shop" },
   }
 }
 

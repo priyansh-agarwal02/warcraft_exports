@@ -273,7 +273,7 @@ export function ImageUploader({
         <div className="grid grid-cols-3 gap-3">
           {(productId ? images : newImages).map((img, idx) => {
             const isHero = "is_hero" in img ? img.is_hero : false
-            const key = img.url
+            const key = ("id" in img && img.id) ? String(img.id) : `${img.url}__${idx}`
             return (
               <div
                 key={key}

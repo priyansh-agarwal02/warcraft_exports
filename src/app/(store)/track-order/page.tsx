@@ -9,6 +9,7 @@ import { checkRateLimit } from "@/lib/rate-limit"
 export const metadata: Metadata = {
   title: "Track Your Order — Warcraft Exports",
   description: "Enter your order number and email to track your Warcraft Exports shipment.",
+  alternates: { canonical: "https://www.warcraftexports.com/track-order" },
 }
 
 type SP = Promise<{ order_number?: string; email?: string }>

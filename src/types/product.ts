@@ -20,7 +20,7 @@ export type ProductDetail = {
   category: { name: string; slug: string } | null
   categories?: { name: string; slug: string }[]
   images: { id: string; url: string; alt_text: string | null; sort_order: number; is_hero: boolean }[]
-  variants: { id: string; color: string | null; size: string | null; sku_suffix: string | null; price_override: number | null; stock_quantity: number; is_active: boolean }[]
+  variants: { id: string; color: string | null; size: string | null; sku_suffix: string | null; price_override: number | null; stock_quantity: number; is_active: boolean; image_url?: string | null }[]
   features: string[]
   specifications: Record<string, string>
   tags?: string[]

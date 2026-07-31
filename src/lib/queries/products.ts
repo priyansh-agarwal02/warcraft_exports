@@ -204,7 +204,7 @@ export async function getProductBySlug(slug: string): Promise<ProductDetail | nu
 
     const { data: variants } = await supabase
       .from("product_variants")
-      .select("id, color, size, sku_suffix, price_override, stock_quantity, is_active")
+      .select("id, color, size, sku_suffix, price_override, stock_quantity, is_active, image_url")
       .eq("product_id", product.id)
       .eq("is_active", true)
 

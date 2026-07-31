@@ -16,7 +16,7 @@ const nextConfig: NextConfig = {
         source: "/(.*)",
         headers: [
           // Prevent clickjacking
-          { key: "X-Frame-Options", value: "DENY" },
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
           // Prevent MIME sniffing
           { key: "X-Content-Type-Options", value: "nosniff" },
           // Control referrer info
@@ -55,7 +55,7 @@ const nextConfig: NextConfig = {
               // Base URI: self only
               "base-uri 'self'",
               // Form submissions: self only
-              "form-action 'self'",
+              "form-action 'self' https://www.paypal.com https://www.sandbox.paypal.com https://checkout.razorpay.com",
             ].join("; "),
           },
         ],

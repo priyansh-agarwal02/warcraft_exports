@@ -11,6 +11,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: seo?.meta_title || "Wholesale Historical Reenactment Gear & Military Props | Warcraft Exports",
     description: seo?.meta_description || "Buy WW1 & WW2 reproduction military gear in bulk. Factory-direct supplier for theatre shows, movies, reenactor clubs, and retail shops. Custom leather & canvas manufacturing from Kanpur, India.",
+    alternates: { canonical: "https://www.warcraftexports.com/wholesale" },
   }
 }
 

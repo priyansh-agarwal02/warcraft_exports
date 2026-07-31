@@ -40,6 +40,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: seo?.meta_title || "About Us — Warcraft Exports",
     description: seo?.meta_description || "RAAS Enterprises — manufacturing WW1 & WW2 historical reproduction gear in Kanpur, India since 2014. Factory-direct, hand-crafted, shipped to 20+ countries.",
+    alternates: { canonical: "https://www.warcraftexports.com/about" },
   }
 }
 

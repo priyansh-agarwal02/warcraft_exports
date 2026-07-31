@@ -1,21 +1,69 @@
 "use client"
 import { useState, useRef, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
+import Link from "next/link"
+import { ExternalLink } from "lucide-react"
 
 type Message = { role: "user" | "assistant"; content: string }
 
 const SUGGESTIONS = [
   "How do I track my order?",
+  "What products do you offer?",
   "What promotions/coupons do you have?",
   "Which items ship from the USA?",
-  "What's your return policy?",
 ]
+
+function FormattedChatMessage({ content }: { content: string }) {
+  // Regex to split markdown links: [label](/path) or [label](https://...)
+  const parts = content.split(/(\[[^\]]+\]\([^)]+\))/g)
+
+  return (
+    <span className="whitespace-pre-wrap leading-relaxed">
+      {parts.map((part, index) => {
+        const match = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/)
+        if (match) {
+          const [, label, url] = match
+          const isExternal = url.startsWith("http://") || url.startsWith("https://")
+
+          if (isExternal) {
+            return (
+              <a
+                key={index}
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 font-bold text-[#33450D] underline hover:text-[#4A5D23] bg-[#33450D]/10 px-1.5 py-0.5 rounded-xs transition-colors my-0.5"
+              >
+                <span>{label}</span>
+                <ExternalLink size={10} className="shrink-0" />
+              </a>
+            )
+          }
+
+          return (
+            <Link
+              key={index}
+              href={url}
+              className="inline-flex items-center gap-1 font-bold text-[#33450D] underline hover:text-[#4A5D23] bg-[#33450D]/10 px-1.5 py-0.5 rounded-xs transition-colors my-0.5 cursor-pointer"
+            >
+              <span>{label}</span>
+              <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2.5" className="shrink-0">
+                <path d="M5 12h14M12 5l7 7-7 7" />
+              </svg>
+            </Link>
+          )
+        }
+        return <span key={index}>{part}</span>
+      })}
+    </span>
+  )
+}
 
 export function ChatbotWidget() {
   const [open, setOpen] = useState(false)
   const [showGreeting, setShowGreeting] = useState(true)
   const [messages, setMessages] = useState<Message[]>([
-    { role: "assistant", content: "Hello! I'm Warex, your Warcraft Exports AI assistant. How can I help you today? I can answer questions about our WW1/WW2 reproduction gear, shipping times, sizing, and order tracking." }
+    { role: "assistant", content: "Hello! Welcome to Warcraft Exports 👋 I'm Warex, your personal AI assistant. How can I help you today? Feel free to ask about our historical reproduction gear, order tracking, shipping, or active promotions!" }
   ])
   const [input, setInput] = useState("")
   const [loading, setLoading] = useState(false)
@@ -42,10 +90,8 @@ export function ChatbotWidget() {
       }, showDuration)
     }
 
-    // Start first cycle
     let hideTimeout = triggerCycle()
 
-    // Repeat every 63 seconds
     const intervalId = setInterval(() => {
       hideTimeout = triggerCycle()
     }, showDuration + hideDuration)
@@ -72,7 +118,7 @@ export function ChatbotWidget() {
       const data = await res.json() as { reply: string }
       setMessages(prev => [...prev, { role: "assistant", content: data.reply }])
     } catch {
-      setMessages(prev => [...prev, { role: "assistant", content: "Sorry, I'm having trouble connecting. Please email warcraftexports@gmail.com." }])
+      setMessages(prev => [...prev, { role: "assistant", content: "Sorry, I'm having trouble connecting. Please visit [Contact Us](/contact) or email warcraftexports@gmail.com." }])
     } finally {
       setLoading(false)
     }
@@ -101,7 +147,6 @@ export function ChatbotWidget() {
             className="fixed bottom-[32px] right-[88px] z-50 bg-[#33450D] text-parchment px-4 py-2.5 shadow-2xl border border-khaki/30 text-xs font-sans font-bold flex items-center gap-2 cursor-pointer select-none rounded-sm hover:bg-[#4A5D23] transition-colors"
             style={{ originX: 1, originY: 0.5 }}
           >
-            {/* Speech bubble pointer */}
             <div className="absolute right-[-6px] top-1/2 -translate-y-1/2 w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-l-[6px] border-l-[#33450D]" />
             <span>Hi! I&apos;m Warex AI</span>
             <span className="text-[10px] opacity-60">👋</span>
@@ -141,19 +186,18 @@ export function ChatbotWidget() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 30, scale: 0.95 }}
             transition={{ type: "spring", stiffness: 350, damping: 28 }}
-            className="fixed bottom-24 right-6 z-50 w-[340px] max-w-[calc(100vw-2rem)] bg-white shadow-2xl border border-khaki/40 flex flex-col origin-bottom-right rounded-sm overflow-hidden" 
-            style={{ height: "460px" }}
+            className="fixed bottom-[84px] right-6 z-50 w-[350px] sm:w-[360px] max-w-[calc(100vw-2rem)] h-[430px] sm:h-[450px] max-h-[calc(100vh-120px)] bg-white shadow-2xl border border-khaki/40 flex flex-col origin-bottom-right rounded-sm overflow-hidden" 
           >
             {/* Header */}
             <div className="bg-leather-dark px-4 py-3 flex items-center gap-3">
-              <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+              <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
               <div className="flex-1">
-                <p className="text-parchment font-sans font-bold text-[13px]">Warex AI · Support</p>
-                <p className="text-parchment/60 text-[10px] font-sans">Powered by AI · Typically instant</p>
+                <p className="text-parchment font-sans font-bold text-[13px]">Warex AI · Support Assistant</p>
+                <p className="text-parchment/60 text-[10px] font-sans">Warcraft Exports Catalog & Orders</p>
               </div>
               <button 
                 onClick={() => setOpen(false)}
-                className="text-parchment/60 hover:text-parchment transition-colors focus:outline-none p-1"
+                className="text-parchment/60 hover:text-parchment transition-colors focus:outline-none p-1 cursor-pointer"
                 aria-label="Close chat"
               >
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
@@ -165,20 +209,21 @@ export function ChatbotWidget() {
               {messages.map((msg, i) => (
                 <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
                   <div
-                    className={`max-w-[85%] px-3 py-2 text-[13px] font-sans leading-relaxed rounded-sm ${
+                    className={`max-w-[88%] px-3.5 py-2.5 text-[13px] font-sans rounded-sm ${
                       msg.role === "user"
                         ? "bg-leather-dark text-parchment"
-                        : "bg-white border border-khaki/30 text-leather-dark shadow-sm"
+                        : "bg-white border border-khaki/30 text-leather-dark shadow-xs"
                     }`}
                   >
-                    {msg.content}
+                    <FormattedChatMessage content={msg.content} />
                   </div>
                 </div>
               ))}
               {loading && (
                 <div className="flex justify-start">
-                  <div className="bg-white border border-khaki/30 px-3 py-2 text-[13px] text-khaki italic rounded-sm shadow-sm">
-                    Typing...
+                  <div className="bg-white border border-khaki/30 px-3.5 py-2.5 text-[12px] text-leather/70 italic rounded-sm shadow-xs flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-[#33450D] animate-ping" />
+                    <span>Warex is searching catalog...</span>
                   </div>
                 </div>
               )}
@@ -192,7 +237,7 @@ export function ChatbotWidget() {
                   <button
                     key={s}
                     onClick={() => sendMessage(s)}
-                    className="text-[10px] font-sans px-2 py-1 border border-leather/30 text-leather hover:bg-leather hover:text-parchment transition-colors rounded-sm cursor-pointer"
+                    className="text-[10px] font-sans px-2.5 py-1 border border-leather/30 text-leather hover:bg-leather hover:text-parchment transition-colors rounded-sm cursor-pointer font-medium"
                   >
                     {s}
                   </button>
@@ -206,8 +251,8 @@ export function ChatbotWidget() {
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && !e.shiftKey && sendMessage()}
-                placeholder="Ask a question…"
-                className="flex-1 text-[13px] font-sans px-3 py-2 border border-khaki/40 focus:border-leather focus:outline-none bg-[#FAFAFA] text-leather-dark placeholder:text-khaki rounded-sm"
+                placeholder="Ask about products, orders, leggings..."
+                className="flex-1 text-[13px] font-sans px-3 py-2 border border-khaki/40 focus:border-leather focus:outline-none bg-[#FAFAFA] text-leather-dark placeholder:text-khaki/80 rounded-sm"
                 disabled={loading}
               />
               <button

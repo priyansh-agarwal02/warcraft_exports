@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import Groq from "groq-sdk"
 import { checkRateLimit } from "@/lib/rate-limit"
+import { createServiceClient } from "@/lib/supabase/service"
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
 
@@ -18,25 +19,154 @@ function containsInjection(text: string): boolean {
   return INJECTION_PATTERNS.some((re) => re.test(text))
 }
 
-const SYSTEM_PROMPT = `You are a knowledgeable customer service assistant for Warcraft Exports, a manufacturer and global exporter of WW1 and WW2 historical reproduction military gear based in Kanpur, India.
+const STOP_WORDS = new Set([
+  "do", "you", "have", "any", "the", "a", "an", "is", "are", "can", "i",
+  "want", "need", "looking", "for", "what", "how", "much", "does", "it",
+  "your", "my", "me", "please", "thanks", "thank", "hi", "hello", "hey",
+  "show", "find", "get", "buy", "order", "about", "tell", "with", "and",
+  "or", "in", "on", "of", "to", "from", "this", "that", "these", "those",
+  "item", "items", "product", "products", "gear", "store", "shop",
+])
 
-You help customers with:
-- Product information (holsters, pouches, belts, slings, reenactment kits)
-- Sizing and fit guidance
-- Order tracking: Guide users to "Manage Orders" under their Account dashboard (/account/orders) where they can view full order details, or use the "Track Order" facility page (/track-order) with their Order Number (e.g. WE-2026-0001) and checkout email.
-- US Warehouse: Select items ship directly from our US warehouse (marked with a "Ships from USA" badge and USA flag). These products default to Expedited Shipping at checkout, while other items default to Standard Shipping.
-- Sales, Promotions & Coupons: Guide users to our Sale page (/sale) for discounted gear. We offer auto-applied tiered Quantity Discounts in the cart (e.g. Buy 2+ Save 10%), Combo Deals (discounted bundles like Holster + Belt), and Coupon/Promo Codes that can be entered manually at checkout.
-- Wholesale inquiries (minimum 100 pieces, direct from factory)
-- Shipping information (worldwide shipping, 10-20 business days, free over $150)
-- Returns (30-day return policy)
-- Materials (genuine leather, canvas, brass hardware)
+const SYNONYMS: Record<string, string[]> = {
+  legging: ["leggings", "puttees", "gaiter", "gaiters", "leg wrap", "gaitor"],
+  leggings: ["legging", "puttees", "gaiter", "gaiters", "leg wrap", "gaitor"],
+  gaiter: ["gaiters", "leggings", "puttees", "gaitor"],
+  gaiters: ["gaiter", "leggings", "puttees", "gaitor"],
+  puttee: ["puttees", "leggings", "gaiters"],
+  puttees: ["puttee", "leggings", "gaiters"],
+  holster: ["holsters", "pouch", "case"],
+  holsters: ["holster", "pouch", "case"],
+  pouch: ["pouches", "ammo", "bag"],
+  pouches: ["pouch", "ammo", "bag"],
+  belt: ["belts", "strap", "waistband"],
+  belts: ["belt", "strap", "waistband"],
+  helmet: ["helmets", "cap", "hat"],
+  helmets: ["helmet", "cap", "hat"],
+  boot: ["boots", "shoe", "footwear"],
+  boots: ["boot", "shoe", "footwear"],
+}
 
-Be concise, helpful, and knowledgeable about historical military gear. Keep responses under 150 words. Do not make up specific product prices — say "visit our shop for current pricing". If asked about payment, mention we accept PayPal and Razorpay. Do not discuss unrelated topics.`
+function extractSearchKeywords(text: string): string[] {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, "")
+    .split(/\s+/)
+    .filter((w) => w.length > 2 && !STOP_WORDS.has(w))
+    .slice(0, 5)
+}
+
+function expandKeywords(words: string[]): string[] {
+  const expanded = new Set<string>()
+  for (const w of words) {
+    const clean = w.toLowerCase()
+    expanded.add(clean)
+
+    if (clean.endsWith("ies")) expanded.add(clean.slice(0, -3) + "y")
+    else if (clean.endsWith("es")) expanded.add(clean.slice(0, -2))
+    else if (clean.endsWith("s")) expanded.add(clean.slice(0, -1))
+
+    if (SYNONYMS[clean]) {
+      SYNONYMS[clean].forEach((syn) => expanded.add(syn))
+    }
+  }
+  return Array.from(expanded).filter((w) => w.length > 2)
+}
+
+async function searchProducts(userQuery: string): Promise<string> {
+  const rawKeywords = extractSearchKeywords(userQuery)
+  const keywords = expandKeywords(rawKeywords)
+
+  try {
+    const serviceClient = createServiceClient()
+    let products: any[] = []
+
+    if (keywords.length > 0) {
+      const orConditions = keywords.flatMap((kw) => [
+        `name.ilike.%${kw}%`,
+        `short_description.ilike.%${kw}%`,
+        `description.ilike.%${kw}%`,
+        `material.ilike.%${kw}%`,
+        `slug.ilike.%${kw}%`,
+      ])
+
+      const { data } = await serviceClient
+        .from("products")
+        .select("name, slug, price_usd, sale_price_usd, short_description, nation, era")
+        .eq("is_active", true)
+        .or(orConditions.join(","))
+        .limit(6)
+
+      if (data && data.length > 0) {
+        products = data
+      }
+    }
+
+    if (products.length === 0) {
+      const { data } = await serviceClient
+        .from("products")
+        .select("name, slug, price_usd, sale_price_usd, short_description, nation, era")
+        .eq("is_active", true)
+        .order("is_featured", { ascending: false })
+        .limit(4)
+
+      if (data && data.length > 0) {
+        products = data
+      }
+    }
+
+    if (products.length === 0) return ""
+
+    const productLines = products.map((p) => {
+      const price = p.sale_price_usd ? `$${p.sale_price_usd} (was $${p.price_usd})` : `$${p.price_usd}`
+      const desc = p.short_description ? ` — ${p.short_description.slice(0, 75)}` : ""
+      return `• ${p.name} | ${price}${desc} | Direct Link: [${p.name}](/product/${p.slug})`
+    }).join("\n")
+
+    return `\n\n--- MATCHING PRODUCTS FROM CATALOG ---\n${productLines}\n--- END CATALOG RESULTS ---\nWhen recommending products, ALWAYS use the embedded markdown link format [Product Name](/product/slug).`
+  } catch (err) {
+    console.error("Chat product search error:", err)
+    return ""
+  }
+}
+
+const SYSTEM_PROMPT = `You are Warex, the expert customer support AI assistant for Warcraft Exports (warcraftexports.com), a premier manufacturer and exporter of WW1 & WW2 military reproduction gear, reenactment equipment, holsters, pouches, gaiters, puttees, belts, uniforms, helmets, and accessories.
+
+KEY RESPONSIBILITIES & GUIDELINES:
+1. CATALOG GUIDANCE & RECOMMENDATIONS:
+   - When matching products from catalog are provided below, ALWAYS recommend them with exact prices and embedded markdown links formatted as [Product Name](/product/slug).
+   - If the user asks for a category (e.g. leggings, gaiters, puttees, holsters, pouches, belts, slings, boots, helmets), guide them to the specific products or direct them to browse [Browse Full Shop](/shop).
+2. ORDER TRACKING & MY ORDERS:
+   - When asked about order status, tracking, or order history, ALWAYS provide direct clickable markdown links:
+     - For tracking with Order ID: [Track Order Page](/track-order)
+     - For logged-in account order history: [My Orders Dashboard](/account/orders)
+   - Explain that customers can enter their Order Number (e.g. WE-2026-0001) and email on [Track Order](/track-order).
+3. PROMOTIONS & DEALS:
+   - Guide users to [Sale & Discounted Gear](/sale) for active deals.
+   - Mention auto-applied Quantity Discounts in cart (e.g. Buy 2+ Save 10%) and Combo Deals.
+4. WHOLESALE & B2B:
+   - For bulk or factory orders (minimum 100 items), guide users to submit a query at [B2B Wholesale Inquiries](/wholesale).
+5. SHIPPING & RETURNS:
+   - Free worldwide standard shipping on orders over $50.
+   - Select items ship directly from US Warehouse ("Ships from USA" badge) with 1-3 day expedited delivery.
+   - 30-day return policy. Contact support at [Contact Us](/contact).
+
+CRITICAL FORMATTING RULE:
+Never output raw URLs. Always write links in standard markdown format: [Link Label](/path).
+Examples:
+- [P37 Canvas Gaiters Leggings](/product/p37-gaiters-leggings)
+- [Track Order](/track-order)
+- [My Account Orders](/account/orders)
+- [Browse Full Shop](/shop)
+- [Sale Page](/sale)
+- [Contact Support](/contact)
+
+Be concise, friendly, professional, and knowledgeable. Keep responses under 220 words with clear formatting.`
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown"
 
-  if (!checkRateLimit(`chat:${ip}`, 20, 60_000)) {
+  if (!checkRateLimit(`chat:${ip}`, 25, 60_000)) {
     return NextResponse.json({ reply: "Too many messages. Please wait a minute before continuing." }, { status: 429 })
   }
 
@@ -64,21 +194,28 @@ export async function POST(req: NextRequest) {
       })
     }
 
+    let catalogContext = ""
+    if (lastUserMsg) {
+      catalogContext = await searchProducts(lastUserMsg.content)
+    }
+
+    const dynamicSystemPrompt = SYSTEM_PROMPT + catalogContext
+
     const completion = await groq.chat.completions.create({
       model: "llama-3.1-8b-instant",
-      messages: [{ role: "system", content: SYSTEM_PROMPT }, ...safeMessages],
-      max_tokens: 300,
-      temperature: 0.7,
+      messages: [{ role: "system", content: dynamicSystemPrompt }, ...safeMessages],
+      max_tokens: 450,
+      temperature: 0.6,
     })
 
     const reply =
       completion.choices[0]?.message?.content ??
-      "I'm sorry, I couldn't process that. Please email warcraftexports@gmail.com for assistance."
+      "I'm sorry, I couldn't process that right now. Please email warcraftexports@gmail.com for assistance."
     return NextResponse.json({ reply })
   } catch (err) {
     console.error("Chat API error:", err)
     return NextResponse.json({
-      reply: "I'm temporarily unavailable. Please email warcraftexports@gmail.com for help.",
+      reply: "I'm temporarily unavailable. Please visit our [Contact Us](/contact) page or email warcraftexports@gmail.com for help.",
     }, { status: 200 })
   }
 }

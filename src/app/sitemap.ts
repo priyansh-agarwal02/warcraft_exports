@@ -1,12 +1,12 @@
 import type { MetadataRoute } from "next"
-import { createClient } from "@/lib/supabase/client"
+import { createServiceClient } from "@/lib/supabase/service"
 import { siteConfig } from "@/config/site.config"
 
 export const revalidate = 3600 // regenerate every hour
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://warcraftexports.com"
-
+  
   // Core static pages
   const staticPages: MetadataRoute.Sitemap = [
     { url: `${baseUrl}/`, lastModified: new Date(), changeFrequency: "daily", priority: 1.0 },
@@ -53,7 +53,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let categoryPages: MetadataRoute.Sitemap = []
 
   try {
-    const supabase = await createClient()
+    const supabase = createServiceClient()
 
     const { data: products } = await supabase
       .from("products")

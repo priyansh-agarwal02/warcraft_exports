@@ -6,6 +6,7 @@ import type { Metadata } from "next"
 export const metadata: Metadata = {
   title: "Sale — Warcraft Exports",
   description: "Shop discounted WW1 & WW2 historical reproduction military gear. Limited time offers.",
+  alternates: { canonical: "https://www.warcraftexports.com/sale" },
 }
 
 export const dynamic = "force-dynamic"
@@ -74,7 +75,7 @@ export default async function SalePage() {
                 Limited time offers
               </p>
               <p className="text-[11px] font-sans text-[#76786B] mt-0.5">
-                Free shipping over $150
+                Free shipping over $50
               </p>
             </div>
           </div>
