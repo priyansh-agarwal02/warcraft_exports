@@ -1,7 +1,7 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 
-export type CurrencyCode = "USD" | "EUR" | "GBP" | "AUD" | "CAD" | "JPY" | "INR" | "SGD" | "SEK" | "NOK" | "DKK" | "CHF" | "PLN" | "CZK" | "NZD"
+export type CurrencyCode = "USD" | "EUR" | "GBP" | "AUD" | "CAD" | "JPY" | "INR" | "RUB" | "CNY"
 
 export const CURRENCIES: { code: CurrencyCode; symbol: string; name: string }[] = [
   { code: "USD", symbol: "$", name: "US Dollar" },
@@ -11,10 +11,8 @@ export const CURRENCIES: { code: CurrencyCode; symbol: string; name: string }[] 
   { code: "CAD", symbol: "C$", name: "Canadian Dollar" },
   { code: "JPY", symbol: "¥", name: "Japanese Yen" },
   { code: "INR", symbol: "₹", name: "Indian Rupee" },
-  { code: "SGD", symbol: "S$", name: "Singapore Dollar" },
-  { code: "SEK", symbol: "kr", name: "Swedish Krona" },
-  { code: "CHF", symbol: "Fr", name: "Swiss Franc" },
-  { code: "NZD", symbol: "NZ$", name: "New Zealand Dollar" },
+  { code: "RUB", symbol: "₽", name: "Russian Ruble" },
+  { code: "CNY", symbol: "¥", name: "Chinese Yuan" },
 ]
 
 type RatesMap = Partial<Record<CurrencyCode, number>>
