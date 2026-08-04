@@ -19,6 +19,7 @@ const NAV: NavEntry[] = [
       { label: "Categories", href: "/admin/categories", icon: Tag },
       { label: "Inventory", href: "/admin/inventory", icon: Warehouse },
       { label: "Bulk Upload", href: "/admin/products/upload", icon: Upload },
+      { label: "Distributor Catalog", href: "/admin/catalog", icon: FileText },
     ],
   },
   {
@@ -85,9 +86,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* ── Sidebar — the ENTIRE sidebar scrolls as one container ── */}
       <aside
         className={cn(
-          // Fixed to viewport, full height, scrolls as one unit (like old version)
-          "fixed inset-y-0 left-0 z-50 w-64 bg-[#18181B] overflow-y-auto transition-transform duration-300",
-          // Desktop: always visible | Mobile: toggle drawer
+          "print:hidden fixed inset-y-0 left-0 z-50 w-64 bg-[#18181B] overflow-y-auto transition-transform duration-300",
           sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >
@@ -174,9 +173,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </aside>
 
       {/* ── Main content — offset by sidebar width on desktop ── */}
-      <div className="flex flex-col min-h-screen lg:ml-64">
+      <div className="flex flex-col min-h-screen lg:ml-64 print:ml-0 print:min-h-0 print:p-0">
         {/* Top breadcrumb bar */}
-        <div className="bg-white border-b border-[#E4E4E7] px-4 sm:px-8 py-3 flex items-center justify-between gap-2 text-[12px] font-sans text-[#71717A] sticky top-0 z-30">
+        <div className="print:hidden bg-white border-b border-[#E4E4E7] px-4 sm:px-8 py-3 flex items-center justify-between gap-2 text-[12px] font-sans text-[#71717A] sticky top-0 z-30">
           <div className="flex items-center gap-2">
             <button
               onClick={() => setSidebarOpen(true)}
