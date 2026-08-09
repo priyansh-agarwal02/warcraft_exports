@@ -26,10 +26,11 @@ const PRODUCT_CATEGORIES = [
 ]
 
 const VOLUME_OPTIONS = [
-  "Under 100 units",
-  "100–500 units",
+  "10–50 units (Low MOQ Tier)",
+  "50–200 units",
+  "200–500 units",
   "500–1,000 units",
-  "1,000+ units",
+  "1,000+ units (Bulk Order)",
 ]
 
 const INPUT =
@@ -108,15 +109,15 @@ export function WholesaleForm({ onSubmit }: WholesaleFormProps) {
   }
 
   return (
-    <div className="border border-khaki/50 rounded-sm bg-white/50 p-8">
-      <h2 className="font-heading text-2xl text-leather-dark mb-1">Wholesale Enquiry Form</h2>
-      <p className="font-sans text-xs text-leather/60 mb-8">
-        Wholesale is enquiry-only. Our team will follow up with pricing and availability.
+    <div id="wholesale-inquiry-form" className="border-2 border-leather rounded-sm bg-white p-6 sm:p-8 shadow-md">
+      <h2 className="font-heading text-2xl sm:text-3xl text-leather-dark font-bold mb-1">Wholesale Inquiry Form</h2>
+      <p className="font-sans text-xs text-leather/70 mb-6">
+        Direct Factory Pricing for Reenactor Groups, Museums, Film Prop Directors &amp; Retailers.
       </p>
 
       {success && (
-        <div className="mb-6 p-4 bg-green-50 border border-green-200 text-green-800 text-sm font-sans rounded-sm">
-          Thank you! Your wholesale inquiry has been submitted successfully. Our B2B team will review your application and respond within 24 Hours.
+        <div className="mb-6 p-4 bg-green-50 border border-green-200 text-green-800 text-sm font-sans rounded-sm font-medium">
+          Thank you! Your wholesale inquiry has been submitted successfully. Our team will review your application and respond within 24 Hours.
         </div>
       )}
 
@@ -126,10 +127,10 @@ export function WholesaleForm({ onSubmit }: WholesaleFormProps) {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label htmlFor="name" className="block text-[10px] font-sans font-700 uppercase tracking-[0.15em] text-leather mb-2">
+            <label htmlFor="name" className="block text-[10px] font-sans font-bold uppercase tracking-[0.15em] text-leather mb-1.5">
               Full Name *
             </label>
             <input
@@ -145,8 +146,8 @@ export function WholesaleForm({ onSubmit }: WholesaleFormProps) {
             />
           </div>
           <div>
-            <label htmlFor="company" className="block text-[10px] font-sans font-700 uppercase tracking-[0.15em] text-leather mb-2">
-              Company Name
+            <label htmlFor="company" className="block text-[10px] font-sans font-bold uppercase tracking-[0.15em] text-leather mb-1.5">
+              Company / Group Name
             </label>
             <input
               id="company"
@@ -156,14 +157,14 @@ export function WholesaleForm({ onSubmit }: WholesaleFormProps) {
               value={form.company}
               onChange={handleChange}
               className={INPUT}
-              placeholder="Your Company Ltd."
+              placeholder="Your Business or Reenactment Club"
             />
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label htmlFor="country" className="block text-[10px] font-sans font-700 uppercase tracking-[0.15em] text-leather mb-2">
+            <label htmlFor="country" className="block text-[10px] font-sans font-bold uppercase tracking-[0.15em] text-leather mb-1.5">
               Country *
             </label>
             <input
@@ -179,7 +180,7 @@ export function WholesaleForm({ onSubmit }: WholesaleFormProps) {
             />
           </div>
           <div>
-            <label htmlFor="email" className="block text-[10px] font-sans font-700 uppercase tracking-[0.15em] text-leather mb-2">
+            <label htmlFor="email" className="block text-[10px] font-sans font-bold uppercase tracking-[0.15em] text-leather mb-1.5">
               Email Address *
             </label>
             <input
@@ -197,7 +198,7 @@ export function WholesaleForm({ onSubmit }: WholesaleFormProps) {
         </div>
 
         <div>
-          <label htmlFor="phone" className="block text-[10px] font-sans font-700 uppercase tracking-[0.15em] text-leather mb-2">
+          <label htmlFor="phone" className="block text-[10px] font-sans font-bold uppercase tracking-[0.15em] text-leather mb-1.5">
             Phone Number *
           </label>
           <input
@@ -215,10 +216,10 @@ export function WholesaleForm({ onSubmit }: WholesaleFormProps) {
 
         {/* Product category checkboxes */}
         <div>
-          <label className="block text-[10px] font-sans font-700 uppercase tracking-[0.15em] text-leather mb-3">
+          <label className="block text-[10px] font-sans font-bold uppercase tracking-[0.15em] text-leather mb-2">
             Product Categories of Interest *
           </label>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {PRODUCT_CATEGORIES.map((cat) => (
               <label key={cat} className="flex items-center gap-2 cursor-pointer group">
                 <input
@@ -226,9 +227,9 @@ export function WholesaleForm({ onSubmit }: WholesaleFormProps) {
                   disabled={isPending}
                   checked={selectedCategories.includes(cat)}
                   onChange={(e) => handleCategoryChange(cat, e.target.checked)}
-                  className="w-4 h-4 accent-leather rounded-sm"
+                  className="w-4 h-4 accent-leather rounded-xs"
                 />
-                <span className="font-sans text-sm text-leather-dark group-hover:text-leather transition-colors">
+                <span className="font-sans text-xs text-leather-dark group-hover:text-leather transition-colors font-medium">
                   {cat}
                 </span>
               </label>
@@ -238,8 +239,8 @@ export function WholesaleForm({ onSubmit }: WholesaleFormProps) {
 
         {/* Volume select */}
         <div>
-          <label htmlFor="volume" className="block text-[10px] font-sans font-700 uppercase tracking-[0.15em] text-leather mb-2">
-            Estimated Monthly Volume *
+          <label htmlFor="volume" className="block text-[10px] font-sans font-bold uppercase tracking-[0.15em] text-leather mb-1.5">
+            Estimated Order Volume (MOQ 10+ Units) *
           </label>
           <select
             id="volume"
@@ -250,7 +251,7 @@ export function WholesaleForm({ onSubmit }: WholesaleFormProps) {
             onChange={handleChange}
             className="w-full border border-khaki/60 bg-parchment/60 rounded-sm px-3 py-2 font-sans text-sm text-leather-dark focus:outline-none focus:border-leather"
           >
-            <option value="">Select a range</option>
+            <option value="">Select an order volume range</option>
             {VOLUME_OPTIONS.map((v) => (
               <option key={v} value={v}>
                 {v}
@@ -261,8 +262,8 @@ export function WholesaleForm({ onSubmit }: WholesaleFormProps) {
 
         {/* Message */}
         <div>
-          <label htmlFor="message" className="block text-[10px] font-sans font-700 uppercase tracking-[0.15em] text-leather mb-2">
-            Additional Message
+          <label htmlFor="message" className="block text-[10px] font-sans font-bold uppercase tracking-[0.15em] text-leather mb-1.5">
+            Requirements / Mix &amp; Match Details
           </label>
           <textarea
             id="message"
@@ -272,21 +273,21 @@ export function WholesaleForm({ onSubmit }: WholesaleFormProps) {
             value={form.message}
             onChange={handleChange}
             className="w-full border border-khaki/60 bg-parchment/60 rounded-sm px-3 py-2 font-sans text-sm text-leather-dark placeholder-khaki focus:outline-none focus:border-leather resize-none"
-            placeholder="Tell us about your business and what you're looking for..."
+            placeholder="Specify SKUs, quantities, or custom requirements..."
           />
         </div>
 
         <button
           type="submit"
           disabled={isPending}
-          className="w-full bg-leather text-parchment font-sans font-semibold text-sm uppercase tracking-widest py-3 rounded-sm hover:bg-leather-dark transition-colors disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+          className="w-full bg-[#33450D] text-white hover:bg-[#27350A] font-sans font-bold text-sm uppercase tracking-widest py-3.5 rounded-xs transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer shadow-md"
         >
           {isPending && <Loader2 className="animate-spin" size={14} />}
-          {isPending ? "Submitting..." : "Submit Enquiry"}
+          {isPending ? "Submitting Inquiry..." : "Submit Wholesale Inquiry"}
         </button>
 
         <p className="text-center font-sans text-[11px] text-khaki">
-          We typically respond within 24 Hours. No automated replies — a human reads every enquiry.
+          Direct response within 24 hours · Confidential B2B Pricing
         </p>
       </form>
     </div>

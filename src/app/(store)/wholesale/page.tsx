@@ -1,22 +1,68 @@
 import type { Metadata } from "next"
+import Image from "next/image"
 import { createClient } from "@/lib/supabase/server"
 import { headers } from "next/headers"
 import { checkRateLimit } from "@/lib/rate-limit"
 import { getPageSeo } from "@/lib/queries/seo"
+import { sendWholesaleNotification } from "@/lib/email"
+import { WholesaleForm } from "@/components/wholesale/wholesale-form"
+import { WholesaleProductStack } from "@/components/wholesale/wholesale-product-stack"
+import { Truck, Factory, Layers, Film, Globe, CheckCircle2 } from "lucide-react"
 
 export const dynamic = "force-dynamic"
 
 export async function generateMetadata(): Promise<Metadata> {
   const seo = await getPageSeo("wholesale")
+  const title = seo?.meta_title || "Wholesale Historical Reenactment Gear & Military Props | Warcraft Exports"
+  const description = seo?.meta_description || "Buy WW1 & WW2 reproduction military gear in bulk. Direct factory supplier from Kanpur, India for theater shows, movies, reenactor clubs, and retail shops."
+
   return {
-    title: seo?.meta_title || "Wholesale Historical Reenactment Gear & Military Props | Warcraft Exports",
-    description: seo?.meta_description || "Buy WW1 & WW2 reproduction military gear in bulk. Factory-direct supplier for theatre shows, movies, reenactor clubs, and retail shops. Custom leather & canvas manufacturing from Kanpur, India.",
+    title,
+    description,
+    keywords: [
+      "Wholesale Military Gear",
+      "WW1 Reproduction Wholesale",
+      "WW2 Reenactment Gear Bulk",
+      "Film Prop Military Supplier",
+      "Theater Costume Outfitting",
+      "Kanpur Leather Goods Exporter",
+      "RAAS Enterprises Wholesale",
+      "Warcraft Exports B2B",
+    ],
     alternates: { canonical: "https://www.warcraftexports.com/wholesale" },
+    openGraph: {
+      title,
+      description,
+      url: "https://www.warcraftexports.com/wholesale",
+      siteName: "Warcraft Exports",
+      type: "website",
+      images: [
+        {
+          url: "https://www.warcraftexports.com/hero/wholesale-banner-new.webp",
+          width: 1536,
+          height: 1024,
+          alt: "Warcraft Exports Kanpur Workshop Craftsmanship",
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: ["https://www.warcraftexports.com/hero/wholesale-banner-new.webp"],
+    },
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-image-preview": "large",
+        "max-snippet": -1,
+      },
+    },
   }
 }
-
-import { sendWholesaleNotification } from "@/lib/email"
-import { WholesaleForm } from "@/components/wholesale/wholesale-form"
 
 async function submitWholesaleAction(data: {
   name: string
@@ -79,110 +125,179 @@ async function submitWholesaleAction(data: {
   return { success: true }
 }
 
-const BENEFITS = [
+const BENEFIT_CARDS = [
   {
-    icon: "🏭",
+    icon: Factory,
     title: "Factory-Direct Pricing",
-    desc: "No middlemen. You buy directly from RAAS Enterprises, the manufacturer in Kanpur, India.",
+    desc: "Buy directly from our Kanpur workshop (RAAS Enterprises). No middlemen markup.",
   },
   {
-    icon: "📦",
-    title: "Flexible Volumes",
-    desc: "We work with reenactment groups, retailers, and distributors. Enquire with your requirements.",
+    icon: Layers,
+    title: "Low 10+ Unit MOQ",
+    desc: "Flexible order volumes starting at just 10 units with multi-category mix & match.",
   },
   {
-    icon: "🌍",
-    title: "Ships Worldwide",
-    desc: "We export to 20+ countries via DHL, FedEx, and Ship Global. Full documentation provided.",
+    icon: Film,
+    title: "Film & Stage Props",
+    desc: "Trusted by theater companies, film set prop masters & museum living history archives.",
   },
   {
-    icon: "🏅",
-    title: "Trusted Since 2018",
-    desc: "Over 70,000 orders fulfilled. Museums, film productions, and collectors trust our quality.",
+    icon: Truck,
+    title: "Global Express Freight",
+    desc: "Exporting to 20+ countries via DHL, FedEx & Ocean Freight with full documentation.",
   },
-]
-
-const PRODUCT_CATEGORIES = [
-  "US Gear",
-  "German Gear",
-  "British Gear",
-  "Japanese Gear",
-  "Soviet Gear",
-  "All Nations",
-]
-
-const VOLUME_OPTIONS = [
-  "Under 100 units",
-  "100–500 units",
-  "500–1,000 units",
-  "1,000+ units",
 ]
 
 export default function WholesalePage() {
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: "Warcraft Exports",
+    legalName: "RAAS Enterprises",
+    url: "https://www.warcraftexports.com",
+    logo: "https://www.warcraftexports.com/hero/wholesale-banner-new.webp",
+    description: "Direct manufacturer and exporter of handcrafted WW1 & WW2 reproduction military gear and canvas goods from Kanpur, India.",
+    address: {
+      "@type": "PostalAddress",
+      addressLocality: "Kanpur",
+      addressRegion: "Uttar Pradesh",
+      addressCountry: "India",
+    },
+    knowsAbout: [
+      "Historical Reenactment Gear",
+      "Film Prop Supply",
+      "Stage Show Costumes",
+      "WW1 Military Reproductions",
+      "WW2 Military Gear",
+    ],
+  }
+
   return (
-    <div className="bg-parchment min-h-screen">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div className="bg-parchment min-h-screen selection:bg-leather selection:text-parchment pb-4">
+      {/* Structured Data JSON-LD */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
 
-        {/* Hero */}
-        <div className="text-center mb-14">
-          <p className="text-[10px] font-sans font-700 uppercase tracking-[0.2em] text-leather mb-2">
-            For Retailers, Distributors &amp; Bulk Buyers
-          </p>
-          <h1 className="font-heading text-4xl sm:text-5xl text-leather-dark mb-4">
-            Partner Directly with the Manufacturer
+      {/* ── TOP HERO BANNER (Full Color WebP Banner) ── */}
+      <div className="relative bg-[#18181B] text-white border-b-2 border-leather overflow-hidden">
+        {/* Full Width WebP Banner */}
+        <div className="absolute inset-0 opacity-95">
+          <Image
+            src="/hero/wholesale-banner-new.webp"
+            alt="Warcraft Exports Kanpur Workshop Craftsmanship"
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover object-center"
+          />
+        </div>
+
+        {/* Clear center overlay backdrop */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/25 to-black/35" />
+
+        {/* Hero Content Overlay */}
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14 text-center">
+          <h1 className="font-heading text-3xl sm:text-5xl uppercase tracking-tight text-white font-black leading-tight max-w-4xl mx-auto drop-shadow-lg">
+            Handcrafted Historical Reproductions
           </h1>
-          <p className="font-sans text-leather/80 max-w-2xl mx-auto text-base leading-relaxed">
-            RAAS Enterprises has supplied historical reproduction gear to retailers, reenactment
-            groups, and collectors in 20+ countries since 2018. Submit an enquiry and our team
-            will respond within 24 hours.
+
+          <p className="font-sans text-xs sm:text-base text-parchment max-w-2xl mx-auto mt-2 leading-relaxed font-semibold drop-shadow-md">
+            Warcraft Exports — Handcrafted Leather &amp; Canvas Goods from Kanpur, India. Supplying Retailers, Theater Productions, Reenactment Clubs &amp; Collectors Worldwide.
           </p>
         </div>
+      </div>
 
-        {/* Benefits grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
-          {BENEFITS.map((b) => (
-            <div
-              key={b.title}
-              className="bg-white/60 border border-khaki/40 rounded-sm p-6 text-center"
-            >
-              <div className="text-3xl mb-3">{b.icon}</div>
-              <h3 className="font-heading text-base text-leather-dark mb-2">{b.title}</h3>
-              <p className="font-sans text-xs text-leather/70 leading-relaxed">{b.desc}</p>
+      {/* ── MAIN CONTENT CONTAINER (Tight Bottom Padding) ── */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 pb-4">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          
+          {/* LEFT COLUMN: Benefits, Verified Showcase & Exporter Services (6 cols) */}
+          <div className="lg:col-span-6 space-y-4 font-sans">
+            
+            {/* Benefit Grid (2x2) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {BENEFIT_CARDS.map((b) => {
+                const Icon = b.icon
+                return (
+                  <div
+                    key={b.title}
+                    className="bg-white/90 border border-khaki/60 p-3 rounded-sm shadow-xs hover:border-leather transition-all"
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="p-1 bg-parchment/80 border border-khaki/40 rounded-xs text-leather">
+                        <Icon size={15} />
+                      </div>
+                      <h3 className="font-heading text-xs text-leather-dark font-bold uppercase tracking-wide">
+                        {b.title}
+                      </h3>
+                    </div>
+                    <p className="font-sans text-[11px] text-leather/70 leading-snug">
+                      {b.desc}
+                    </p>
+                  </div>
+                )
+              })}
             </div>
-          ))}
-        </div>
 
-        {/* B2B Segments and Keywords Section */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16 border-t border-b border-khaki/30 py-12">
-          <div>
-            <h2 className="font-heading text-2xl text-leather-dark mb-4">
-              Theatrical Plays, Stage Shows &amp; Film Production Supplies
-            </h2>
-            <p className="font-sans text-sm text-leather/80 leading-relaxed mb-4">
-              Warcraft Exports is a trusted B2B partner for theater groups, movie set prop masters, drama societies, and television costume directors. We specialize in supplying bulk historical reproductions of WW1 and WW2 military gear, enabling production companies to achieve complete period-accuracy.
-            </p>
-            <p className="font-sans text-sm text-leather/80 leading-relaxed">
-              Whether outfitting a full platoon of actors for a stage play, outfitting extras for a feature film, or looking for specific vintage leather goods and canvas web accessories, we provide custom bulk solutions tailored to your production timeline.
-            </p>
+            {/* Simplified Interactive Rotating Product Showcase */}
+            <WholesaleProductStack />
+
+            {/* Film, Theater & Reenactment Industry Credibility Box */}
+            <div className="bg-[#18181B] text-parchment border-2 border-leather p-4.5 rounded-sm space-y-2 shadow-md">
+              <div className="flex items-center gap-2 border-b border-white/10 pb-2">
+                <Film size={17} className="text-[#A3E635]" />
+                <h3 className="font-heading text-xs text-white uppercase tracking-wide font-bold">
+                  Film Sets, Stage Shows &amp; Living History Outfitting
+                </h3>
+              </div>
+              <p className="font-sans text-[11px] text-white/80 leading-relaxed">
+                Warcraft Exports is a trusted direct supplier for theater prop directors, costume designers, and film production companies requiring period accuracy. We support custom production runs and bulk freight.
+              </p>
+              <div className="flex flex-wrap gap-1.5 pt-0.5">
+                {["Theater Prop Depts", "Film Costume Directors", "Living History Clubs", "Museum Reenactors"].map((tag) => (
+                  <span
+                    key={tag}
+                    className="text-[9px] font-sans font-bold uppercase tracking-wider bg-white/10 border border-white/15 px-2 py-0.5 text-white/90"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Wholesale Reenactment Gear & Exporter Services Box */}
+            <div className="bg-white/90 border border-khaki/60 p-4.5 rounded-sm shadow-xs space-y-2">
+              <div className="flex items-center gap-2 border-b border-khaki/30 pb-2">
+                <Globe size={16} className="text-leather" />
+                <h3 className="font-heading text-xs uppercase tracking-wider text-leather-dark font-bold">
+                  Wholesale Reenactment Gear &amp; Exporter Services
+                </h3>
+              </div>
+              <p className="font-sans text-[11px] text-leather/80 leading-relaxed">
+                Direct retail brand of RAAS Enterprises in Fazalgunj, Kanpur. We manufacture and export handcrafted leather &amp; canvas military goods spanning US, German, British, Soviet, and Japanese historical gear.
+              </p>
+              <div className="grid grid-cols-2 gap-2 pt-1 font-sans text-[10px] text-leather-dark font-semibold">
+                <div className="flex items-center gap-1.5 bg-parchment/60 p-1.5 border border-khaki/40 rounded-xs">
+                  <CheckCircle2 size={12} className="text-[#33450D]" />
+                  <span>Custom Production &amp; Patterns</span>
+                </div>
+                <div className="flex items-center gap-1.5 bg-parchment/60 p-1.5 border border-khaki/40 rounded-xs">
+                  <CheckCircle2 size={12} className="text-[#33450D]" />
+                  <span>Full Export Customs Clearance</span>
+                </div>
+              </div>
+            </div>
+
           </div>
-          <div>
-            <h2 className="font-heading text-2xl text-leather-dark mb-4">
-              Wholesale Reenactment Gear &amp; Exporter Services
-            </h2>
-            <p className="font-sans text-sm text-leather/80 leading-relaxed mb-4">
-              As the direct retail brand of RAAS Enterprises in Fazalgunj, Kanpur, we are a leading exporter of handcrafted leather military goods. Our facility supports custom production runs, pattern replication, and bulk wholesale logistics for international distributors, military surplus stores, and living history organizations.
-            </p>
-            <p className="font-sans text-sm text-leather/80 leading-relaxed">
-              Our B2B catalog spans US, German, British, Soviet, and Japanese military gear reproductions. We handle export documentation, customs clearance, and global air/ocean freight to ensure seamless delivery to your retail warehouse or club address.
-            </p>
+
+          {/* RIGHT COLUMN: Wholesale Inquiry Form (6 cols — Equal & Perfectly Balanced) */}
+          <div className="lg:col-span-6 sticky top-6">
+            <WholesaleForm onSubmit={submitWholesaleAction} />
           </div>
-        </div>
 
-        {/* Inquiry form */}
-        <div className="max-w-3xl mx-auto">
-          <WholesaleForm onSubmit={submitWholesaleAction} />
         </div>
-
       </div>
     </div>
   )
