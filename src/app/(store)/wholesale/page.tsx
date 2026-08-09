@@ -182,10 +182,22 @@ export default function WholesalePage() {
 
       {/* ── TOP HERO BANNER (Full Color WebP Banner) ── */}
       <div className="relative bg-[#18181B] text-white border-b-2 border-leather overflow-hidden">
-        {/* Full Width WebP Banner */}
-        <div className="absolute inset-0 opacity-95">
+        {/* Desktop WebP Banner (sm screens and above — untouched!) */}
+        <div className="absolute inset-0 opacity-95 hidden sm:block">
           <Image
             src="/hero/wholesale-banner-new.webp"
+            alt="Warcraft Exports Kanpur Workshop Craftsmanship"
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover object-center"
+          />
+        </div>
+
+        {/* Mobile WebP Banner (mobile screens under sm only!) */}
+        <div className="absolute inset-0 opacity-95 block sm:hidden">
+          <Image
+            src="/hero/Mobile-wholesale-banner.webp"
             alt="Warcraft Exports Kanpur Workshop Craftsmanship"
             fill
             priority
