@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { Suspense } from "react"
 import { Mail, Phone, MapPin, Clock } from "lucide-react"
 import { createClient } from "@/lib/supabase/server"
 import { siteConfig } from "@/config/site.config"
@@ -153,9 +154,11 @@ export default function ContactPage() {
             </div>
           </aside>
 
-          {/* Contact form */}
+          {/* Contact form wrapped in Suspense boundary for searchParams */}
           <div className="lg:col-span-3">
-            <ContactForm onSubmit={submitContactAction} />
+            <Suspense fallback={<div className="bg-white/50 border border-khaki/40 p-8 h-[450px] animate-pulse" />}>
+              <ContactForm onSubmit={submitContactAction} />
+            </Suspense>
           </div>
         </div>
       </div>

@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useState, useEffect, useTransition } from "react"
+import { useSearchParams } from "next/navigation"
 import { Loader2 } from "lucide-react"
 
 interface ContactFormProps {
@@ -11,6 +12,9 @@ const INPUT =
   "w-full border border-khaki/60 bg-parchment/60 px-3 py-2.5 font-sans text-sm text-leather-dark placeholder-khaki/70 focus:outline-none focus:border-leather transition-colors"
 
 export function ContactForm({ onSubmit }: ContactFormProps) {
+  const searchParams = useSearchParams()
+  const productParam = searchParams.get("product")
+
   const [isPending, startTransition] = useTransition()
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -21,6 +25,29 @@ export function ContactForm({ onSubmit }: ContactFormProps) {
     subject: "",
     message: "",
   })
+
+  // Auto-populate Subject only if product query parameter is present in URL
+  useEffect(() => {
+    if (productParam) {
+      const formattedTitle = productParam
+        .split("-")
+        .map((word) => {
+          if (!word) return ""
+          const lower = word.toLowerCase()
+          if (lower === "wwi" || lower === "ww1") return "WW1"
+          if (lower === "wwii" || lower === "ww2") return "WW2"
+          if (lower === "us" || lower === "uk") return lower.toUpperCase()
+          return word.charAt(0).toUpperCase() + word.slice(1)
+        })
+        .filter(Boolean)
+        .join(" ")
+
+      setForm((f) => ({
+        ...f,
+        subject: `Product Inquiry: ${formattedTitle}`,
+      }))
+    }
+  }, [productParam])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }))
