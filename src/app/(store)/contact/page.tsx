@@ -4,22 +4,41 @@ import { createClient } from "@/lib/supabase/server"
 import { siteConfig } from "@/config/site.config"
 import { headers } from "next/headers"
 import { checkRateLimit } from "@/lib/rate-limit"
-
 import { getPageSeo } from "@/lib/queries/seo"
+import { sendContactNotification, sendContactAutoresponder } from "@/lib/email"
+import { ContactForm } from "@/components/contact/contact-form"
 
 export const dynamic = "force-dynamic"
 
-export async function generateMetadata(): Promise<Metadata> {
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>
+}): Promise<Metadata> {
+  const resolvedParams = searchParams ? await searchParams : {}
   const seo = await getPageSeo("contact")
+  const hasQueryParams = Object.keys(resolvedParams || {}).length > 0
+
   return {
     title: seo?.meta_title || "Contact Us — Warcraft Exports",
     description: seo?.meta_description || "Get in touch with Warcraft Exports. Questions about orders, products, or wholesale enquiries — our team responds within 2 business days.",
     alternates: { canonical: "https://www.warcraftexports.com/contact" },
+    robots: hasQueryParams
+      ? {
+          index: false,
+          follow: true,
+        }
+      : {
+          index: true,
+          follow: true,
+          googleBot: {
+            index: true,
+            follow: true,
+            "max-image-preview": "large",
+          },
+        },
   }
 }
-
-import { sendContactNotification, sendContactAutoresponder } from "@/lib/email"
-import { ContactForm } from "@/components/contact/contact-form"
 
 async function submitContactAction(name: string, email: string, subject: string, message: string) {
   "use server"
@@ -75,9 +94,6 @@ const CONTACT_INFO = [
     href: null,
   },
 ]
-
-const INPUT =
-  "w-full border border-khaki/60 bg-parchment/60 px-3 py-2.5 font-sans text-sm text-leather-dark placeholder-khaki/70 focus:outline-none focus:border-leather transition-colors"
 
 export default function ContactPage() {
   return (
