@@ -15,7 +15,7 @@ type ProductCard = {
 const FEATURED_PRODUCTS: ProductCard[] = [
   {
     sku: "V8-KMPG-YKOQ",
-    name: "German WWI 98 Mauser Leather Sling (Gewehr M98)",
+    name: "German WWI 98 Leather Sling (Gewehr M98)",
     image: "https://m.media-amazon.com/images/I/71HeDUAs5sL.jpg",
     nation: "German WWI",
   },
@@ -39,9 +39,9 @@ const FEATURED_PRODUCTS: ProductCard[] = [
   },
   {
     sku: "J0-R8D3-B0VJ",
-    name: "Leather Officers Sam Browne Ammo Pouch (Dark Brown)",
+    name: "Leather Officers Sam Browne Pouch (Dark Brown)",
     image: "https://m.media-amazon.com/images/I/81kahR10fDL.jpg",
-    nation: "British/Commonwealth",
+    nation: "British",
   },
   {
     sku: "TT-Q8SW-WC2P",
@@ -51,7 +51,7 @@ const FEATURED_PRODUCTS: ProductCard[] = [
   },
   {
     sku: "JN-FHCA-JBUG",
-    name: "U.S. Army M1923 10-Pocket Canvas Ammunition Belt",
+    name: "U.S. Army M1923 10-Pocket Canvas Belt",
     image: "https://m.media-amazon.com/images/I/813OcDptTiL.jpg",
     nation: "US WWII",
   },

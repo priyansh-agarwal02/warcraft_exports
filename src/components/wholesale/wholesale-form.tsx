@@ -88,6 +88,24 @@ export function WholesaleForm({ onSubmit }: WholesaleFormProps) {
         })
         if (res.success) {
           setSuccess(true)
+          // Fire Google Tag / GA4 lead conversion event safely without affecting form state
+          if (typeof window !== "undefined") {
+            try {
+              if (typeof (window as any).gtag === "function") {
+                ;(window as any).gtag("event", "generate_lead", {
+                  event_category: "Wholesale",
+                  event_label: "Wholesale Inquiry Submitted",
+                })
+              }
+              ;(window as any).dataLayer = (window as any).dataLayer || []
+              ;(window as any).dataLayer.push({
+                event: "wholesale_form_submit",
+                event_category: "Wholesale",
+              })
+            } catch (gtagErr) {
+              console.warn("Analytics event push:", gtagErr)
+            }
+          }
           setForm({
             name: "",
             company: "",
