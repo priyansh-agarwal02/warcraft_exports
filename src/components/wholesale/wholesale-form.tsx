@@ -88,10 +88,21 @@ export function WholesaleForm({ onSubmit }: WholesaleFormProps) {
         })
         if (res.success) {
           setSuccess(true)
-          // Fire Google Tag / GA4 lead conversion event safely without affecting form state
+          // Fire Direct Google Tag / Google Ads conversion event ONLY on successful form submit (prevents pageview false conversions)
           if (typeof window !== "undefined") {
             try {
               if (typeof (window as any).gtag === "function") {
+                // Direct Google Tag event
+                ;(window as any).gtag("event", "conversion", {
+                  send_to: "G-0SZPRVLY3R",
+                  value: 1.0,
+                  currency: "USD",
+                })
+                // Primary B2B Wholesale Conversion Event
+                ;(window as any).gtag("event", "wholesale_form_submit", {
+                  event_category: "B2B_Wholesale",
+                  event_label: "Wholesale Inquiry Submitted",
+                })
                 ;(window as any).gtag("event", "generate_lead", {
                   event_category: "Wholesale",
                   event_label: "Wholesale Inquiry Submitted",
@@ -100,7 +111,7 @@ export function WholesaleForm({ onSubmit }: WholesaleFormProps) {
               ;(window as any).dataLayer = (window as any).dataLayer || []
               ;(window as any).dataLayer.push({
                 event: "wholesale_form_submit",
-                event_category: "Wholesale",
+                event_category: "B2B_Wholesale",
               })
             } catch (gtagErr) {
               console.warn("Analytics event push:", gtagErr)
