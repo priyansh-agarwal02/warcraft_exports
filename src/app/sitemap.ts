@@ -81,7 +81,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         url: `${baseUrl}/shop/category/${c.slug}`,
         lastModified: new Date(),
         changeFrequency: "weekly" as const,
-        priority: 0.75,
+        priority: c.slug === "uniforms" ? 0.9 : 0.75,
       }))
     }
   } catch {

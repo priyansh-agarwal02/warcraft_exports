@@ -89,8 +89,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   keywordSet.add("military reenactment gear")
   keywordSet.add("militaria collectibles")
   keywordSet.add("reenactor equipment")
+  keywordSet.add("world war 2 gear")
+  keywordSet.add("ww2 military surplus")
+  keywordSet.add("ww2 army surplus")
+  keywordSet.add("ww2 reenactment supplies")
+  keywordSet.add("military gear manufacturer")
+  keywordSet.add("reproduction militaria")
 
-  const finalKeywords = Array.from(keywordSet).filter(Boolean).slice(0, 30)
+  const finalKeywords = Array.from(keywordSet).filter(Boolean).slice(0, 45)
 
   return {
     title,

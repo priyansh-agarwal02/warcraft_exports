@@ -17,9 +17,66 @@ export const dynamic = "force-dynamic"
 
 export async function generateMetadata(): Promise<Metadata> {
   const seo = await getPageSeo("home")
+  const title = seo?.meta_title || "WW1 & WW2 Military Uniforms & Reproduction Gear | Warcraft Exports"
+  const description = seo?.meta_description || "Shop 300+ WW1 & WW2 reproduction military uniforms, German Wehrmacht jackets, US field jackets, jackboots, M1 helmets, leather holsters, rifle slings & ammo pouches. Direct from manufacturer."
+  const keywords = [
+    "ww2 military uniforms",
+    "german ww2 uniform",
+    "world war 2 uniforms",
+    "ww2 german camo",
+    "m43 jacket",
+    "m41 field jacket",
+    "us navy deck jacket",
+    "jackboots",
+    "jack boots",
+    "garrison cap",
+    "world war 2 helmets",
+    "m1 helmet buy",
+    "replica stahlhelm",
+    "world war 2 gear",
+    "ww2 military surplus",
+    "ww2 army surplus",
+    "ww2 reenactment shop",
+    "luger holster",
+    "luger p08 holster",
+    "m1916 holster",
+    "garand sling",
+    "mosin nagant sling",
+    "k98 sling",
+    "mp40 magazine pouch",
+    "1911 leather mag pouch",
+    "ww2 german bread bag",
+    "musette bag wwii",
+    "warcraft exports",
+    "raas enterprises kanpur",
+  ]
+
   return {
-    title: seo?.meta_title || "Warcraft Exports — Historical Reproduction Military Gear",
-    description: seo?.meta_description || "Manufacturer-direct WW1 & WW2 historical reproduction gear. 300+ products. Ships worldwide from Kanpur, India.",
+    title,
+    description,
+    keywords,
+    alternates: { canonical: "https://www.warcraftexports.com" },
+    openGraph: {
+      title,
+      description,
+      url: "https://www.warcraftexports.com",
+      siteName: "Warcraft Exports",
+      type: "website",
+      images: [
+        {
+          url: "https://www.warcraftexports.com/hero/homepage-hero.webp",
+          width: 1200,
+          height: 630,
+          alt: "WW1 & WW2 Military Reproduction Gear",
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: ["https://www.warcraftexports.com/hero/homepage-hero.webp"],
+    },
   }
 }
 

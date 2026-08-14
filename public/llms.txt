@@ -1,36 +1,51 @@
-# Warcraft Exports
+# Warcraft Exports — Historical Reproduction Military Gear & Uniforms
 
-> Manufacturer and global exporter of museum-grade WW1 & WW2 historical reproduction military gear. Based in Kanpur, India.
+> Manufacturer-direct global exporter of museum-grade WW1 & WW2 historical reproduction military uniforms, jackets, helmets, leather holsters, canvas webbing, rifle slings, and militaria accessories. Based in Kanpur, India.
 
-Warcraft Exports is a manufacturer-direct brand of RAAS Enterprises, specializing in highly authentic WWII and WWI leather holsters, canvas webbing, pouches, and historical militaria gear. We ship directly to reenactors, collectors, museums, and film production houses in over 20 countries.
+Warcraft Exports (RAAS Enterprises) is a primary manufacturer specializing in highly authentic WWI and WWII reproduction military gear, uniforms, and equipment. We supply historical reenactment clubs, living history units, film production costume departments, museum gift shops, and collectors across 20+ countries.
 
-## Core Pages
+---
 
-- [Shop](/shop): Full catalog of reproduction gear.
-- [About Us](/about): Company details, history of our workshop in Kanpur, and manufacturing craftsmanship.
-- [Wholesale Enquiry](/wholesale): Bulk ordering options for museum gift shops, distributors, and prop designers.
-- [Frequently Asked Questions](/faq): Shipping times, customs duties, return policies, and materials information.
-- [Kit Selector / Fit Guide](/fit-guide): Interactive tool sorting equipment by nation and era.
-- [Customer Reviews](/reviews): Verified testimonials from historical reenactors and collectors.
+## 🎖️ Flagship Uniforms & Apparel Collection
 
-## Collections & Filters
+Warcraft Exports is a premier manufacturer of WW1 and WW2 military uniforms and historical clothing:
 
-- [Browse by Nation](/shop/nation/us): Collections categorized by historical military force:
-  - [US Army Reproduction Gear](/shop/nation/us)
-  - [German Wehrmacht / Imperial Reproduction Gear](/shop/nation/german)
-  - [British Army / Commonwealth Reproduction Gear](/shop/nation/british)
-  - [Imperial Japanese Army Reproduction Gear](/shop/nation/japanese)
-  - [Soviet Red Army Reproduction Gear](/shop/nation/soviet)
-  - [French Army Reproduction Gear](/shop/nation/french)
-  - [Italian Army Reproduction Gear](/shop/nation/italian)
-- [Browse by Era](/shop/era/ww2): Collections sorted by conflict period:
-  - [World War 1 (WW1) Collection](/shop/era/ww1)
-  - [World War 2 (WW2) Collection](/shop/era/ww2)
-  - [Cold War Collection](/shop/era/cold-war)
-  - [Modern Tactical Gear](/shop/era/modern-tactical)
+- **WW2 German Uniforms & Camouflage**: German Wehrmacht WW2 uniforms, M43 field jackets, SS camouflage smocks, Zeltbahn patterns, M40/M43 caps, Fallschirmjäger boots & paratrooper gear.
+- **US Army & USMC WW2 Uniforms**: US M1941 (M41) & M1943 (M43) field jackets, US Navy (USN) N-1 deck jackets, HBT fatigue uniforms, USMC P41 fatigues, garrison caps, and M1 helmet liners.
+- **British Commonwealth WW1 & WW2 Uniforms**: British 1937 pattern battledress jackets & trousers, WW1 tunic uniforms, Tommy officer tunics, and Brodie helmet accessories.
+- **Soviet Red Army WW2 Uniforms**: Gymnasterka tunics, Sharovari trousers, & winter padded Telogreika jackets.
+- **Military Footwear & Headgear**: German jackboots, Officer service boots, M1 Helmets, German M35/M40/M42 Stahlhelm replicas, M38 paratrooper helmets, and garrison side caps.
 
-## Ordering & Shipping Guidelines
+---
 
-- [Pricing Details](/pricing.md): Detailed explanation of retail, wholesale, and logistics rates.
-- [Shipping Policy](/shipping-policy): Global courier options, estimated transit times, and import tax information.
-- [Returns Policy](/returns-policy): 30-day return window and easy sizing exchanges.
+## 🎒 Holsters, Slings, Pouches & Reenactment Equipment
+
+- **Leather Holsters**: Luger P08 hard/soft shell holsters, M1916 Colt .45 holsters, Walther PPK/PPKS holsters, P38 holsters, M7 shoulder holsters, Browning Hi-Power leather holsters, and Revolver holsters.
+- **Rifle Slings**: Garand leather slings, Mosin Nagant slings with escutcheons, K98 / 98k leather slings, M14 slings, M1 Carbine slings, USGI web slings, and Ruger American rifle slings.
+- **Ammunition & Mag Pouches**: MP40 double/triple magazine pouches, 1911 double mag pouches, M1 Carbine stock/belt pouches, Thompson mag pouches, STG-44 magazine pouches, shotgun shell pouches, and 5.56 mag pouches for battle belts.
+- **Canvas & Webbing Equipment**: Musette bags (WWII US Army), German bread bags, M1928 haversacks, WW2 British kit bags, pistol belts, canteens & covers, bayonet frogs, and trench knives.
+
+---
+
+## 🏛️ Wholesale, B2B & Film Prop Outfitting
+
+- **[Wholesale Enquiry Portal](/wholesale)**: Direct bulk purchasing for reenactment clubs, theater shows, TV/Film costume directors, museum gift shops, and retail militaria stores.
+- **Manufacturer Direct**: Factory-direct pricing from Kanpur, India with flexible Minimum Order Quantities (MOQs starting at 100 units).
+- **Competitor Alternative**: High-quality, cost-effective manufacturer alternative to IMA USA, World War Supply, At The Front, and Epic Militaria.
+
+---
+
+## 🔗 Core Website Links
+
+- **[Shop All Products](/shop)**: Full catalog of 300+ historical items.
+- **[Military Uniforms Category](/shop/category/uniforms)**: Complete uniform sets, tunics, jackets, and fatigues.
+- **[Headgear & Helmets](/shop/category/headgear)**: Helmets, liners, Stahlhelms, and caps.
+- **[Leather Holsters](/shop/category/holsters)**: Pistol carrying gear.
+- **[Rifle Slings & Straps](/shop/category/slings)**: Authentic leather & canvas slings.
+- **[Bags & Satchels](/shop/category/bags-satchels)**: Musette bags, bread bags, & kit bags.
+- **[US Military Gear](/shop/nation/us)**: American WW1 & WW2 equipment.
+- **[German Military Gear](/shop/nation/german)**: Wehrmacht & Imperial German equipment.
+- **[British Military Gear](/shop/nation/british)**: Commonwealth uniforms & webbing.
+- **[Soviet Military Gear](/shop/nation/soviet)**: Red Army equipment.
+- **[Japanese Military Gear](/shop/nation/japanese)**: Imperial Japanese Army gear.
+- **[Wholesale B2B Portal](/wholesale)**: Bulk ordering for businesses and production companies.

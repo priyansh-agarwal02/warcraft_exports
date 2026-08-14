@@ -13,22 +13,39 @@ export const dynamic = "force-dynamic"
 
 export async function generateMetadata(): Promise<Metadata> {
   const seo = await getPageSeo("wholesale")
-  const title = seo?.meta_title || "Wholesale Historical Reenactment Gear & Military Props | Warcraft Exports"
-  const description = seo?.meta_description || "Buy WW1 & WW2 reproduction military gear in bulk. Direct factory supplier from Kanpur, India for theater shows, movies, reenactor clubs, and retail shops."
+  const title = seo?.meta_title || "Wholesale WW1 & WW2 Military Uniforms & Gear Supplier | Warcraft Exports"
+  const description = seo?.meta_description || "Direct factory manufacturer of WW1 & WW2 reproduction military uniforms, jackets, boots, helmets, leather holsters & rifle slings in Kanpur, India. Bulk supplier for film props, theater, reenactment clubs, and retail shops."
+  const keywords = [
+    "wholesale military uniforms",
+    "ww2 military uniforms bulk",
+    "german ww2 uniform wholesale",
+    "wholesale military gear",
+    "WW1 reproduction wholesale",
+    "WW2 reenactment gear bulk",
+    "military reproduction gear supplier",
+    "film prop military supplier",
+    "theater costume outfitting bulk",
+    "kanpur leather goods exporter",
+    "RAAS Enterprises wholesale",
+    "Warcraft Exports B2B",
+    "military holster manufacturer india",
+    "bulk military slings and holsters supplier",
+    "jackboots wholesale",
+    "m1 helmets bulk supplier",
+    "leather holsters manufacturer",
+    "rifle slings bulk exporter",
+    "ww2 reenactment supplies",
+    "world war 2 surplus bulk",
+    "ww2 military surplus supplier",
+    "bulk militaria wholesaler",
+    "ww2 reenactment shop supplier",
+    "historical military equipment factory",
+  ]
 
   return {
     title,
     description,
-    keywords: [
-      "Wholesale Military Gear",
-      "WW1 Reproduction Wholesale",
-      "WW2 Reenactment Gear Bulk",
-      "Film Prop Military Supplier",
-      "Theater Costume Outfitting",
-      "Kanpur Leather Goods Exporter",
-      "RAAS Enterprises Wholesale",
-      "Warcraft Exports B2B",
-    ],
+    keywords,
     alternates: { canonical: "https://www.warcraftexports.com/wholesale" },
     openGraph: {
       title,

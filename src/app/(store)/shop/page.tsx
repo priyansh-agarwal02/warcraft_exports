@@ -13,10 +13,50 @@ export const dynamic = "force-dynamic"
 
 export async function generateMetadata(): Promise<Metadata> {
   const seo = await getPageSeo("shop")
+  const title = seo?.meta_title || "Shop WW1 & WW2 Military Reproduction Gear | Warcraft Exports"
+  const description = seo?.meta_description || "Browse 300+ WW1 & WW2 historical reproduction gear items. World war 2 gear for sale, handcrafted leather holsters, canvas webbing, belts, slings, helmets & uniforms."
+  const keywords = [
+    "world war 2 gear for sale",
+    "ww2 gear for sale",
+    "ww2 surplus store",
+    "ww2 equipment for sale",
+    "m1 helmets for sale",
+    "ww1 helmets for sale",
+    "ww2 replicas",
+    "world war 2 replicas",
+    "ww2 army surplus",
+    "jackboots",
+    "german ww2 uniform",
+    "m43 jacket",
+    "usn belt",
+    "garand sling",
+    "mosin nagant sling",
+    "luger p08 holster",
+    "m1916 holster",
+    "m3 trench knife reproduction",
+    "stg 44 reproduction",
+    "mp40 reproduction",
+    "ww2 german bread bag",
+    "musette bag wwii",
+  ]
+
   return {
-    title: seo?.meta_title || "Shop WW1 & WW2 Military Reproduction Gear | Warcraft Exports",
-    description: seo?.meta_description || "Browse 300+ WW1 & WW2 historical reproduction gear items. Handcrafted leather holsters, canvas webbing, belts, slings & helmets. Direct from manufacturer.",
+    title,
+    description,
+    keywords,
     alternates: { canonical: "https://www.warcraftexports.com/shop" },
+    openGraph: {
+      title,
+      description,
+      url: "https://www.warcraftexports.com/shop",
+      siteName: "Warcraft Exports",
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+    },
   }
 }
 
