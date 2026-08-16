@@ -8,8 +8,8 @@ export const siteConfig = {
 
   social: {
     amazon: "https://www.amazon.com/stores/WarcraftExports/page/3230F619-1D84-409B-A959-DD6873E12497",
-    ebay: "https://www.ebay.com/str/warcraftexports",       // TBD — owner to provide
-    walmart: "https://www.walmart.com/browse/0?facet=brand:Warcraft+Exports",    // TBD — owner to provide
+    ebay: "https://www.ebay.com/str/warcraftexports",
+    walmart: "https://www.walmart.com/browse/0?facet=brand:Warcraft+Exports",
   },
 
   brand: {
