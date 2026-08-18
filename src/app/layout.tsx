@@ -286,8 +286,8 @@ export default function RootLayout({
         <div id="google_translate_element" className="absolute opacity-0 pointer-events-none w-0 h-0 overflow-hidden" />
         <Script
           id="google-translate-widget-script"
-          src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"
-          strategy="afterInteractive"
+          src="https://translate.googleapis.com/translate_a/element.js?cb=googleTranslateElementInit"
+          strategy="lazyOnload"
         />
       </body>
     </html>
