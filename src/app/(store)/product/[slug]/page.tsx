@@ -85,6 +85,32 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     })
   }
 
+  const productNameLower = (product.name ?? "").toLowerCase()
+  if (productNameLower.includes("garand") || productNameLower.includes("sling")) {
+    keywordSet.add("m1 garand sling")
+    keywordSet.add("us gi sling")
+    keywordSet.add("british ww2 enfield sling")
+    keywordSet.add("mauser g98 sling")
+    keywordSet.add("wwii rifle sling")
+  }
+  if (productNameLower.includes("helmet") || productNameLower.includes("liner")) {
+    keywordSet.add("m1917a1 helmet liners")
+    keywordSet.add("ww1 helmet")
+    keywordSet.add("german ww1 helmet")
+    keywordSet.add("ww1 replica helmet")
+    keywordSet.add("ww2 us helmet liner")
+    keywordSet.add("m1917a1 helmet for sale")
+  }
+  if (productNameLower.includes("musette") || productNameLower.includes("bag") || productNameLower.includes("haversack")) {
+    keywordSet.add("m1936 musette bag")
+    keywordSet.add("ww2 us field gear")
+    keywordSet.add("wwii reenactment gear")
+  }
+  if (productNameLower.includes("pouch") || productNameLower.includes("first aid")) {
+    keywordSet.add("m1910 1st aid pouches")
+    keywordSet.add("m1910 first aid kit")
+  }
+
   keywordSet.add("historical reproduction")
   keywordSet.add("military reenactment gear")
   keywordSet.add("militaria collectibles")
@@ -339,6 +365,7 @@ export default async function ProductPage({ params }: Props) {
         {/* Product Tabs */}
         <div className="mb-16">
           <ProductTabs
+            productName={product.name}
             description={product.description}
             shortDescription={product.short_description}
             specs={{

@@ -44,6 +44,21 @@ export async function generateMetadata(): Promise<Metadata> {
     "british ww1 puttees",
     "ww1 canvas leggings",
     "us army leggings ww1",
+    "British WW2 Enfield sling",
+    "M1917A1 helmet liners",
+    "M1910 1st aid pouches",
+    "WW1 helmet",
+    "German WW1 helmet",
+    "WWII reenactment gear",
+    "M1936 musette bag",
+    "M1917A1 helmet for sale",
+    "WW2 US field gear",
+    "WW1 replica helmet",
+    "Mauser G98 sling",
+    "WW1 Brodie helmet",
+    "M1 Garand bayonet reproduction",
+    "reproduction military holsters",
+    "WW1 Stahlhelm",
   ]
 
   return {
