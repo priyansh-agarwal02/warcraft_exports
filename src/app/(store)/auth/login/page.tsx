@@ -7,8 +7,14 @@ export const metadata: Metadata = {
 
 export default function LoginPage() {
   return (
-    <div className="bg-parchment min-h-screen">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div 
+      className="min-h-[85vh] bg-cover bg-center bg-no-repeat relative flex items-center justify-center py-16 px-4 sm:px-6 lg:px-8"
+      style={{ backgroundImage: `url('/hero/wholesale-bg-opt.jpg')` }}
+    >
+      {/* Dark overlay for contrast and focus */}
+      <div className="absolute inset-0 bg-[#1E140C]/60 backdrop-blur-[1.5px]" />
+      
+      <div className="relative z-10 w-full max-w-md my-auto">
         <LoginForm />
       </div>
     </div>

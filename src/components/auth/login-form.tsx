@@ -1,20 +1,58 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import Script from "next/script"
 import { createClient } from "@/lib/supabase/client"
 
 export function LoginForm() {
   const router = useRouter()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [turnstileToken, setTurnstileToken] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+
+  // Explicitly render the Turnstile widget for Login
+  useEffect(() => {
+    let intervalId: any
+
+    const tryRender = () => {
+      if (typeof window !== "undefined" && (window as any).turnstile) {
+        try {
+          (window as any).turnstile.render("#turnstile-widget-login", {
+            sitekey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "1x00000000000000000000AA",
+            callback: (token: string) => {
+              setTurnstileToken(token)
+            },
+            "expired-callback": () => {
+              setTurnstileToken("")
+            },
+            "error-callback": () => {
+              setTurnstileToken("")
+            },
+          })
+          clearInterval(intervalId)
+        } catch {
+          // Container might not be ready yet, retry on next interval
+        }
+      }
+    }
+
+    intervalId = setInterval(tryRender, 200)
+    return () => clearInterval(intervalId)
+  }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
+
+    if (!turnstileToken) {
+      setError("Please complete the security check.")
+      return
+    }
+
     setLoading(true)
 
     const supabase = createClient()
@@ -62,7 +100,7 @@ export function LoginForm() {
   }
 
   return (
-    <div className="bg-canvas border border-khaki/30 rounded-sm p-8 w-full max-w-md mx-auto mt-16">
+    <div className="bg-[#FDFBF7] border-2 border-leather shadow-2xl rounded-sm p-8 w-full max-w-md mx-auto">
       <h1 className="font-heading text-2xl text-leather-dark mb-6">Sign In</h1>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -101,6 +139,13 @@ export function LoginForm() {
         {error && (
           <p className="text-red-600 text-sm font-sans">{error}</p>
         )}
+
+        {/* Cloudflare Turnstile CAPTCHA Widget */}
+        <Script
+          src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
+          strategy="lazyOnload"
+        />
+        <div id="turnstile-widget-login" className="my-2 flex justify-center min-h-[65px]" />
 
         <button
           type="submit"
