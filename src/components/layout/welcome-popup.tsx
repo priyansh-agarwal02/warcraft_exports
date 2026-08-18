@@ -2,17 +2,23 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { X, Mail, Sparkles, CheckCircle2 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 
 export function WelcomePopup() {
+  const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(false)
   const [user, setUser] = useState<any>(null)
   const [authInitialized, setAuthInitialized] = useState(false)
   const [email, setEmail] = useState("")
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle")
 
+  const isWholesale = pathname === "/wholesale" || pathname?.startsWith("/wholesale")
+
   useEffect(() => {
+    if (isWholesale) return
+
     const supabase = createClient()
     let active = true
     let initTimeoutId: any = null
@@ -111,7 +117,7 @@ export function WelcomePopup() {
     }
   }
 
-  if (!isOpen) return null
+  if (isWholesale || !isOpen) return null
 
   return (
     <>
