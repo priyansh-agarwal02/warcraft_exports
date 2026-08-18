@@ -47,6 +47,12 @@ export async function generateMetadata(): Promise<Metadata> {
     "1911 leather mag pouch",
     "ww2 german bread bag",
     "musette bag wwii",
+    "puttees ww1",
+    "ww1 leggings",
+    "ww1 wool puttees",
+    "british ww1 puttees",
+    "ww1 canvas leggings",
+    "us army leggings ww1",
     "warcraft exports",
     "raas enterprises kanpur",
   ]

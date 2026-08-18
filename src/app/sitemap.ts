@@ -5,7 +5,7 @@ import { siteConfig } from "@/config/site.config"
 export const revalidate = 3600 // regenerate every hour
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://warcraftexports.com"
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://www.warcraftexports.com"
   
   // Core static pages
   const staticPages: MetadataRoute.Sitemap = [
