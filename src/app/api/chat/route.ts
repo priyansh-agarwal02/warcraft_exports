@@ -201,12 +201,23 @@ export async function POST(req: NextRequest) {
 
     const dynamicSystemPrompt = SYSTEM_PROMPT + catalogContext
 
-    const completion = await groq.chat.completions.create({
-      model: "llama-3.1-8b-instant",
-      messages: [{ role: "system", content: dynamicSystemPrompt }, ...safeMessages],
-      max_tokens: 450,
-      temperature: 0.6,
-    })
+    let completion: any
+    try {
+      completion = await groq.chat.completions.create({
+        model: "groq/compound-mini",
+        messages: [{ role: "system", content: dynamicSystemPrompt }, ...safeMessages],
+        max_tokens: 450,
+        temperature: 0.6,
+      })
+    } catch (modelErr: any) {
+      console.warn("Primary model groq/compound-mini failed, trying fallback groq/compound:", modelErr?.message)
+      completion = await groq.chat.completions.create({
+        model: "groq/compound",
+        messages: [{ role: "system", content: dynamicSystemPrompt }, ...safeMessages],
+        max_tokens: 450,
+        temperature: 0.6,
+      })
+    }
 
     const reply =
       completion.choices[0]?.message?.content ??
