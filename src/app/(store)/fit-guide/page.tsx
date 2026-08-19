@@ -40,15 +40,20 @@ export default function FitGuidePage() {
   return (
     <div className="bg-parchment min-h-screen selection:bg-leather selection:text-parchment">
       {/* ── Top Hero Banner ── */}
-      <div className="bg-[#18181B] text-parchment border-b-2 border-leather py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-5xl mx-auto text-center space-y-3">
-          <p className="text-[11px] font-sans font-bold uppercase tracking-[0.2em] text-khaki">
+      <div className="relative bg-[#18181B] text-parchment border-b-2 border-leather py-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
+        <div 
+          className="absolute inset-0 bg-cover bg-center opacity-85"
+          style={{ backgroundImage: "url('/hero/hero-1.webp')" }}
+        />
+        <div className="absolute inset-0 bg-black/55" />
+        <div className="relative z-10 max-w-5xl mx-auto text-center space-y-3">
+          <p className="text-[11px] font-sans font-bold uppercase tracking-[0.2em] text-khaki drop-shadow-xs">
             Historical Equipment &amp; Sizing Standard
           </p>
-          <h1 className="font-heading text-3xl sm:text-5xl font-black text-white uppercase tracking-tight leading-tight">
+          <h1 className="font-heading text-3xl sm:text-5xl font-black text-white uppercase tracking-tight leading-tight drop-shadow-md">
             WW1 &amp; WW2 Reenactment Gear, US Field Gear &amp; Sizing Guide
           </h1>
-          <p className="font-sans text-xs sm:text-sm text-parchment/80 max-w-3xl mx-auto leading-relaxed">
+          <p className="font-sans text-xs sm:text-sm text-parchment/90 max-w-3xl mx-auto leading-relaxed drop-shadow-xs">
             Detailed measurement charts for military uniforms, M1917A1 helmet liners, WW1 wool puttees, US field gear, rifle slings, and WWII reenactment gear loadouts.
           </p>
         </div>
@@ -80,34 +85,34 @@ export default function FitGuidePage() {
                   WWII US Army Infantry Equipment
                 </h3>
                 <p className="font-sans text-[11px] text-leather/75 leading-relaxed">
-                  Key field webbing, rifle slings, musette bags, and first aid pouches for US infantry impressions.
+                  Key field webbing, rifle slings, M1 canvas belts, and vintage medic pouches for US infantry impressions.
                 </p>
                 <div className="space-y-1.5 pt-2">
                   <Link
-                    href="/product/m1-garand-us-gi-pattern-web-sling-two-point-cotton-canvas-ri"
+                    href="/product/warcraft-exports-exports-m1-garand-1903-web-sling-us-gi-patt-1"
                     className="group flex items-center justify-between text-xs font-sans font-semibold text-leather hover:text-leather-dark p-2 bg-parchment/60 rounded-xs border border-khaki/30 transition-all"
                   >
-                    <span>M1 Garand Web/Leather Sling</span>
+                    <span>M1 Garand US GI Web Sling</span>
                     <ArrowRight size={13} className="group-hover:translate-x-1 transition-transform" />
                   </Link>
                   <Link
-                    href="/product/m1936-musette-bag"
+                    href="/product/pack-of-5-warcraft-exports-us-army-wwii-m1-webbing-canvas-be"
                     className="group flex items-center justify-between text-xs font-sans font-semibold text-leather hover:text-leather-dark p-2 bg-parchment/60 rounded-xs border border-khaki/30 transition-all"
                   >
-                    <span>M1936 Musette Field Bag</span>
+                    <span>M1 Webbing Canvas Belt</span>
                     <ArrowRight size={13} className="group-hover:translate-x-1 transition-transform" />
                   </Link>
                   <Link
-                    href="/product/m1910-first-aid-pouch"
+                    href="/product/warcraft-exports-vintage-medic-canvas-bag-with-cross-militar"
                     className="group flex items-center justify-between text-xs font-sans font-semibold text-leather hover:text-leather-dark p-2 bg-parchment/60 rounded-xs border border-khaki/30 transition-all"
                   >
-                    <span>M1910 First Aid Pouch</span>
+                    <span>M1910 Vintage Medic Pouch Bag</span>
                     <ArrowRight size={13} className="group-hover:translate-x-1 transition-transform" />
                   </Link>
                 </div>
               </div>
               <Link
-                href="/shop/nation/us?era=WW2"
+                href="/shop/nation/us"
                 className="text-[11px] font-sans font-bold uppercase tracking-wider text-khaki hover:text-leather transition-colors block text-center pt-2"
               >
                 Browse All WWII US Gear &rarr;
@@ -125,34 +130,34 @@ export default function FitGuidePage() {
                   British Tommy Webbing &amp; Slings
                 </h3>
                 <p className="font-sans text-[11px] text-leather/75 leading-relaxed">
-                  1937 pattern khaki webbing, Lee Enfield rifle slings, wool puttees, and Brodie helmets.
+                  1937 pattern khaki webbing, Lee Enfield rifle slings, 144&quot; wool puttees, and Webley revolver holsters.
                 </p>
                 <div className="space-y-1.5 pt-2">
                   <Link
-                    href="/product/british-enfield-rifle-sling"
+                    href="/product/wwii-british-style-enfield-sling-light-khaki-canvas-webbing"
                     className="group flex items-center justify-between text-xs font-sans font-semibold text-leather hover:text-leather-dark p-2 bg-parchment/60 rounded-xs border border-khaki/30 transition-all"
                   >
                     <span>British Lee Enfield Rifle Sling</span>
                     <ArrowRight size={13} className="group-hover:translate-x-1 transition-transform" />
                   </Link>
                   <Link
-                    href="/shop"
+                    href="/shop?search=putties"
                     className="group flex items-center justify-between text-xs font-sans font-semibold text-leather hover:text-leather-dark p-2 bg-parchment/60 rounded-xs border border-khaki/30 transition-all"
                   >
-                    <span>WW1 Wool Puttees &amp; Leggings</span>
+                    <span>WW1 Wool Long Puttees (144&quot;)</span>
                     <ArrowRight size={13} className="group-hover:translate-x-1 transition-transform" />
                   </Link>
                   <Link
-                    href="/shop/category/collectibles"
+                    href="/product/british-army-455-webley-luger-revolver-canvas-holster-khaki"
                     className="group flex items-center justify-between text-xs font-sans font-semibold text-leather hover:text-leather-dark p-2 bg-parchment/60 rounded-xs border border-khaki/30 transition-all"
                   >
-                    <span>WW1 Brodie Steel Helmet</span>
+                    <span>British .455 Webley Revolver Holster</span>
                     <ArrowRight size={13} className="group-hover:translate-x-1 transition-transform" />
                   </Link>
                 </div>
               </div>
               <Link
-                href="/shop/nation/british?era=WW2"
+                href="/shop/nation/british"
                 className="text-[11px] font-sans font-bold uppercase tracking-wider text-khaki hover:text-leather transition-colors block text-center pt-2"
               >
                 Browse All British Gear &rarr;
@@ -170,34 +175,34 @@ export default function FitGuidePage() {
                   German Wehrmacht Leather &amp; Gear
                 </h3>
                 <p className="font-sans text-[11px] text-leather/75 leading-relaxed">
-                  K98/G98 embossed leather slings, Luger P08 holsters, Stahlhelm helmets, and MP40 pouches.
+                  K98/G98 embossed leather slings, Luger P08 holsters, and MP38/MP40 ammo magazine pouch sets.
                 </p>
                 <div className="space-y-1.5 pt-2">
                   <Link
-                    href="/product/german-k98-g98-leather-rifle-sling"
+                    href="/product/german-mauser-kar-98-k98-98k-k98k-kar98-g41-g43-k43-leather"
                     className="group flex items-center justify-between text-xs font-sans font-semibold text-leather hover:text-leather-dark p-2 bg-parchment/60 rounded-xs border border-khaki/30 transition-all"
                   >
                     <span>German K98/G98 Leather Sling</span>
                     <ArrowRight size={13} className="group-hover:translate-x-1 transition-transform" />
                   </Link>
                   <Link
-                    href="/product/german-luger-p08-hard-shell-leather-holster"
+                    href="/product/wwii-german-p08-luger-pistol-holster-black-with-takedown-too"
                     className="group flex items-center justify-between text-xs font-sans font-semibold text-leather hover:text-leather-dark p-2 bg-parchment/60 rounded-xs border border-khaki/30 transition-all"
                   >
                     <span>Luger P08 Hard Shell Holster</span>
                     <ArrowRight size={13} className="group-hover:translate-x-1 transition-transform" />
                   </Link>
                   <Link
-                    href="/shop/category/collectibles"
+                    href="/product/german-wwii-mp40-wehrmacht-magazine-pouch-set-grey-get-free"
                     className="group flex items-center justify-between text-xs font-sans font-semibold text-leather hover:text-leather-dark p-2 bg-parchment/60 rounded-xs border border-khaki/30 transition-all"
                   >
-                    <span>Stahlhelm M16/M35 Helmets</span>
+                    <span>German MP40 Ammo Pouch Set</span>
                     <ArrowRight size={13} className="group-hover:translate-x-1 transition-transform" />
                   </Link>
                 </div>
               </div>
               <Link
-                href="/shop/nation/german?era=WW2"
+                href="/shop/nation/german"
                 className="text-[11px] font-sans font-bold uppercase tracking-wider text-khaki hover:text-leather transition-colors block text-center pt-2"
               >
                 Browse All German Gear &rarr;
@@ -284,7 +289,7 @@ export default function FitGuidePage() {
                   </p>
                 </div>
                 <Link
-                  href="/shop"
+                  href="/shop?search=putties"
                   className="inline-flex items-center gap-1.5 text-xs font-sans font-bold text-leather hover:text-leather-dark uppercase tracking-wide pt-2"
                 >
                   View WW1 Wool Puttees &amp; Leggings in Catalog &rarr;
