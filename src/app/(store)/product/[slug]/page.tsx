@@ -236,6 +236,10 @@ export default async function ProductPage({ params }: Props) {
       url: `${BASE_URL}/product/${slug}`,
       seller: { "@type": "Organization", name: "Warcraft Exports" },
     },
+    audience: {
+      "@type": "PeopleAudience",
+      audienceType: "WW1 & WWII Reenactors, Militaria Collectors, and Film Prop Directors",
+    },
     ...(product.material ? { material: product.material } : {}),
     ...(aggregateRating ? { aggregateRating } : {}),
     ...(reviewsJsonLd ? { review: reviewsJsonLd } : {}),
