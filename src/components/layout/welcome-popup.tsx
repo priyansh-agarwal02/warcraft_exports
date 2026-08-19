@@ -12,6 +12,7 @@ export function WelcomePopup() {
   const [user, setUser] = useState<any>(null)
   const [authInitialized, setAuthInitialized] = useState(false)
   const [email, setEmail] = useState("")
+  const [honeypot, setHoneypot] = useState("")
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle")
 
   const isWholesale = pathname === "/wholesale" || pathname?.startsWith("/wholesale")
@@ -98,7 +99,7 @@ export function WelcomePopup() {
       const res = await fetch("/api/newsletter/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, b_website: honeypot }),
       })
 
       if (res.ok) {
@@ -173,7 +174,19 @@ export function WelcomePopup() {
         </div>
 
         {/* Newsletter signup tag */}
-        <form onSubmit={handleSubscribe} className="space-y-2.5">
+        <form onSubmit={handleSubscribe} className="space-y-2.5 relative">
+          {/* 🍯 Invisible Honeypot Trap field (hidden from humans, filled by bots) */}
+          <input
+            type="text"
+            name="b_website"
+            tabIndex={-1}
+            aria-hidden="true"
+            autoComplete="off"
+            value={honeypot}
+            onChange={(e) => setHoneypot(e.target.value)}
+            className="hidden absolute opacity-0 pointer-events-none w-0 h-0"
+            style={{ display: "none" }}
+          />
           <label className="block text-[9px] font-sans font-bold uppercase tracking-[0.1em] text-khaki">
             Subscribe for Newsletter
           </label>

@@ -2,17 +2,18 @@
 
 import { useState } from "react"
 
-async function subscribeNewsletter(email: string) {
+async function subscribeNewsletter(email: string, honeypot?: string) {
   const res = await fetch("/api/newsletter/subscribe", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email }),
+    body: JSON.stringify({ email, b_website: honeypot || "" }),
   })
   return res.ok
 }
 
 export function NewsletterForm() {
   const [email, setEmail] = useState("")
+  const [honeypot, setHoneypot] = useState("")
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle")
 
   async function handleSubmit(e: React.FormEvent) {
@@ -20,7 +21,7 @@ export function NewsletterForm() {
     if (!email.trim()) return
     setStatus("loading")
     try {
-      const ok = await subscribeNewsletter(email)
+      const ok = await subscribeNewsletter(email, honeypot)
       setStatus(ok ? "success" : "error")
     } catch {
       setStatus("error")
@@ -36,7 +37,20 @@ export function NewsletterForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex gap-2 mb-5">
+    <form onSubmit={handleSubmit} className="flex gap-2 mb-5 relative">
+      {/* 🍯 Invisible Honeypot Trap field (hidden from humans, filled by bots) */}
+      <input
+        type="text"
+        name="b_website"
+        tabIndex={-1}
+        aria-hidden="true"
+        autoComplete="off"
+        value={honeypot}
+        onChange={(e) => setHoneypot(e.target.value)}
+        className="hidden absolute opacity-0 pointer-events-none w-0 h-0"
+        style={{ display: "none" }}
+      />
+
       <input
         type="email"
         value={email}

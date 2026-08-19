@@ -15,10 +15,26 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json()
-    const email = typeof body?.email === "string" ? body.email.trim().toLowerCase() : null
+
+    // 🍯 INVISIBLE HONEYPOT TRAP: Bots fill hidden inputs automatically
+    if (typeof body?.b_website === "string" && body.b_website.trim().length > 0) {
+      // Return fake 200 OK success so bot thinks it succeeded — zero DB insert, zero Resend emails
+      return NextResponse.json({ ok: true })
+    }
+
+    let email = typeof body?.email === "string" ? body.email.trim().toLowerCase() : null
 
     if (!email || !EMAIL_REGEX.test(email) || email.length > 254) {
       return NextResponse.json({ error: "Invalid email" }, { status: 400 })
+    }
+
+    // 🔒 GMAIL DOT-TRICK DEDUPLICATION:
+    // Gmail ignores dots (c.a.t.h.y@gmail.com === cathy@gmail.com).
+    // Strip dots so duplicate submissions of any dot variant map to 1 record and 1 welcome email.
+    if (email.endsWith("@gmail.com") || email.endsWith("@googlemail.com")) {
+      const parts = email.split("@")
+      const userWithoutDots = parts[0].replace(/\./g, "").split("+")[0]
+      email = `${userWithoutDots}@${parts[1]}`
     }
 
     const res = await fetch(
