@@ -7,6 +7,7 @@ import { getPageSeo } from "@/lib/queries/seo"
 import { sendWholesaleNotification } from "@/lib/email"
 import { WholesaleForm } from "@/components/wholesale/wholesale-form"
 import { WholesaleProductStack } from "@/components/wholesale/wholesale-product-stack"
+import { WholesaleFaq } from "@/components/wholesale/wholesale-faq"
 import { Truck, Factory, Layers, Film, Globe, CheckCircle2 } from "lucide-react"
 
 export const dynamic = "force-dynamic"
@@ -146,22 +147,22 @@ const BENEFIT_CARDS = [
   {
     icon: Factory,
     title: "Factory-Direct Pricing",
-    desc: "Buy directly from our Kanpur workshop (RAAS Enterprises). No middlemen markup.",
+    desc: "Direct workshop pricing on bulk WW1 & WW2 military reproductions. No middlemen markup.",
   },
   {
     icon: Layers,
     title: "Low 10+ Unit MOQ",
-    desc: "Flexible order volumes starting at just 10 units with multi-category mix & match.",
+    desc: "Flexible order volume starting at 10 units for WW1 & WW2 slings, holsters, and gear.",
   },
   {
     icon: Film,
     title: "Film & Stage Props",
-    desc: "Trusted by theater companies, film set prop masters & museum living history archives.",
+    desc: "Trusted by movie prop directors & reenactment clubs for authentic WW1 & WW2 gear.",
   },
   {
     icon: Truck,
     title: "Global Express Freight",
-    desc: "Exporting to 20+ countries via DHL, FedEx & Ocean Freight with full documentation.",
+    desc: "Exporting WW1 & WW2 military equipment to 20+ countries via express air & ocean freight.",
   },
 ]
 
@@ -173,7 +174,7 @@ export default function WholesalePage() {
     legalName: "RAAS Enterprises",
     url: "https://www.warcraftexports.com",
     logo: "https://www.warcraftexports.com/hero/wholesale-banner-new.webp",
-    description: "Direct manufacturer and exporter of handcrafted WW1 & WW2 reproduction military gear and canvas goods from Kanpur, India.",
+    description: "Direct factory manufacturer and exporter of handcrafted WW1 & WW2 reproduction military gear, leather holsters, rifle slings, and canvas goods from Kanpur, India.",
     address: {
       "@type": "PostalAddress",
       addressLocality: "Kanpur",
@@ -181,16 +182,18 @@ export default function WholesalePage() {
       addressCountry: "India",
     },
     knowsAbout: [
-      "Historical Reenactment Gear",
-      "Film Prop Supply",
-      "Stage Show Costumes",
-      "WW1 Military Reproductions",
-      "WW2 Military Gear",
+      "WWII Reenactment Gear Wholesale",
+      "M1 Garand Leather Slings Bulk",
+      "WW1 Wool Puttees & Leggings",
+      "Lee Enfield Rifle Slings Factory Direct",
+      "P08 Luger Leather Holsters Wholesale",
+      "Sam Browne Leather Belts",
+      "Film Prop Military Equipment Supplier",
     ],
   }
 
   return (
-    <div className="bg-parchment min-h-screen selection:bg-leather selection:text-parchment pb-4">
+    <div className="bg-parchment min-h-screen selection:bg-leather selection:text-parchment pb-8">
       {/* Structured Data JSON-LD */}
       <script
         type="application/ld+json"
@@ -232,14 +235,14 @@ export default function WholesalePage() {
             Handcrafted Historical Reproductions
           </h1>
 
-          <p className="font-sans text-xs sm:text-base text-parchment max-w-2xl mx-auto mt-2 leading-relaxed font-semibold drop-shadow-md">
-            Warcraft Exports — Handcrafted Leather &amp; Canvas Goods from Kanpur, India. Supplying Retailers, Theater Productions, Reenactment Clubs &amp; Collectors Worldwide.
+          <p className="font-sans text-xs sm:text-base text-parchment max-w-3xl mx-auto mt-2 leading-relaxed font-semibold drop-shadow-md">
+            Factory-direct wholesale supplier of WW1 &amp; WW2 reproduction military gear, WWII reenactment uniforms, M1 Garand leather slings, WW1 wool puttees, Lee Enfield slings, K98 ammo pouches, and vintage holsters. Outfitting militaria retailers, film prop departments, and living history clubs worldwide.
           </p>
         </div>
       </div>
 
       {/* ── MAIN CONTENT CONTAINER (Tight Bottom Padding) ── */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 pb-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 pb-4 space-y-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
           {/* LEFT COLUMN: Benefits, Verified Showcase & Exporter Services (6 cols) */}
@@ -282,13 +285,13 @@ export default function WholesalePage() {
                 </h3>
               </div>
               <p className="font-sans text-[11px] text-white/80 leading-relaxed">
-                Warcraft Exports is a trusted direct supplier for theater prop directors, costume designers, and film production companies requiring period accuracy. We support custom production runs and bulk freight.
+                Warcraft Exports is a trusted direct factory supplier for film prop directors, theater costume designers, and living history reenactment clubs requiring authentic period accuracy. We specialize in bulk outfitting for WW1 &amp; WW2 movie productions, offering custom production runs for leather holsters, canvas webbing, and military field gear.
               </p>
-              <div className="flex flex-wrap gap-1.5 pt-0.5">
-                {["Theater Prop Depts", "Film Costume Directors", "Living History Clubs", "Museum Reenactors"].map((tag) => (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 pt-0.5">
+                {["Theater Props", "Film Costumes", "Living History", "Museum Reenactors"].map((tag) => (
                   <span
                     key={tag}
-                    className="text-[9px] font-sans font-bold uppercase tracking-wider bg-white/10 border border-white/15 px-2 py-0.5 text-white/90"
+                    className="text-[8.5px] sm:text-[9px] font-sans font-bold uppercase tracking-wider bg-white/10 border border-white/15 px-1.5 py-1 text-white/90 text-center truncate"
                   >
                     {tag}
                   </span>
@@ -305,7 +308,7 @@ export default function WholesalePage() {
                 </h3>
               </div>
               <p className="font-sans text-[11px] text-leather/80 leading-relaxed">
-                Direct retail brand of RAAS Enterprises in Fazalgunj, Kanpur. We manufacture and export handcrafted leather &amp; canvas military goods spanning US, German, British, Soviet, and Japanese historical gear.
+                Direct manufacturing exporter of handcrafted leather &amp; canvas military goods from Kanpur. Our catalog spans US Army infantry gear, British Tommy webbing, German Wehrmacht equipment, and WW1 &amp; WW2 historical reproductions — including M1 Garand slings, Lee Enfield slings, K98 ammo pouches, P08 Luger holsters, Sam Browne belts, and WW1 wool puttees.
               </p>
               <div className="grid grid-cols-2 gap-2 pt-1 font-sans text-[10px] text-leather-dark font-semibold">
                 <div className="flex items-center gap-1.5 bg-parchment/60 p-1.5 border border-khaki/40 rounded-xs">
@@ -327,6 +330,12 @@ export default function WholesalePage() {
           </div>
 
         </div>
+
+        {/* ── B2B WHOLESALE FAQ & CATALOG SCOPE SECTION (Compact Dropdown Accordion) ── */}
+        <section className="pt-4">
+          <WholesaleFaq />
+        </section>
+
       </div>
     </div>
   )
