@@ -14,33 +14,36 @@ export const dynamic = "force-dynamic"
 
 export async function generateMetadata(): Promise<Metadata> {
   const seo = await getPageSeo("wholesale")
-  const title = seo?.meta_title || "Wholesale WW1 & WW2 Military Uniforms & Gear Supplier | Warcraft Exports"
-  const description = seo?.meta_description || "Direct factory manufacturer of WW1 & WW2 reproduction military uniforms, jackets, boots, helmets, leather holsters & rifle slings in Kanpur, India. Bulk supplier for film props, theater, reenactment clubs, and retail shops."
+  const title = seo?.meta_title || "WWI & WWII Reproduction Gear | Wholesale, Reenactment & Film | Warcraft Exports"
+  const description = seo?.meta_description || "Direct factory supplier of WWI & WWII reproduction gear for retailers, wholesale buyers, reenactment groups, museums, film & TV productions, and theater costume departments."
   const keywords = [
-    "wholesale military uniforms",
-    "ww2 military uniforms bulk",
-    "german ww2 uniform wholesale",
-    "wholesale military gear",
-    "WW1 reproduction wholesale",
-    "WW2 reenactment gear bulk",
+    "WWI & WWII reproduction gear",
+    "WW1 reenactment gear",
+    "WWII reenactment gear",
+    "WW2 reenactment gear",
+    "WW2 German reenactment gear",
+    "military props",
+    "WWII costumes",
+    "military gear wholesale",
+    "military uniform costumes",
+    "military costumes",
+    "reenactment equipment",
+    "military equipment wholesale",
+    "military reproduction wholesale",
+    "military gear supplier",
     "military reproduction gear supplier",
-    "film prop military supplier",
-    "theater costume outfitting bulk",
-    "kanpur leather goods exporter",
-    "RAAS Enterprises wholesale",
-    "Warcraft Exports B2B",
-    "military holster manufacturer india",
-    "bulk military slings and holsters supplier",
-    "jackboots wholesale",
-    "m1 helmets bulk supplier",
-    "leather holsters manufacturer",
-    "rifle slings bulk exporter",
-    "ww2 reenactment supplies",
-    "world war 2 surplus bulk",
-    "ww2 military surplus supplier",
-    "bulk militaria wholesaler",
-    "ww2 reenactment shop supplier",
-    "historical military equipment factory",
+    "WWII reproduction gear supplier",
+    "WWI reproduction gear supplier",
+    "reenactment gear supplier",
+    "historical equipment supplier",
+    "film costume supplier",
+    "theater costume supplier",
+    "museum reproduction equipment",
+    "WW1 wool puttees wholesale",
+    "M1 Garand slings bulk",
+    "Lee Enfield slings supplier",
+    "K98 leather pouches wholesale",
+    "P08 Luger holsters factory",
   ]
 
   return {
@@ -57,9 +60,9 @@ export async function generateMetadata(): Promise<Metadata> {
       images: [
         {
           url: "https://www.warcraftexports.com/hero/wholesale-banner-new.webp",
-          width: 1536,
-          height: 1024,
-          alt: "Warcraft Exports Kanpur Workshop Craftsmanship",
+          width: 1200,
+          height: 630,
+          alt: "Warcraft Exports WWI & WWII Reproduction Gear Supplier",
         },
       ],
     },
@@ -174,7 +177,7 @@ export default function WholesalePage() {
     legalName: "RAAS Enterprises",
     url: "https://www.warcraftexports.com",
     logo: "https://www.warcraftexports.com/hero/wholesale-banner-new.webp",
-    description: "Direct factory manufacturer and exporter of handcrafted WW1 & WW2 reproduction military gear, leather holsters, rifle slings, and canvas goods from Kanpur, India.",
+    description: "Direct factory manufacturer and exporter of handcrafted WWI & WWII reproduction gear, military props, reenactment equipment, leather holsters, and rifle slings from Kanpur, India.",
     address: {
       "@type": "PostalAddress",
       addressLocality: "Kanpur",
@@ -182,13 +185,17 @@ export default function WholesalePage() {
       addressCountry: "India",
     },
     knowsAbout: [
+      "WWI & WWII Reproduction Gear Supplier",
+      "WW1 Reenactment Gear",
       "WWII Reenactment Gear Wholesale",
+      "WW2 German Reenactment Gear",
+      "Military Props & Film Costumes",
       "M1 Garand Leather Slings Bulk",
       "WW1 Wool Puttees & Leggings",
       "Lee Enfield Rifle Slings Factory Direct",
       "P08 Luger Leather Holsters Wholesale",
       "Sam Browne Leather Belts",
-      "Film Prop Military Equipment Supplier",
+      "Museum Historical Display Equipment",
     ],
   }
 
@@ -202,7 +209,7 @@ export default function WholesalePage() {
 
       {/* ── TOP HERO BANNER (Full Color WebP Banner) ── */}
       <div className="relative bg-[#18181B] text-white border-b-2 border-leather overflow-hidden">
-        {/* Desktop WebP Banner (sm screens and above — untouched!) */}
+        {/* Desktop WebP Banner (sm screens and above) */}
         <div className="absolute inset-0 opacity-95 hidden sm:block">
           <Image
             src="/hero/wholesale-banner-new.webp"
@@ -214,7 +221,7 @@ export default function WholesalePage() {
           />
         </div>
 
-        {/* Mobile WebP Banner (mobile screens under sm only!) */}
+        {/* Mobile WebP Banner */}
         <div className="absolute inset-0 opacity-95 block sm:hidden">
           <Image
             src="/hero/Mobile-wholesale-banner.webp"
@@ -231,12 +238,12 @@ export default function WholesalePage() {
 
         {/* Hero Content Overlay */}
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14 text-center">
-          <h1 className="font-heading text-3xl sm:text-5xl uppercase tracking-tight text-white font-black leading-tight max-w-4xl mx-auto drop-shadow-lg">
-            Handcrafted Historical Reproductions
+          <h1 className="font-heading text-2.5xl sm:text-4.5xl uppercase tracking-tight text-white font-black leading-tight max-w-5xl mx-auto drop-shadow-lg">
+            WWI &amp; WWII Reproduction Gear for Wholesale, Reenactment &amp; Film
           </h1>
 
-          <p className="font-sans text-xs sm:text-base text-parchment max-w-3xl mx-auto mt-2 leading-relaxed font-semibold drop-shadow-md">
-            Factory-direct wholesale supplier of WW1 &amp; WW2 reproduction military gear, WWII reenactment uniforms, M1 Garand leather slings, WW1 wool puttees, Lee Enfield slings, K98 ammo pouches, and vintage holsters. Outfitting militaria retailers, film prop departments, and living history clubs worldwide.
+          <p className="font-sans text-xs sm:text-base text-parchment max-w-4xl mx-auto mt-2 leading-relaxed font-semibold drop-shadow-md">
+            Warcraft Exports supplies high-quality WWI and WWII reproduction military gear for retailers, wholesale buyers, reenactment groups, museums, film and television productions, theater costume departments, and living history organizations worldwide.
           </p>
         </div>
       </div>

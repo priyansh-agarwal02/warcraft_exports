@@ -139,9 +139,11 @@ export function WholesaleForm({ onSubmit }: WholesaleFormProps) {
 
   return (
     <div id="wholesale-inquiry-form" className="border-2 border-leather rounded-sm bg-white p-6 sm:p-8 shadow-md">
-      <h2 className="font-heading text-2xl sm:text-3xl text-leather-dark font-bold mb-1">Wholesale Inquiry Form</h2>
-      <p className="font-sans text-xs text-leather/70 mb-6">
-        Direct Factory Pricing for Reenactor Groups, Museums, Film Prop Directors &amp; Retailers.
+      <h2 className="font-heading text-xl sm:text-2xl text-leather-dark font-black uppercase tracking-tight mb-1">
+        Request a Wholesale, Group or Production Quote
+      </h2>
+      <p className="font-sans text-xs text-leather/75 mb-6 leading-relaxed">
+        Tell us what you need, the target quantity, your organization or production type, and required delivery date.
       </p>
 
       {success && (
