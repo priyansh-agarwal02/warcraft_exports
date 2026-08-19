@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic"
 
 export async function generateMetadata(): Promise<Metadata> {
   const seo = await getPageSeo("wholesale")
-  const title = seo?.meta_title || "WWI & WWII Reproduction Gear | Wholesale, Reenactment & Film | Warcraft Exports"
+  const title = seo?.meta_title || "Wholesale WW1 & WW2 Military Uniforms & Gear Supplier | Warcraft Exports"
   const description = seo?.meta_description || "Direct factory supplier of WWI & WWII reproduction gear for retailers, wholesale buyers, reenactment groups, museums, film & TV productions, and theater costume departments."
   const keywords = [
     "WWI & WWII reproduction gear",
@@ -238,9 +238,13 @@ export default function WholesalePage() {
 
         {/* Hero Content Overlay */}
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14 text-center">
-          <h1 className="font-heading text-2.5xl sm:text-4.5xl uppercase tracking-tight text-white font-black leading-tight max-w-5xl mx-auto drop-shadow-lg">
-            WWI &amp; WWII Reproduction Gear for Wholesale, Reenactment &amp; Film
+          <h1 className="font-heading text-3xl sm:text-5xl uppercase tracking-tight text-white font-black leading-tight max-w-4xl mx-auto drop-shadow-lg">
+            Handcrafted Historical Reproductions
           </h1>
+
+          <h2 className="font-heading text-xs sm:text-base font-bold text-[#A3E635] uppercase tracking-wider mt-1.5 drop-shadow-md">
+            WWI &amp; WWII Reproduction Gear for Wholesale, Reenactment &amp; Film
+          </h2>
 
           <p className="font-sans text-xs sm:text-base text-parchment max-w-4xl mx-auto mt-2 leading-relaxed font-semibold drop-shadow-md">
             Warcraft Exports supplies high-quality WWI and WWII reproduction military gear for retailers, wholesale buyers, reenactment groups, museums, film and television productions, theater costume departments, and living history organizations worldwide.
