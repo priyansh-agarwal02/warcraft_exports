@@ -184,7 +184,7 @@ export function DashboardClient({ initialData, initialAnalytics }: DashboardClie
         {/* Order Status Donut */}
         <div className="bg-white border border-[#E4E4E7] p-6 shadow-sm">
           {mounted ? (
-            <OrderStatusDonut data={data.charts.orderStatusBreakdown} />
+            <OrderStatusDonut data={data.charts.orderStatusBreakdown} orders={data.feeds.latestOrders} />
           ) : (
             <div className="h-[220px] flex items-center justify-center bg-[#FAF9F6] border border-[#F4F4F4] animate-pulse">
               <div className="text-center font-sans text-xs text-[#A1A1AA]">Loading status breakdown...</div>
@@ -335,7 +335,7 @@ export function DashboardClient({ initialData, initialAnalytics }: DashboardClie
               </div>
             ) : (
               <div className="divide-y divide-[#F4F4F4]">
-                {data.feeds.lowStockProducts.map((p: any) => {
+                {data.feeds.lowStockProducts.slice(0, 8).map((p: any) => {
                   const img = p.images?.find((i: any) => i.is_hero)?.url ?? p.images?.[0]?.url
                   return (
                     <div key={p.id} className="py-2.5 flex items-center justify-between gap-3 text-[12px] font-sans">

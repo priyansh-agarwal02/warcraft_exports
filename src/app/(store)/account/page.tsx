@@ -37,16 +37,25 @@ export default async function AccountPage() {
     redirect("/auth/login")
   }
 
+  const { createServiceClient } = await import("@/lib/supabase/service")
+  const serviceClient = createServiceClient()
+
+  const orderFilter = user.email
+    ? `user_id.eq.${user.id},customer_email.ilike.${user.email.trim()}`
+    : `user_id.eq.${user.id}`
+
   const [{ data: profile }, { data: orders }] = await Promise.all([
     supabase
       .from("profiles")
       .select("full_name, email, phone, avatar_url")
       .eq("id", user.id)
       .single(),
-    supabase
+    serviceClient
       .from("orders")
-      .select("id, status, total_usd, created_at")
-      .eq("user_id", user.id)
+      .select(
+        `id, order_number, status, total_usd, created_at, order_items(id, quantity, product:products(name, images:product_images(url, is_hero)))`
+      )
+      .or(orderFilter)
       .order("created_at", { ascending: false })
       .limit(5),
   ])
@@ -132,52 +141,138 @@ export default async function AccountPage() {
                   </Link>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm font-sans">
-                    <thead>
-                      <tr className="border-b border-khaki/30">
-                        <th className="text-left text-xs font-semibold uppercase tracking-widest text-khaki pb-3 pr-4">Order ID</th>
-                        <th className="text-left text-xs font-semibold uppercase tracking-widest text-khaki pb-3 pr-4">Date</th>
-                        <th className="text-left text-xs font-semibold uppercase tracking-widest text-khaki pb-3 pr-4">Status</th>
-                        <th className="text-right text-xs font-semibold uppercase tracking-widest text-khaki pb-3">Total</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-khaki/20">
-                      {orders.map((order) => {
-                        const status = (order.status ?? "confirmed") as OrderStatus
-                        const statusStyle = STATUS_STYLES[status] ?? STATUS_STYLES.confirmed
-                        const shortId = order.id.slice(0, 8).toUpperCase()
-                        const date = new Date(order.created_at).toLocaleDateString("en-US", {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        })
-                        return (
-                          <tr key={order.id} className="relative hover:bg-parchment/50 transition-colors group cursor-pointer">
-                            <td className="py-3 pr-4 z-0">
-                              <Link
-                                href={`/account/orders/${order.id}`}
-                                className="absolute inset-0 z-10"
-                                aria-label={`View order #${shortId}`}
-                              />
-                              <span className="text-leather font-mono text-xs transition-colors">
-                                #{shortId}
+                <>
+                  {/* Mobile Amazon App UI View (no horizontal scroll, 100% fitting) */}
+                  <div className="flex flex-col gap-3 md:hidden">
+                    {orders.map((order) => {
+                      const status = (order.status ?? "confirmed") as OrderStatus
+                      const statusStyle = STATUS_STYLES[status] ?? STATUS_STYLES.confirmed
+                      const displayId = (order as any).order_number ?? order.id.slice(0, 8).toUpperCase()
+                      const date = new Date(order.created_at).toLocaleDateString("en-US", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })
+
+                      const rawItems = Array.isArray(order.order_items) ? order.order_items : []
+                      const itemCount = rawItems.length
+                      const firstItem = (rawItems[0] as any)?.product
+                      const firstImg = firstItem?.images?.find((i: any) => i.is_hero)?.url ?? firstItem?.images?.[0]?.url
+                      const firstItemName = firstItem?.name ?? "Order Item"
+
+                      return (
+                        <div
+                          key={order.id}
+                          className="relative bg-canvas border border-khaki/30 rounded-sm p-3.5 hover:border-leather/40 transition-colors shadow-xs group flex items-center gap-3.5"
+                        >
+                          <Link
+                            href={`/account/orders/${order.id}`}
+                            className="absolute inset-0 z-10"
+                            aria-label={`View order #${displayId}`}
+                          />
+
+                          {/* Thumbnail */}
+                          <div className="w-14 h-14 shrink-0 bg-khaki/10 rounded-xs border border-khaki/20 overflow-hidden flex items-center justify-center">
+                            {firstImg ? (
+                              <img src={firstImg} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="text-[10px] text-khaki">No img</span>
+                            )}
+                          </div>
+
+                          {/* Info */}
+                          <div className="flex-1 min-w-0">
+                            <p className="font-sans font-bold text-xs text-leather-dark truncate group-hover:text-leather transition-colors">
+                              {firstItemName}
+                            </p>
+                            {itemCount > 1 && (
+                              <span className="text-[10px] text-khaki font-medium block">
+                                +{itemCount - 1} more item{itemCount > 2 ? "s" : ""}
                               </span>
-                            </td>
-                            <td className="py-3 pr-4 text-leather-dark/80 text-xs">{date}</td>
-                            <td className="py-3 pr-4">
-                              <span className={`inline-flex px-2 py-0.5 rounded-sm text-[11px] font-semibold uppercase tracking-wider ${statusStyle}`}>
-                                {status}
-                              </span>
-                            </td>
-                            <td className="py-3 text-right font-semibold text-leather-dark text-xs relative z-0">
+                            )}
+                            <div className="flex items-center gap-2 text-[11px] text-khaki font-sans mt-0.5">
+                              <span className="font-mono text-leather-dark/80 font-medium">#{displayId}</span>
+                              <span>•</span>
+                              <span>{date}</span>
+                            </div>
+                          </div>
+
+                          {/* Right Status & Price */}
+                          <div className="text-right shrink-0 flex flex-col items-end gap-1">
+                            <span className="font-sans font-bold text-xs text-leather-dark">
                               ${(order.total_usd ?? 0).toFixed(2)}
-                            </td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
+                            </span>
+                            <span
+                              className={`inline-flex px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase tracking-wider ${statusStyle}`}
+                            >
+                              {status}
+                            </span>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  {/* Desktop Table View */}
+                  <div className="hidden md:block overflow-x-auto">
+                    <table className="w-full text-sm font-sans">
+                      <thead>
+                        <tr className="border-b border-khaki/30">
+                          <th className="text-left text-xs font-semibold uppercase tracking-widest text-khaki pb-3 pr-4">Order #</th>
+                          <th className="text-left text-xs font-semibold uppercase tracking-widest text-khaki pb-3 pr-4">Date</th>
+                          <th className="text-left text-xs font-semibold uppercase tracking-widest text-khaki pb-3 pr-4">Status</th>
+                          <th className="text-right text-xs font-semibold uppercase tracking-widest text-khaki pb-3">Total</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-khaki/20">
+                        {orders.map((order) => {
+                          const status = (order.status ?? "confirmed") as OrderStatus
+                          const statusStyle = STATUS_STYLES[status] ?? STATUS_STYLES.confirmed
+                          const displayId = (order as any).order_number ?? order.id.slice(0, 8).toUpperCase()
+                          const date = new Date(order.created_at).toLocaleDateString("en-US", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })
+
+                          const rawItems = Array.isArray(order.order_items) ? order.order_items : []
+                          const firstItem = (rawItems[0] as any)?.product
+                          const firstImg = firstItem?.images?.find((i: any) => i.is_hero)?.url ?? firstItem?.images?.[0]?.url
+
+                          return (
+                            <tr key={order.id} className="relative hover:bg-parchment/50 transition-colors group cursor-pointer">
+                              <td className="py-3 pr-4 z-0">
+                                <Link
+                                  href={`/account/orders/${order.id}`}
+                                  className="absolute inset-0 z-10"
+                                  aria-label={`View order #${displayId}`}
+                                />
+                                <div className="flex items-center gap-3">
+                                  {firstImg ? (
+                                    <img src={firstImg} alt="" className="w-10 h-10 object-cover bg-khaki/10 rounded-xs border border-khaki/20 shrink-0" />
+                                  ) : (
+                                    <div className="w-10 h-10 bg-khaki/10 rounded-xs border border-khaki/20 shrink-0 flex items-center justify-center text-[10px] text-khaki">No img</div>
+                                  )}
+                                  <span className="text-leather font-mono text-xs transition-colors">
+                                    #{displayId}
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="py-3 pr-4 text-leather-dark/80 text-xs relative z-0">{date}</td>
+                              <td className="py-3 pr-4 relative z-0">
+                                <span className={`inline-flex px-2 py-0.5 rounded-sm text-[11px] font-semibold uppercase tracking-wider ${statusStyle}`}>
+                                  {status}
+                                </span>
+                              </td>
+                              <td className="py-3 text-right font-semibold text-leather-dark text-xs relative z-0">
+                                ${(order.total_usd ?? 0).toFixed(2)}
+                              </td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
 
                   <div className="mt-5 pt-4 border-t border-khaki/30">
                     <Link
@@ -187,7 +282,7 @@ export default async function AccountPage() {
                       View All Orders →
                     </Link>
                   </div>
-                </div>
+                </>
               )}
             </div>
           </section>

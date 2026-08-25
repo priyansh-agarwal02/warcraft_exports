@@ -45,7 +45,7 @@ export default async function CheckoutSuccessPage({ searchParams }: { searchPara
     const serviceClient = createServiceClient()
     const { data } = await serviceClient
       .from("orders")
-      .select("id, order_number, total_usd, shipping_usd, created_at, customer_name, shipping_address, user_id, payment_intent_id, order_items(id, quantity, unit_price_usd, price_usd, product_snapshot, product:products(name, sku, images:product_images(url, is_hero)))")
+      .select("id, order_number, notes, total_usd, shipping_usd, created_at, customer_name, shipping_address, user_id, payment_intent_id, order_items(id, quantity, unit_price_usd, price_usd, product_snapshot, product:products(name, sku, ships_from_usa, images:product_images(url, is_hero)))")
       .eq("id", order_id)
       .single()
     

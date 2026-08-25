@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server"
 import { headers } from "next/headers"
 import { checkRateLimit } from "@/lib/rate-limit"
 import { getPageSeo } from "@/lib/queries/seo"
-import { sendWholesaleNotification } from "@/lib/email"
+import { sendWholesaleNotification, sendWholesaleAutoresponder } from "@/lib/email"
 import { WholesaleForm } from "@/components/wholesale/wholesale-form"
 import { WholesaleProductStack } from "@/components/wholesale/wholesale-product-stack"
 import { WholesaleFaq } from "@/components/wholesale/wholesale-faq"
@@ -16,94 +16,46 @@ export async function generateMetadata(): Promise<Metadata> {
   const seo = await getPageSeo("wholesale")
   const title = seo?.meta_title || "Wholesale WW1 & WW2 Military Uniforms & Gear Supplier | Warcraft Exports"
   const description = seo?.meta_description || "Direct factory supplier of WWI & WWII reproduction gear for retailers, wholesale buyers, reenactment groups, museums, film & TV productions, and theater costume departments."
-  const keywords = [
-    "WWI & WWII reproduction gear",
-    "WW1 reenactment gear",
-    "WWII reenactment gear",
-    "WW2 reenactment gear",
-    "WW2 German reenactment gear",
-    "military props",
-    "WWII costumes",
-    "military gear wholesale",
-    "military uniform costumes",
-    "military costumes",
-    "reenactment equipment",
-    "military equipment wholesale",
-    "military reproduction wholesale",
-    "military gear supplier",
-    "military reproduction gear supplier",
-    "WWII reproduction gear supplier",
-    "WWI reproduction gear supplier",
-    "reenactment gear supplier",
-    "historical equipment supplier",
-    "film costume supplier",
-    "theater costume supplier",
-    "museum reproduction equipment",
-    "WW1 wool puttees wholesale",
-    "M1 Garand slings bulk",
-    "Lee Enfield slings supplier",
-    "K98 leather pouches wholesale",
-    "P08 Luger holsters factory",
-  ]
-
   return {
     title,
     description,
-    keywords,
-    alternates: { canonical: "https://www.warcraftexports.com/wholesale" },
-    openGraph: {
-      title,
-      description,
-      url: "https://www.warcraftexports.com/wholesale",
-      siteName: "Warcraft Exports",
-      type: "website",
-      images: [
-        {
-          url: "https://www.warcraftexports.com/hero/wholesale-banner-new.webp",
-          width: 1200,
-          height: 630,
-          alt: "Warcraft Exports WWI & WWII Reproduction Gear Supplier",
-        },
-      ],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title,
-      description,
-      images: ["https://www.warcraftexports.com/hero/wholesale-banner-new.webp"],
-    },
     robots: {
       index: true,
       follow: true,
-      googleBot: {
-        index: true,
-        follow: true,
-        "max-image-preview": "large",
-        "max-snippet": -1,
-      },
     },
   }
 }
 
 async function submitWholesaleAction(data: {
   name: string
-  company: string
+  company?: string
   country: string
   email: string
-  phone: string
+  phone?: string
   categories: string[]
   volume: string
-  message: string
+  message?: string
+  honeypot?: string
 }) {
   "use server"
-  if (!data.name?.trim() || !data.country?.trim() || !data.email?.trim() || !data.phone?.trim() || !data.volume) {
-    return { success: false, error: "Missing required fields" }
+
+  if (data.honeypot) {
+    return { success: true }
   }
 
-  const headersList = await headers()
-  const ip = headersList.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown"
-  if (!checkRateLimit(`wholesale:${ip}`, 5, 3600_000)) {
-    return { success: false, error: "Too many submissions. Please try again in an hour." }
+  const headerList = await headers()
+  const ip = headerList.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown"
+  if (!checkRateLimit(`wholesale:${ip}`, 3, 300_000)) {
+    return { success: false, error: "Too many requests. Please try again later." }
+  }
+
+  if (!data.name?.trim() || !data.email?.trim() || !data.country?.trim() || !data.volume) {
+    return { success: false, error: "Please fill in all required fields." }
+  }
+
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!EMAIL_RE.test(data.email.trim())) {
+    return { success: false, error: "Please enter a valid email address." }
   }
 
   const supabase = await createClient()
@@ -129,16 +81,20 @@ async function submitWholesaleAction(data: {
   }
 
   try {
-    await sendWholesaleNotification({
+    const wholesaleData = {
       name: data.name,
-      company: data.company,
+      company: data.company || "N/A",
       country: data.country,
       email: data.email,
       phone: data.phone || undefined,
       categories: data.categories,
       volume: data.volume,
       message: data.message || undefined,
-    })
+    }
+    // 1. Notify Seller
+    await sendWholesaleNotification(wholesaleData)
+    // 2. Send receipt copy to Visitor
+    await sendWholesaleAutoresponder(wholesaleData)
   } catch (emailErr: any) {
     console.error("Email B2B notification failed:", emailErr.message)
   }

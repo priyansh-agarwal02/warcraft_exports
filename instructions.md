@@ -18,6 +18,7 @@
 7. **Risk check before submitting** — trace all affected routes/components
 8. **Env vars only from .env.local** — never hardcode keys or URLs
 9. **All DB changes = .sql file in supabase/** — with RLS, header comment, and rollback note
+10. **Plan & Approval Mandatory** — NEVER write code or commit without explicit user review and approval of the plan first. Always analyze, think, present the plan, get user approval, and only then write code or commit.
 
 ## BEFORE CODING, CONFIRM:
 - [ ] File tree read

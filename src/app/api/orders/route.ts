@@ -255,22 +255,33 @@ export async function POST(req: NextRequest) {
       try {
         let existingUserId: string | null = null
 
-        // 1. Paginate to find if user already exists in auth.users
-        let page = 1
-        const perPage = 1000
-        while (true) {
-          const { data, error: listError } = await serviceClient.auth.admin.listUsers({
-            page,
-            perPage,
-          })
-          if (listError || !data?.users || data.users.length === 0) break
-          const matchedUser = data.users.find(u => u.email?.toLowerCase() === customer.email.toLowerCase())
-          if (matchedUser) {
-            existingUserId = matchedUser.id
-            break
+        // 1. Check profiles table first for direct UUID match
+        const { data: profileMatch } = await serviceClient
+          .from("profiles")
+          .select("id")
+          .ilike("email", customer.email.trim())
+          .maybeSingle()
+
+        if (profileMatch?.id) {
+          existingUserId = profileMatch.id
+        } else {
+          // Fallback: Paginate to find if user exists in auth.users
+          let page = 1
+          const perPage = 1000
+          while (true) {
+            const { data, error: listError } = await serviceClient.auth.admin.listUsers({
+              page,
+              perPage,
+            })
+            if (listError || !data?.users || data.users.length === 0) break
+            const matchedUser = data.users.find(u => u.email?.toLowerCase() === customer.email.trim().toLowerCase())
+            if (matchedUser) {
+              existingUserId = matchedUser.id
+              break
+            }
+            if (data.users.length < perPage) break
+            page++
           }
-          if (data.users.length < perPage) break
-          page++
         }
 
         if (existingUserId) {

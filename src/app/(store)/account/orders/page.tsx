@@ -36,19 +36,38 @@ export default async function AccountOrdersPage({
   const from = (currentPage - 1) * PAGE_SIZE
   const to = from + PAGE_SIZE - 1
 
+  const { createServiceClient } = await import("@/lib/supabase/service")
+  const serviceClient = createServiceClient()
+
+  // Auto-link & re-align any orders matching user's email address
+  if (user.email) {
+    try {
+      await serviceClient
+        .from("orders")
+        .update({ user_id: user.id })
+        .ilike("customer_email", user.email.trim())
+    } catch (err) {
+      console.error("Order auto-link error:", err)
+    }
+  }
+
+  const orderFilter = user.email
+    ? `user_id.eq.${user.id},customer_email.ilike.${user.email.trim()}`
+    : `user_id.eq.${user.id}`
+
   const [{ data: profile }, { data: orders, count }] = await Promise.all([
     supabase
       .from("profiles")
       .select("full_name, email")
       .eq("id", user.id)
       .single(),
-    supabase
+    serviceClient
       .from("orders")
       .select(
-        `id, order_number, status, total_usd, created_at, order_items(count)`,
+        `id, order_number, status, total_usd, created_at, order_items(id, quantity, product:products(name, images:product_images(url, is_hero)))`,
         { count: "exact" }
       )
-      .eq("user_id", user.id)
+      .or(orderFilter)
       .order("created_at", { ascending: false })
       .range(from, to),
   ])
@@ -135,7 +154,79 @@ export default async function AccountOrdersPage({
                 </div>
               ) : (
                 <>
-                  <div className="overflow-x-auto">
+                  {/* Mobile Amazon App UI View (no horizontal scroll, 100% fitting) */}
+                  <div className="flex flex-col gap-3 md:hidden">
+                    {orders.map((order) => {
+                      const status = (order.status ?? "confirmed") as OrderStatus
+                      const statusStyle = STATUS_STYLES[status] ?? STATUS_STYLES.confirmed
+                      const displayId = order.order_number ?? order.id.slice(0, 8).toUpperCase()
+                      const date = new Date(order.created_at).toLocaleDateString("en-US", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })
+
+                      const rawItems = Array.isArray(order.order_items) ? order.order_items : []
+                      const itemCount = rawItems.length
+                      const firstItem = (rawItems[0] as any)?.product
+                      const firstImg = firstItem?.images?.find((i: any) => i.is_hero)?.url ?? firstItem?.images?.[0]?.url
+                      const firstItemName = firstItem?.name ?? "Order Item"
+
+                      return (
+                        <div
+                          key={order.id}
+                          className="relative bg-canvas border border-khaki/30 rounded-sm p-3.5 hover:border-leather/40 transition-colors shadow-xs group flex items-center gap-3.5"
+                        >
+                          <Link
+                            href={`/account/orders/${order.id}`}
+                            className="absolute inset-0 z-10"
+                            aria-label={`View order #${displayId}`}
+                          />
+
+                          {/* Thumbnail */}
+                          <div className="w-14 h-14 shrink-0 bg-khaki/10 rounded-xs border border-khaki/20 overflow-hidden flex items-center justify-center">
+                            {firstImg ? (
+                              <img src={firstImg} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="text-[10px] text-khaki">No img</span>
+                            )}
+                          </div>
+
+                          {/* Info */}
+                          <div className="flex-1 min-w-0">
+                            <p className="font-sans font-bold text-xs text-leather-dark truncate group-hover:text-leather transition-colors">
+                              {firstItemName}
+                            </p>
+                            {itemCount > 1 && (
+                              <span className="text-[10px] text-khaki font-medium block">
+                                +{itemCount - 1} more item{itemCount > 2 ? "s" : ""}
+                              </span>
+                            )}
+                            <div className="flex items-center gap-2 text-[11px] text-khaki font-sans mt-0.5">
+                              <span className="font-mono text-leather-dark/80 font-medium">#{displayId}</span>
+                              <span>•</span>
+                              <span>{date}</span>
+                            </div>
+                          </div>
+
+                          {/* Right Status & Price */}
+                          <div className="text-right shrink-0 flex flex-col items-end gap-1">
+                            <span className="font-sans font-bold text-xs text-leather-dark">
+                              ${(order.total_usd ?? 0).toFixed(2)}
+                            </span>
+                            <span
+                              className={`inline-flex px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase tracking-wider ${statusStyle}`}
+                            >
+                              {status}
+                            </span>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  {/* Desktop Table View */}
+                  <div className="hidden md:block overflow-x-auto">
                     <table className="w-full text-sm font-sans">
                       <thead>
                         <tr className="border-b border-khaki/30">
@@ -157,9 +248,11 @@ export default async function AccountOrdersPage({
                             month: "short",
                             year: "numeric",
                           })
-                          const itemCount = Array.isArray(order.order_items)
-                            ? (order.order_items[0] as { count: number } | undefined)?.count ?? 0
-                            : 0
+
+                          const rawItems = Array.isArray(order.order_items) ? order.order_items : []
+                          const itemCount = rawItems.length
+                          const firstItem = (rawItems[0] as any)?.product
+                          const firstImg = firstItem?.images?.find((i: any) => i.is_hero)?.url ?? firstItem?.images?.[0]?.url
 
                           return (
                             <tr key={order.id} className="relative hover:bg-parchment/50 transition-colors group cursor-pointer">
@@ -169,7 +262,14 @@ export default async function AccountOrdersPage({
                                   className="absolute inset-0 z-10"
                                   aria-label={`View order #${displayId}`}
                                 />
-                                <span className="font-mono text-xs text-leather-dark">#{displayId}</span>
+                                <div className="flex items-center gap-3">
+                                  {firstImg ? (
+                                    <img src={firstImg} alt="" className="w-10 h-10 object-cover bg-khaki/10 rounded-xs border border-khaki/20 shrink-0" />
+                                  ) : (
+                                    <div className="w-10 h-10 bg-khaki/10 rounded-xs border border-khaki/20 shrink-0 flex items-center justify-center text-[10px] text-khaki">No img</div>
+                                  )}
+                                  <span className="font-mono text-xs text-leather-dark">#{displayId}</span>
+                                </div>
                               </td>
                               <td className="py-3 pr-4 text-leather-dark/80 text-xs relative z-0">{date}</td>
                               <td className="py-3 pr-4 text-leather-dark/80 text-xs relative z-0">{itemCount}</td>
@@ -185,7 +285,7 @@ export default async function AccountOrdersPage({
                               </td>
                               <td className="py-3 text-right relative z-0">
                                 <span className="text-xs font-semibold text-leather group-hover:text-leather-dark transition-colors">
-                                  View
+                                  View →
                                 </span>
                               </td>
                             </tr>

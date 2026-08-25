@@ -52,19 +52,27 @@ export default async function OrderDetailPage({ params }: Props) {
 
   const { id } = await params
 
-  const { data: order } = await supabase
+  const { createServiceClient } = await import("@/lib/supabase/service")
+  const serviceClient = createServiceClient()
+
+  const orderFilter = user.email
+    ? `user_id.eq.${user.id},customer_email.ilike.${user.email.trim()}`
+    : `user_id.eq.${user.id}`
+
+  const { data: order } = await serviceClient
     .from("orders")
     .select(
       `
-      id, order_number, status, total_usd, created_at, shipping_address, customer_name, tracking_number, tracking_url,
+      id, order_number, notes, status, total_usd, created_at, shipping_address, customer_name, tracking_number, tracking_url,
+      cancellation_requested, cancellation_request_status, customer_cancellation_reason, cancellation_rejection_reason,
       order_items (
         id, quantity, unit_price_usd,
-        products ( name, slug, images:product_images ( url, is_hero ) )
+        products ( name, slug, ships_from_usa, images:product_images ( url, is_hero ) )
       )
     `
     )
     .eq("id", id)
-    .eq("user_id", user.id)
+    .or(orderFilter)
     .single()
 
   if (!order) redirect("/account/orders")
@@ -94,7 +102,7 @@ export default async function OrderDetailPage({ params }: Props) {
     id: string
     quantity: number
     unit_price_usd: number
-    products: { name: string; slug: string; images: { url: string; is_hero: boolean }[] } | null
+    products: { name: string; slug: string; ships_from_usa?: boolean; images: { url: string; is_hero: boolean }[] } | null
   }
 
   const items = (order.order_items ?? []) as unknown as OrderItem[]
@@ -118,6 +126,37 @@ export default async function OrderDetailPage({ params }: Props) {
       address2?: string
       postalCode?: string
     } | null
+
+  const hasUsWarehouseItem = items.some((item: any) => item.products?.ships_from_usa)
+
+  let standardDaysFromRate: string | null = null
+  if (shippingAddress?.country) {
+    const { data: rate } = await serviceClient
+      .from("shipping_rates")
+      .select("standard_days")
+      .eq("country_name", shippingAddress.country)
+      .maybeSingle()
+
+    if (rate?.standard_days) {
+      standardDaysFromRate = rate.standard_days
+    } else {
+      const { data: fallback } = await serviceClient
+        .from("shipping_rates")
+        .select("standard_days")
+        .eq("country_code", "OTHER")
+        .maybeSingle()
+      if (fallback?.standard_days) standardDaysFromRate = fallback.standard_days
+    }
+  }
+
+  const { computeShippingInfo } = await import("@/lib/shipping-utils")
+  const shippingInfo = computeShippingInfo({
+    createdAtStr: order.created_at,
+    shippingUsd: (order.total_usd ?? 0) - subtotal,
+    notes: (order as any).notes,
+    standardDaysFromRate,
+    hasUsWarehouseItem,
+  })
 
   return (
     <div className="bg-parchment min-h-screen">
@@ -183,8 +222,8 @@ export default async function OrderDetailPage({ params }: Props) {
           {/* Order Detail */}
           <section className="lg:col-span-2 flex flex-col gap-6">
             {/* Header */}
-            <div className="bg-canvas border border-khaki/30 rounded-sm p-6">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-1">
+            <div className="bg-canvas border border-khaki/30 rounded-sm p-6 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
                   <Link
                     href="/account/orders"
@@ -203,57 +242,123 @@ export default async function OrderDetailPage({ params }: Props) {
                   {status}
                 </span>
               </div>
-            </div>
-
-            {/* Status Timeline */}
-            {!isCancelled && (
-              <div className="bg-canvas border border-khaki/30 rounded-sm p-6">
-                <h3 className="font-heading text-sm text-leather-dark uppercase font-black mb-5">
-                  Order Progress
-                </h3>
-                <div className="flex items-center gap-0">
-                  {TIMELINE_STEPS.map((step, index) => {
-                    const isCompleted = index <= currentStepIndex
-                    const isLast = index === TIMELINE_STEPS.length - 1
-                    return (
-                      <div key={step} className="flex items-center flex-1">
-                        <div className="flex flex-col items-center flex-shrink-0">
-                          <div
-                            className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
-                              isCompleted
-                                ? "bg-leather text-parchment"
-                                : "bg-khaki/20 text-khaki border border-khaki/30"
-                            }`}
-                          >
-                            {isCompleted ? "✓" : index + 1}
-                          </div>
-                          <span
-                            className={`mt-1.5 text-[10px] font-sans font-semibold uppercase tracking-wider whitespace-nowrap ${
-                              isCompleted ? "text-leather" : "text-khaki"
-                            }`}
-                          >
-                            {STEP_LABELS[step]}
-                          </span>
-                        </div>
-                        {!isLast && (
-                          <div
-                            className={`flex-1 h-0.5 mx-1 mb-5 transition-colors ${
-                              index < currentStepIndex ? "bg-leather" : "bg-khaki/30"
-                            }`}
-                          />
-                        )}
-                      </div>
-                    )
-                  })}
+              
+              {/* Delivery Option & Estimated Arrival Box */}
+              <div className="bg-parchment-dark/30 border border-khaki/30 p-4 rounded-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-sans text-leather-dark">
+                <div className="space-y-1">
+                  <span className="text-[10px] text-khaki uppercase font-bold tracking-wider block">Selected Shipping Option</span>
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider border ${
+                    shippingInfo.isExpress
+                      ? "bg-[#1D70B8]/10 text-[#1D70B8] border-[#1D70B8]/30"
+                      : "bg-amber-500/10 text-amber-900 border-amber-500/30"
+                  }`}>
+                    {shippingInfo.shippingLabel}
+                  </span>
+                </div>
+                <div className="sm:text-right space-y-0.5">
+                  <span className="text-[10px] text-khaki uppercase font-bold tracking-wider block">Estimated Delivery Window</span>
+                  <span className="font-bold text-sm text-leather-dark block">{shippingInfo.estimatedDeliveryWindow}</span>
                 </div>
               </div>
-            )}
+            </div>
 
-            {isCancelled && (
-              <div className="bg-red-50 border border-red-200 text-red-800 p-4 text-xs font-sans rounded-sm">
-                <strong>Order Cancelled:</strong> This order has been cancelled and a refund is being processed (if paid).
+            {/* Rejection Alert Notice if Cancellation Request was Rejected */}
+            {order.cancellation_request_status === "rejected" && !isCancelled && (
+              <div className="bg-amber-50 border border-amber-200 text-amber-900 p-4 text-xs font-sans rounded-sm space-y-1">
+                <p className="font-bold uppercase tracking-wider text-[11px] text-amber-800">
+                  ⚠️ Cancellation Request Update
+                </p>
+                <p>
+                  Your cancellation request was reviewed by our workshop management team and could not be approved for the following reason:
+                </p>
+                <p className="italic bg-amber-100/60 p-2.5 border-l-2 border-amber-600 font-medium">
+                  "{order.cancellation_rejection_reason || "Order has already entered fulfillment and carrier dispatch."}"
+                </p>
+                <p className="pt-1 text-[11px] text-amber-700 font-semibold">
+                  Standard order processing and carrier delivery are continuing normally below.
+                </p>
               </div>
             )}
+
+            {/* Dynamic Enterprise Order Progress Timeline */}
+            {(() => {
+              let steps: { label: string; state: "completed" | "active" | "pending" }[] = []
+              let headerText = "Order Progress"
+
+              if (order.cancellation_requested && order.cancellation_request_status === "pending") {
+                headerText = "Order Progress — Cancellation Request Under Review"
+                steps = [
+                  { label: "Confirmed", state: "completed" },
+                  { label: "Cancellation Requested", state: "active" },
+                  { label: "Review & Refund", state: "pending" },
+                ]
+              } else if (status === "cancelled" || order.cancellation_request_status === "accepted") {
+                headerText = "Order Progress — Cancelled & Refunded"
+                steps = [
+                  { label: "Confirmed", state: "completed" },
+                  { label: "Cancellation Requested", state: "completed" },
+                  { label: "Cancelled & Refunded", state: "completed" },
+                ]
+              } else {
+                const activeIdx = status === "delivered" ? 2 : status === "shipped" ? 1 : 0
+                steps = [
+                  { label: "Confirmed", state: activeIdx > 0 ? "completed" : "active" },
+                  { label: "Shipped", state: activeIdx > 1 ? "completed" : activeIdx === 1 ? "active" : "pending" },
+                  { label: "Delivered", state: activeIdx === 2 ? "completed" : "pending" },
+                ]
+              }
+
+              return (
+                <div className="bg-canvas border border-khaki/30 rounded-sm p-6 shadow-xs">
+                  <h3 className="font-heading text-sm text-leather-dark uppercase font-black mb-5">
+                    {headerText}
+                  </h3>
+                  <div className="flex items-center gap-0">
+                    {steps.map((step, index) => {
+                      const isCompleted = step.state === "completed"
+                      const isActive = step.state === "active"
+                      const isLast = index === steps.length - 1
+
+                      return (
+                        <div key={step.label} className="flex items-center flex-1">
+                          <div className="flex flex-col items-center flex-shrink-0">
+                            <div
+                              className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
+                                isCompleted
+                                  ? "bg-leather text-parchment shadow-xs scale-100"
+                                  : isActive
+                                  ? "bg-amber-600 text-white shadow-md animate-pulse ring-4 ring-amber-500/20 scale-105"
+                                  : "bg-khaki/20 text-khaki border border-khaki/30 scale-95"
+                              }`}
+                            >
+                              {isCompleted ? "✓" : isActive ? "⌛" : index + 1}
+                            </div>
+                            <span
+                              className={`mt-2 text-[10px] font-sans font-bold uppercase tracking-wider whitespace-nowrap transition-colors duration-200 ${
+                                isCompleted
+                                  ? "text-leather"
+                                  : isActive
+                                  ? "text-amber-800 font-extrabold"
+                                  : "text-khaki"
+                              }`}
+                            >
+                              {step.label}
+                            </span>
+                          </div>
+                          {!isLast && (
+                            <div
+                              className={`flex-1 h-0.5 mx-1.5 mb-5 transition-all duration-500 ${
+                                isCompleted ? "bg-leather" : "bg-khaki/30"
+                              }`}
+                            />
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })()}
 
             {/* Shipment Tracking Card */}
             {(status === "shipped" || status === "delivered") && (
@@ -276,7 +381,7 @@ export default async function OrderDetailPage({ params }: Props) {
                     </p>
                     {status === "shipped" && (
                       <p className="text-xs text-khaki italic mt-2">
-                        Your package is on its way. Delivery usually takes 7&ndash;14 business days.
+                        Your package is on its way. Estimated delivery window: <strong>{shippingInfo.estimatedDeliveryWindow}</strong> ({shippingInfo.daysText} business days).
                       </p>
                     )}
                   </div>
@@ -305,7 +410,12 @@ export default async function OrderDetailPage({ params }: Props) {
                 <p className="text-xs font-sans text-leather-dark/70 mb-4 leading-relaxed">
                   You can cancel this order at any time before it is shipped. Once shipped, cancellations are no longer permitted and standard return policies will apply.
                 </p>
-                <CancelOrderButton orderId={order.id} userId={user.id} />
+                <CancelOrderButton
+                  orderId={order.id}
+                  userId={user.id}
+                  cancellationRequested={order.cancellation_requested}
+                  cancellationRequestStatus={order.cancellation_request_status}
+                />
               </div>
             )}
 
@@ -346,7 +456,7 @@ export default async function OrderDetailPage({ params }: Props) {
                         {imageUrl ? (
                           <Image
                             src={imageUrl}
-                            alt={product?.name ?? "Product"}
+                            alt={product?.name ?? "Product image"}
                             width={64}
                             height={64}
                             className="w-full h-full object-cover"
@@ -373,6 +483,12 @@ export default async function OrderDetailPage({ params }: Props) {
                         <p className="text-xs font-sans text-khaki mt-1">
                           Qty: {item.quantity} × ${item.unit_price_usd.toFixed(2)}
                         </p>
+                        {product?.ships_from_usa && (
+                          <div className="bg-[#1D70B8]/10 border border-[#1D70B8]/20 px-3 py-1.5 flex items-center gap-2.5 text-leather-dark text-[12px] font-sans rounded-xs mt-2 w-fit">
+                            <img src="/images/us-flag.png" alt="USA Flag" className="w-4 h-3 object-cover shrink-0" />
+                            <span className="font-bold text-[#1D70B8] uppercase text-[11px]">Ships from USA — Stocked in US Warehouse</span>
+                          </div>
+                        )}
                       </div>
                       <div className="flex-shrink-0 text-right">
                         <p className="font-sans font-semibold text-sm text-leather-dark">

@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import { createClient } from "@/lib/supabase/server"
 import Link from "next/link"
-import { Search } from "lucide-react"
+import { Search, AlertTriangle } from "lucide-react"
 import { revalidatePath } from "next/cache"
 
 export const dynamic = "force-dynamic"
@@ -11,20 +11,8 @@ export const metadata: Metadata = { title: "Orders — Warcraft Exports Admin" }
 type SP = Promise<{ q?: string; status?: string; page?: string }>
 
 const PAGE_SIZE = 25
-const STATUSES = ["confirmed", "processing", "shipped", "delivered", "cancelled"]
+const STATUSES = ["confirmed", "shipped", "delivered", "cancelled"]
 
-async function updateOrderStatus(formData: FormData) {
-  "use server"
-  const { createServiceClient } = await import("@/lib/supabase/service")
-  const supabase = createServiceClient()
-  const id = formData.get("order_id") as string
-  const status = formData.get("status") as string
-  const redirectTo = (formData.get("redirect_to") as string) || "/admin/orders"
-  await supabase.from("orders").update({ status }).eq("id", id)
-  revalidatePath("/admin/orders")
-  const { redirect } = await import("next/navigation")
-  redirect(redirectTo)
-}
 const STATUS_COLORS: Record<string, string> = {
   confirmed: "bg-amber-100 text-amber-800",
   processing: "bg-blue-100 text-blue-800",
@@ -41,7 +29,7 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
 
   let query = supabase
     .from("orders")
-    .select("id, order_number, customer_email, status, total_usd, created_at, order_items(count)", { count: "exact" })
+    .select("id, order_number, customer_email, status, total_usd, created_at, cancellation_requested, cancellation_request_status, order_items(id, product:products(name, images:product_images(url, is_hero)))", { count: "exact" })
     .order("created_at", { ascending: false })
     .range(from, from + PAGE_SIZE - 1)
 
@@ -98,35 +86,50 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
             </tr>
           </thead>
           <tbody className="divide-y divide-[#F4F4F4]">
-            {(orders ?? []).map((o: { id: string; order_number: string | null; customer_email: string | null; status: string | null; total_usd: number | null; created_at: string; order_items: { count: number }[] }) => {
-              const itemCount = o.order_items?.[0]?.count ?? 0
+            {(orders ?? []).map((o: any) => {
+              const rawItems = Array.isArray(o.order_items) ? o.order_items : []
+              const itemCount = rawItems.length
+              const firstItem = rawItems[0]?.product
+              const firstImg = firstItem?.images?.find((i: any) => i.is_hero)?.url ?? firstItem?.images?.[0]?.url
               const status = o.status ?? "confirmed"
+              const isCancelPending = o.cancellation_requested && o.cancellation_request_status === "pending"
+
               return (
                 <tr key={o.id} className="hover:bg-[#FAFAFA] transition-colors">
-                  <td className="px-4 py-3 font-mono text-[12px] text-[#18181B] font-medium">#{o.order_number ?? o.id.slice(0, 8).toUpperCase()}</td>
+                  <td className="px-4 py-3 font-mono text-[12px] text-[#18181B] font-medium">
+                    <div className="flex items-center gap-3">
+                      {firstImg ? (
+                        <img src={firstImg} alt="" className="w-10 h-10 object-cover bg-[#F4F4F4] rounded-xs border border-[#E4E4E7] shrink-0" />
+                      ) : (
+                        <div className="w-10 h-10 bg-[#F4F4F4] rounded-xs border border-[#E4E4E7] shrink-0 flex items-center justify-center text-[10px] text-[#A1A1AA]">No img</div>
+                      )}
+                      <span>#{o.order_number ?? o.id.slice(0, 8).toUpperCase()}</span>
+                    </div>
+                  </td>
                   <td className="px-4 py-3 text-[#18181B] max-w-[180px] truncate">{o.customer_email ?? "—"}</td>
                   <td className="px-4 py-3 text-[#71717A] hidden md:table-cell text-[12px]">{new Date(o.created_at).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" })}</td>
                   <td className="px-4 py-3 text-[#71717A] hidden lg:table-cell">{itemCount}</td>
                   <td className="px-4 py-3">
-                    <span className={`inline-flex px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase tracking-wide ${STATUS_COLORS[status] ?? "bg-gray-100 text-gray-800"}`}>{status}</span>
+                    {isCancelPending ? (
+                      <span
+                        title="Action Needed: Cancellation Request Received"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm text-[10px] font-bold uppercase tracking-wide bg-red-100 text-red-800 border border-red-300"
+                      >
+                        <AlertTriangle size={12} className="text-red-600 shrink-0" />
+                        <span>{status}</span>
+                      </span>
+                    ) : (
+                      <span className={`inline-flex px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase tracking-wide ${STATUS_COLORS[status] ?? "bg-gray-100 text-gray-800"}`}>{status}</span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-right font-bold text-[#18181B]">${(o.total_usd ?? 0).toFixed(2)}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center justify-center gap-2">
-                      <form action={updateOrderStatus} className="flex items-center gap-1">
-                        <input type="hidden" name="order_id" value={o.id} />
-                        <input type="hidden" name="redirect_to" value={currentPath} />
-                        <select
-                          name="status"
-                          defaultValue={status}
-                          className="text-[11px] font-sans border border-[#E4E4E7] px-1.5 py-1 bg-white focus:border-[#33450D] focus:outline-none"
-                        >
-                          {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
-                        </select>
-                        <button type="submit" className="bg-[#33450D] text-white text-[10px] font-sans font-bold uppercase px-2 py-1 hover:bg-[#4A5D23] transition-colors">Save</button>
-                      </form>
-                      <Link href={`/admin/orders/${o.id}`} className="text-[11px] font-sans font-bold text-[#33450D] hover:underline uppercase tracking-wide">View</Link>
-                    </div>
+                  <td className="px-4 py-3 text-center">
+                    <Link
+                      href={`/admin/orders/${o.id}`}
+                      className="inline-flex items-center gap-1 bg-[#33450D] text-white text-[11px] font-sans font-bold uppercase tracking-wider px-3 py-1.5 hover:bg-[#4A5D23] transition-colors"
+                    >
+                      View Order →
+                    </Link>
                   </td>
                 </tr>
               )

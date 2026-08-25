@@ -1,7 +1,7 @@
 "use client"
 
 import { useTransition } from "react"
-import { updateOrderStatus } from "./actions"
+import { updateOrderStatusAction } from "./actions"
 
 interface Props {
   orderId: string
@@ -19,7 +19,7 @@ export function OrderStatusSelect({ orderId, currentStatus }: Props) {
         const nextStatus = e.target.value
         startTransition(async () => {
           try {
-            await updateOrderStatus(orderId, nextStatus)
+            await updateOrderStatusAction({ orderId, status: nextStatus })
           } catch (err) {
             console.error("Failed to update status:", err)
           }

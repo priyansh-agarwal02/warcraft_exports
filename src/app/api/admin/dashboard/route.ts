@@ -103,7 +103,7 @@ export async function GET(request: NextRequest) {
     supabase.from("products")
       .select("id, name, sku, stock_quantity, low_stock_threshold, images:product_images(url, is_hero)")
       .eq("is_active", true).gt("stock_quantity", 0).lte("stock_quantity", 5)
-      .order("stock_quantity", { ascending: true }).limit(5),
+      .order("stock_quantity", { ascending: true }).limit(10),
     // Wholesale inquiries count (in range)
     supabase.from("wholesale_inquiries").select("id, created_at")
       .gte("created_at", startISO).lte("created_at", endISO),
@@ -219,6 +219,20 @@ export async function GET(request: NextRequest) {
     })),
   ]
 
+  // Fetch pending cancellation requests explicitly to guarantee they surface regardless of creation date
+  const { data: pendingCancels } = await supabase
+    .from("orders")
+    .select("id, order_number, guest_email, user_id, status, total_usd, created_at, cancellation_requested, cancellation_request_status")
+    .eq("cancellation_requested", true)
+    .eq("cancellation_request_status", "pending")
+
+  const combinedLatestOrders = [...(pendingCancels ?? [])]
+  latestOrders?.forEach((o: any) => {
+    if (!combinedLatestOrders.some((p) => p.id === o.id)) {
+      combinedLatestOrders.push(o)
+    }
+  })
+
   const response = {
     stats: {
       totalRevenue,
@@ -239,7 +253,7 @@ export async function GET(request: NextRequest) {
       revenueByCurrency,
     },
     feeds: {
-      latestOrders: latestOrders ?? [],
+      latestOrders: combinedLatestOrders,
       lowStockProducts: lowStockProducts ?? [],
     },
     byNation: Object.entries(nationCounts).sort((a, b) => b[1] - a[1]),
