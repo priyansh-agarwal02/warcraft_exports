@@ -247,8 +247,7 @@ export async function POST(req: NextRequest) {
 
     const total = Math.round(Math.max(0, subtotal - discountUsd + shipping) * 100) / 100
 
-    // L-2 FIX: Add random entropy to prevent order number prediction
-    const orderNumber = `WE-${Date.now().toString(36).toUpperCase()}-${crypto.randomBytes(2).toString("hex").toUpperCase()}`
+    const orderNumber = `WE-${Date.now().toString(36).toUpperCase()}`
     const shippingAddress = {
       address1: customer.address1,
       address2: customer.address2 ?? "",
