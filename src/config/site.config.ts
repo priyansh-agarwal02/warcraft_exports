@@ -44,9 +44,9 @@ export const siteConfig = {
   },
 
   announcements: [
-    "Free worldwide shipping on orders over $50",
-    "Authentic WW2 reproduction gear — made in India since 2018",
-    "Trusted by reenactors in 20+ countries",
+    "LIMITED TIME OFFER - Free worldwide shipping on orders over $50",
+    "Authentic WW1 & WW2 reproduction gear — made in India since 2018",
+    "Trusted by reenactors and collectors worldwide",
   ],
 } as const;
 
