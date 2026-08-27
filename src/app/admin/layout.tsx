@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { LayoutDashboard, Package, Tag, BarChart3, Settings, ChevronRight, ShoppingCart, Users, Percent, MessageSquare, Star, Inbox, FileText, Search, Activity, Upload, Warehouse, Truck, Mail, Menu, X, Home } from "lucide-react"
@@ -66,6 +66,19 @@ function isSection(entry: NavEntry): entry is NavSection {
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [navigatingHref, setNavigatingHref] = useState<string | null>(null)
+
+  // Reset loading state when route changes
+  useEffect(() => {
+    setNavigatingHref(null)
+  }, [pathname])
+
+  const handleNavClick = (href: string) => {
+    setSidebarOpen(false)
+    if (href !== pathname) {
+      setNavigatingHref(href)
+    }
+  }
 
   return (
     /*
@@ -75,6 +88,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
      * Mobile: sidebar is a slide-in drawer, hidden by default.
      */
     <div className="min-h-screen bg-[#F4F4F4]">
+      {/* ── Top Progress Line on Route Transition ── */}
+      {navigatingHref && (
+        <div className="fixed top-0 left-0 right-0 z-50 h-1 bg-[#33450D] overflow-hidden">
+          <div className="w-full h-full bg-[#829944] animate-pulse origin-left" />
+        </div>
+      )}
+
       {/* ── Mobile overlay ── */}
       {sidebarOpen && (
         <div
@@ -92,7 +112,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       >
         {/* Header */}
         <div className="px-6 py-5 border-b border-white/10 flex items-center justify-between">
-          <Link href="/admin" className="block" onClick={() => setSidebarOpen(false)}>
+          <Link href="/admin" className="block" onClick={() => handleNavClick("/admin")}>
             <p className="text-[10px] font-sans text-white/40 uppercase tracking-[0.2em] mb-0.5">Warcraft Exports</p>
             <p className="font-heading text-white text-[18px] uppercase tracking-wide">Admin Panel</p>
           </Link>
@@ -110,21 +130,28 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           {NAV.map((entry) => {
             if (!isSection(entry)) {
               const active = entry.href === "/admin" ? pathname === "/admin" : pathname === entry.href
+              const isNavigating = navigatingHref === entry.href
               const Icon = entry.icon
               return (
                 <Link
                   key={entry.href}
                   href={entry.href}
-                  onClick={() => setSidebarOpen(false)}
+                  onClick={() => handleNavClick(entry.href)}
                   className={cn(
-                    "flex items-center gap-3 px-3 py-2.5 text-[13px] font-sans font-medium transition-colors rounded-sm",
+                    "flex items-center justify-between px-3 py-2.5 text-[13px] font-sans font-medium transition-colors rounded-sm",
                     active
                       ? "bg-[#33450D] text-white"
-                      : "text-white/60 hover:text-white hover:bg-white/5"
+                      : "text-white/60 hover:text-white hover:bg-white/5",
+                    isNavigating && "opacity-80 animate-pulse bg-white/10"
                   )}
                 >
-                  <Icon size={16} />
-                  {entry.label}
+                  <div className="flex items-center gap-3">
+                    <Icon size={16} />
+                    {entry.label}
+                  </div>
+                  {isNavigating && (
+                    <span className="w-2 h-2 rounded-full bg-[#829944] animate-ping" />
+                  )}
                 </Link>
               )
             }
@@ -136,20 +163,27 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <div className="space-y-0.5">
                   {entry.items.map(({ label, href, icon: Icon }) => {
                     const active = pathname === href || (href !== "/admin" && pathname.startsWith(href))
+                    const isNavigating = navigatingHref === href
                     return (
                       <Link
                         key={href}
                         href={href}
-                        onClick={() => setSidebarOpen(false)}
+                        onClick={() => handleNavClick(href)}
                         className={cn(
-                          "flex items-center gap-3 px-3 py-2.5 text-[13px] font-sans font-medium transition-colors rounded-sm",
+                          "flex items-center justify-between px-3 py-2.5 text-[13px] font-sans font-medium transition-colors rounded-sm",
                           active
                             ? "bg-[#33450D] text-white"
-                            : "text-white/60 hover:text-white hover:bg-white/5"
+                            : "text-white/60 hover:text-white hover:bg-white/5",
+                          isNavigating && "opacity-80 animate-pulse bg-white/10"
                         )}
                       >
-                        <Icon size={16} />
-                        {label}
+                        <div className="flex items-center gap-3">
+                          <Icon size={16} />
+                          {label}
+                        </div>
+                        {isNavigating && (
+                          <span className="w-2 h-2 rounded-full bg-[#829944] animate-ping" />
+                        )}
                       </Link>
                     )
                   })}
