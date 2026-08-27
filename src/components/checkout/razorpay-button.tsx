@@ -135,6 +135,8 @@ export function RazorpayButton({
                 razorpayOrderId: response.razorpay_order_id,
                 razorpayPaymentId: response.razorpay_payment_id,
                 razorpaySignature: response.razorpay_signature,
+                expectedAmount: data.amount,
+                expectedCurrency: data.currency,
               }),
             })
             const verified = await verifyRes.json()

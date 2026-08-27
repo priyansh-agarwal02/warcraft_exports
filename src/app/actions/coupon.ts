@@ -1,6 +1,8 @@
 "use server"
 
 import { createServiceClient } from "@/lib/supabase/service"
+import { headers } from "next/headers"
+import { checkRateLimit } from "@/lib/rate-limit"
 
 export type CouponResult = {
   success: boolean
@@ -17,6 +19,13 @@ export type CouponResult = {
 }
 
 export async function validateCouponAction(code: string, subtotal: number): Promise<CouponResult> {
+  // L-1 FIX: Rate limit coupon validation to prevent brute-force code enumeration
+  const headersList = await headers()
+  const ip = headersList.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown"
+  if (!checkRateLimit(`coupon:${ip}`, 10, 60_000)) {
+    return { success: false, error: "Too many attempts. Please wait a moment before trying again." }
+  }
+
   const cleanCode = code.toUpperCase().trim()
   if (!cleanCode) {
     return { success: false, error: "Please enter a coupon code." }
