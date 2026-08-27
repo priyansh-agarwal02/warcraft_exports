@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useTransition } from "react"
-import { saveRate, deleteRate } from "@/app/admin/shipping/actions"
+import { saveRate, deleteRate, toggleExpressRate } from "@/app/admin/shipping/actions"
 
 type ShippingRate = {
   id: string
@@ -12,6 +12,7 @@ type ShippingRate = {
   express_days: string
   express_price: number
   free_threshold: number
+  is_express_enabled?: boolean
 }
 
 interface ShippingRatesTableProps {
@@ -29,6 +30,7 @@ export function ShippingRatesTable({ rates }: ShippingRatesTableProps) {
     express_price: string
     express_days: string
     free_threshold: string
+    is_express_enabled: boolean
   }>({
     country_code: "",
     country_name: "",
@@ -37,6 +39,7 @@ export function ShippingRatesTable({ rates }: ShippingRatesTableProps) {
     express_price: "",
     express_days: "",
     free_threshold: "",
+    is_express_enabled: true,
   })
 
   const handleEditClick = (e: React.MouseEvent, rate: ShippingRate) => {
@@ -51,6 +54,7 @@ export function ShippingRatesTable({ rates }: ShippingRatesTableProps) {
       express_price: String(rate.express_price),
       express_days: rate.express_days,
       free_threshold: String(rate.free_threshold),
+      is_express_enabled: rate.is_express_enabled ?? true,
     })
   }
 
@@ -61,8 +65,22 @@ export function ShippingRatesTable({ rates }: ShippingRatesTableProps) {
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setEditForm((prev) => ({ ...prev, [name]: value }))
+    const { name, value, type, checked } = e.target
+    setEditForm((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }))
+  }
+
+  const handleToggleExpress = (id: string, currentStatus: boolean) => {
+    startTransition(async () => {
+      try {
+        await toggleExpressRate(id, !currentStatus)
+      } catch (err) {
+        alert("Failed to update express shipping status.")
+        console.error(err)
+      }
+    })
   }
 
   const handleSaveSubmit = (e?: React.FormEvent | React.MouseEvent | React.KeyboardEvent) => {
@@ -82,6 +100,7 @@ export function ShippingRatesTable({ rates }: ShippingRatesTableProps) {
       formData.append("express_price", editForm.express_price)
       formData.append("express_days", editForm.express_days)
       formData.append("free_threshold", editForm.free_threshold)
+      formData.append("is_express_enabled", String(editForm.is_express_enabled))
 
       try {
         await saveRate(formData)
@@ -120,21 +139,24 @@ export function ShippingRatesTable({ rates }: ShippingRatesTableProps) {
 
   return (
     <div className="bg-white border border-[#E4E4E7] overflow-x-auto mb-8 animate-custom-fade-in">
-      <table className="w-full min-w-[800px]">
+      <table className="w-full min-w-[900px]">
         <thead>
           <tr className="border-b border-[#E4E4E7] bg-[#F4F4F4]">
-            <th className="text-left text-[11px] font-sans font-bold uppercase tracking-widest text-[#71717A] px-4 py-3 w-[22%]">Country</th>
-            <th className="text-left text-[11px] font-sans font-bold uppercase tracking-widest text-[#71717A] px-4 py-3 w-[12%]">Standard Rate</th>
-            <th className="text-left text-[11px] font-sans font-bold uppercase tracking-widest text-[#71717A] px-4 py-3 w-[14%]">Standard Time</th>
-            <th className="text-left text-[11px] font-sans font-bold uppercase tracking-widest text-[#71717A] px-4 py-3 w-[12%]">Express Rate</th>
-            <th className="text-left text-[11px] font-sans font-bold uppercase tracking-widest text-[#71717A] px-4 py-3 w-[14%]">Express Time</th>
-            <th className="text-left text-[11px] font-sans font-bold uppercase tracking-widest text-[#71717A] px-4 py-3 w-[12%]">Free At</th>
+            <th className="text-left text-[11px] font-sans font-bold uppercase tracking-widest text-[#71717A] px-4 py-3 w-[18%]">Country</th>
+            <th className="text-left text-[11px] font-sans font-bold uppercase tracking-widest text-[#71717A] px-4 py-3 w-[10%]">Standard Rate</th>
+            <th className="text-left text-[11px] font-sans font-bold uppercase tracking-widest text-[#71717A] px-4 py-3 w-[12%]">Standard Time</th>
+            <th className="text-left text-[11px] font-sans font-bold uppercase tracking-widest text-[#71717A] px-4 py-3 w-[10%]">Express Rate</th>
+            <th className="text-left text-[11px] font-sans font-bold uppercase tracking-widest text-[#71717A] px-4 py-3 w-[12%]">Express Time</th>
+            <th className="text-left text-[11px] font-sans font-bold uppercase tracking-widest text-[#71717A] px-4 py-3 w-[15%]">Express Status</th>
+            <th className="text-left text-[11px] font-sans font-bold uppercase tracking-widest text-[#71717A] px-4 py-3 w-[9%]">Free At</th>
             <th className="text-left text-[11px] font-sans font-bold uppercase tracking-widest text-[#71717A] px-4 py-3 w-[14%]">Actions</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-[#F4F4F4]">
           {rates.map((rate) => {
             const isEditing = rate.id === editingId
+            const isExpressOn = rate.is_express_enabled !== false
+
             return (
               <tr key={rate.id} className="hover:bg-[#F4F4F4] transition-colors">
                 {/* Country Name & Code */}
@@ -221,7 +243,9 @@ export function ShippingRatesTable({ rates }: ShippingRatesTableProps) {
                       className={INPUT}
                     />
                   ) : (
-                    <p className="text-[13px] font-sans font-semibold text-[#18181B]">${Number(rate.express_price).toFixed(2)}</p>
+                    <p className={`text-[13px] font-sans font-semibold ${isExpressOn ? "text-[#18181B]" : "text-[#A1A1AA] line-through"}`}>
+                      ${Number(rate.express_price).toFixed(2)}
+                    </p>
                   )}
                 </td>
 
@@ -239,7 +263,41 @@ export function ShippingRatesTable({ rates }: ShippingRatesTableProps) {
                       placeholder="e.g. 3-5"
                     />
                   ) : (
-                    <p className="text-[13px] font-sans text-[#71717A]">{rate.express_days} days</p>
+                    <p className={`text-[13px] font-sans ${isExpressOn ? "text-[#71717A]" : "text-[#A1A1AA] line-through"}`}>
+                      {rate.express_days} days
+                    </p>
+                  )}
+                </td>
+
+                {/* Express Toggle */}
+                <td className="px-4 py-3">
+                  {isEditing ? (
+                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        name="is_express_enabled"
+                        checked={editForm.is_express_enabled}
+                        onChange={handleInputChange}
+                        className="w-4 h-4 accent-[#33450D]"
+                      />
+                      <span className="text-[12px] font-sans font-medium text-[#18181B]">
+                        {editForm.is_express_enabled ? "Enabled" : "Disabled"}
+                      </span>
+                    </label>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleToggleExpress(rate.id, isExpressOn)}
+                      disabled={isPending}
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-sans font-bold uppercase tracking-wider transition-colors cursor-pointer disabled:opacity-50 ${
+                        isExpressOn
+                          ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
+                          : "bg-rose-100 text-rose-800 hover:bg-rose-200"
+                      }`}
+                    >
+                      <span className={`w-1.5 h-1.5 rounded-full ${isExpressOn ? "bg-emerald-600" : "bg-rose-600"}`} />
+                      {isExpressOn ? "Enabled" : "Disabled"}
+                    </button>
                   )}
                 </td>
 
@@ -310,3 +368,4 @@ export function ShippingRatesTable({ rates }: ShippingRatesTableProps) {
     </div>
   )
 }
+

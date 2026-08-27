@@ -106,8 +106,14 @@ export default async function AdminShippingPage() {
                 <label className="block text-[11px] font-sans font-bold uppercase tracking-widest text-[#71717A] mb-1.5">Free Threshold ($) *</label>
                 <input name="free_threshold" type="number" step="1" required placeholder="150" className={INPUT} />
               </div>
-              <div className="flex items-end">
-                <button type="submit" className="w-full bg-[#33450D] text-white text-[12px] font-sans font-bold uppercase tracking-[0.1em] py-2 hover:bg-[#4A5D23] transition-colors">
+              <div className="flex items-center gap-2 pt-6">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input type="checkbox" name="is_express_enabled" value="true" defaultChecked className="w-4 h-4 accent-[#33450D]" />
+                  <span className="text-[11px] font-sans font-bold uppercase tracking-wider text-[#18181B]">Enable Express</span>
+                </label>
+              </div>
+              <div className="col-span-2 sm:col-span-4 flex justify-end">
+                <button type="submit" className="px-6 bg-[#33450D] text-white text-[12px] font-sans font-bold uppercase tracking-[0.1em] py-2.5 hover:bg-[#4A5D23] transition-colors cursor-pointer">
                   Add Rate
                 </button>
               </div>

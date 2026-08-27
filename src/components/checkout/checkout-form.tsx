@@ -231,6 +231,14 @@ export function CheckoutForm() {
   const fallbackRate = dbRates.find((r) => r.country_code === "OTHER")
   const selectedRate = activeRate ?? fallbackRate
 
+  const isExpressAvailable = selectedRate ? selectedRate.is_express_enabled !== false : true
+
+  useEffect(() => {
+    if (!isExpressAvailable && shippingMethod === "express") {
+      setShippingMethod("standard")
+    }
+  }, [isExpressAvailable, shippingMethod])
+
   const standardPrice = selectedRate ? Number(selectedRate.standard_price) : 14.99
   const expressPrice = selectedRate ? Number(selectedRate.express_price) : 35.00
   const freeThreshold = selectedRate ? Number(selectedRate.free_threshold) : 150
@@ -238,7 +246,7 @@ export function CheckoutForm() {
   const standardDays = selectedRate ? selectedRate.standard_days : "5-10"
   const expressDays = selectedRate ? selectedRate.express_days : "1-3"
 
-  const isExpress = shippingMethod === "express"
+  const isExpress = isExpressAvailable && shippingMethod === "express"
   
   // Support free shipping coupons
   const freeShipping = subtotalUsd >= freeThreshold || appliedCoupon?.type === "free_shipping"
@@ -560,34 +568,36 @@ export function CheckoutForm() {
                 </span>
               </div>
 
-              {/* Express option */}
-              <div 
-                className={`flex items-center justify-between p-4 border rounded-sm cursor-pointer transition-all bg-parchment/30 select-none ${
-                  shippingMethod === "express" 
-                    ? "border-leather bg-parchment/70 ring-1 ring-leather" 
-                    : "border-khaki/60 hover:border-leather"
-                }`}
-                onClick={() => setShippingMethod("express")}
-              >
-                <div className="flex items-center gap-3.5">
-                  <div className="w-4 h-4 rounded-full border border-leather flex items-center justify-center bg-canvas flex-shrink-0">
-                    {shippingMethod === "express" && (
-                      <div className="w-2.5 h-2.5 rounded-full bg-leather" />
-                    )}
+              {/* Express option (Only rendered if enabled for selected destination country) */}
+              {isExpressAvailable && (
+                <div 
+                  className={`flex items-center justify-between p-4 border rounded-sm cursor-pointer transition-all bg-parchment/30 select-none ${
+                    shippingMethod === "express" 
+                      ? "border-leather bg-parchment/70 ring-1 ring-leather" 
+                      : "border-khaki/60 hover:border-leather"
+                  }`}
+                  onClick={() => setShippingMethod("express")}
+                >
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-4 h-4 rounded-full border border-leather flex items-center justify-center bg-canvas flex-shrink-0">
+                      {shippingMethod === "express" && (
+                        <div className="w-2.5 h-2.5 rounded-full bg-leather" />
+                      )}
+                    </div>
+                    <div className="text-left">
+                      <span className="block text-[13px] font-sans font-bold text-leather-dark uppercase tracking-wider">
+                        Express Shipping (US Warehouse Stock - Expedited)
+                      </span>
+                      <span className="block text-[11px] font-sans text-khaki uppercase tracking-widest mt-1">
+                        {expressDays} Business Days
+                      </span>
+                    </div>
                   </div>
-                  <div className="text-left">
-                    <span className="block text-[13px] font-sans font-bold text-leather-dark uppercase tracking-wider">
-                      Express Shipping (US Warehouse Stock - Expedited)
-                    </span>
-                    <span className="block text-[11px] font-sans text-khaki uppercase tracking-widest mt-1">
-                      {expressDays} Business Days
-                    </span>
-                  </div>
+                  <span className="text-[13px] font-sans font-bold text-leather-dark flex-shrink-0">
+                    {format(expressCost)}
+                  </span>
                 </div>
-                <span className="text-[13px] font-sans font-bold text-leather-dark flex-shrink-0">
-                  {format(expressCost)}
-                </span>
-              </div>
+              )}
             </div>
           </section>
 

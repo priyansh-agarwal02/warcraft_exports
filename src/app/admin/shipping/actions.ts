@@ -8,6 +8,9 @@ export async function saveRate(formData: FormData) {
   const id = formData.get("id") as string
   const countryCode = (formData.get("country_code") as string).trim().toUpperCase()
   
+  const isExpressRaw = formData.get("is_express_enabled")
+  const isExpressEnabled = isExpressRaw === null ? true : isExpressRaw === "true" || isExpressRaw === "on"
+
   const data = {
     country_code: countryCode,
     country_name: (formData.get("country_name") as string).trim(),
@@ -16,6 +19,7 @@ export async function saveRate(formData: FormData) {
     express_price: parseFloat(formData.get("express_price") as string) || 0,
     express_days: (formData.get("express_days") as string).trim(),
     free_threshold: parseFloat(formData.get("free_threshold") as string) || 0,
+    is_express_enabled: isExpressEnabled,
   }
   
   if (id) {
@@ -57,6 +61,23 @@ export async function saveRate(formData: FormData) {
     }
   }
   revalidatePath("/admin/shipping")
+}
+
+export async function toggleExpressRate(id: string, isEnabled: boolean) {
+  const { createServiceClient } = await import("@/lib/supabase/service")
+  const supabase = createServiceClient()
+
+  const { error } = await supabase
+    .from("shipping_rates")
+    .update({ is_express_enabled: isEnabled })
+    .eq("id", id)
+
+  if (error) {
+    console.error("Error toggling express shipping rate:", error)
+    throw new Error(error.message)
+  }
+  revalidatePath("/admin/shipping")
+  revalidatePath("/api/shipping-rates")
 }
 
 
