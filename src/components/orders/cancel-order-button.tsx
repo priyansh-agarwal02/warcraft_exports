@@ -5,14 +5,12 @@ import { requestOrderCancellationAction } from "@/app/(store)/account/orders/[id
 
 type CancelOrderButtonProps = {
   orderId: string
-  userId: string
   cancellationRequested?: boolean
   cancellationRequestStatus?: string | null
 }
 
 export function CancelOrderButton({
   orderId,
-  userId,
   cancellationRequested,
   cancellationRequestStatus,
 }: CancelOrderButtonProps) {
@@ -48,7 +46,6 @@ export function CancelOrderButton({
     startTransition(async () => {
       const formData = new FormData()
       formData.append("order_id", orderId)
-      formData.append("user_id", userId)
       formData.append("reason", reason)
 
       try {

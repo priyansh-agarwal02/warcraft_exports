@@ -412,7 +412,6 @@ export default async function OrderDetailPage({ params }: Props) {
                 </p>
                 <CancelOrderButton
                   orderId={order.id}
-                  userId={user.id}
                   cancellationRequested={order.cancellation_requested}
                   cancellationRequestStatus={order.cancellation_request_status}
                 />

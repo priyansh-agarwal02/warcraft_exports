@@ -73,7 +73,27 @@ export function CheckoutForm() {
     const supabase = createClient()
 
     async function loadUserData() {
-      // Tier 1: Instant client auth resolution so fields populate in 1ms
+      // Tier 0: Instant client localStorage memory pre-fill (works for guest or logged-in)
+      try {
+        const cached = localStorage.getItem("warcraft_checkout_contact")
+        if (cached) {
+          const parsed = JSON.parse(cached)
+          setForm((prev) => ({
+            ...prev,
+            fullName: prev.fullName || parsed.fullName || "",
+            email: prev.email || parsed.email || "",
+            phone: prev.phone || parsed.phone || "",
+            address1: prev.address1 || parsed.address1 || "",
+            address2: prev.address2 || parsed.address2 || "",
+            city: prev.city || parsed.city || "",
+            state: prev.state || parsed.state || "",
+            postalCode: prev.postalCode || parsed.postalCode || "",
+            country: prev.country || parsed.country || "United States",
+          }))
+        }
+      } catch {}
+
+      // Tier 1: Instant client auth resolution
       let user = (await supabase.auth.getUser()).data?.user
       let session = (await supabase.auth.getSession()).data?.session
 
@@ -134,11 +154,11 @@ export function CheckoutForm() {
             email: resolvedEmail || prev.email,
             fullName: defaultAddr?.full_name || resolvedName || prev.fullName,
             phone: defaultAddr?.phone || resolvedPhone || prev.phone,
-            address1: defaultAddr?.line1 || roAddr?.line1 || prev.address1,
-            address2: defaultAddr?.line2 || roAddr?.line2 || prev.address2,
+            address1: defaultAddr?.line1 || roAddr?.address1 || roAddr?.line1 || prev.address1,
+            address2: defaultAddr?.line2 || roAddr?.address2 || roAddr?.line2 || prev.address2,
             city: defaultAddr?.city || roAddr?.city || prev.city,
             state: defaultAddr?.state || roAddr?.state || prev.state,
-            postalCode: defaultAddr?.postal_code || roAddr?.postal_code || prev.postalCode,
+            postalCode: defaultAddr?.postal_code || roAddr?.postalCode || roAddr?.postal_code || prev.postalCode,
             country: defaultAddr?.country || roAddr?.country || prev.country || "United States",
           }))
           return
@@ -297,6 +317,10 @@ export function CheckoutForm() {
   }
 
   async function createOrder(paymentDetails?: { paymentMethod: "razorpay" | "paypal"; paymentIntentId: string; status: string }): Promise<{ orderId: string; orderNumber: string } | null> {
+    try {
+      localStorage.setItem("warcraft_checkout_contact", JSON.stringify(form))
+    } catch {}
+
     const res = await fetch("/api/orders", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

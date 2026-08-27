@@ -15,6 +15,11 @@ export const metadata: Metadata = {
 type SP = Promise<{ order_number?: string; email?: string }>
 
 async function getOrder(orderNumber: string, email: string) {
+  // C-2 FIX: Sanitize email before interpolating into PostgREST .or() filter
+  const sanitizedEmail = email.trim().toLowerCase().replace(/[(),]/g, "")
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!EMAIL_RE.test(sanitizedEmail)) return null
+
   const supabase = createServiceClient()
   const { data } = await supabase
     .from("orders")
@@ -49,7 +54,7 @@ async function getOrder(orderNumber: string, email: string) {
       )
     `)
     .eq("order_number", orderNumber)
-    .or(`customer_email.eq.${email},guest_email.eq.${email}`)
+    .or(`customer_email.eq.${sanitizedEmail},guest_email.eq.${sanitizedEmail}`)
     .single()
   return data
 }

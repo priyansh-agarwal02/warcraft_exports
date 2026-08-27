@@ -2,9 +2,6 @@ import { NextRequest, NextResponse } from "next/server"
 import { sendNewsletterWelcome } from "@/lib/email"
 import { checkRateLimit } from "@/lib/rate-limit"
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
-
 const EMAIL_REGEX = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/
 
 export async function POST(req: NextRequest) {
@@ -36,6 +33,10 @@ export async function POST(req: NextRequest) {
       const userWithoutDots = parts[0].replace(/\./g, "").split("+")[0]
       email = `${userWithoutDots}@${parts[1]}`
     }
+
+    // M-1 FIX: Lazy-evaluate service credentials at request time
+    const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
+    const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
     const res = await fetch(
       `${SUPABASE_URL}/rest/v1/newsletter_subscribers`,

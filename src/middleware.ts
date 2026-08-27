@@ -226,6 +226,10 @@ export async function middleware(request: NextRequest) {
   supabaseResponse.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   supabaseResponse.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
 
+  // H-2 NOTE: CSP is set in next.config.ts headers() for comprehensive coverage.
+  // HSTS — enforce HTTPS and prevent protocol downgrade attacks
+  supabaseResponse.headers.set("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload");
+
   return supabaseResponse;
 }
 

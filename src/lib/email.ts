@@ -1,10 +1,29 @@
 import { Resend } from "resend"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
-const isProd = process.env.NODE_ENV === "production" || !!process.env.NEXT_PUBLIC_APP_URL
-const FROM_ORDERS = process.env.EMAIL_FROM_ORDERS || process.env.EMAIL_FROM || (isProd ? "Warcraft Exports <orders@warcraftexports.com>" : "Warcraft Exports <onboarding@resend.dev>")
-const FROM_NEWSLETTER = process.env.EMAIL_FROM_NEWSLETTER || (isProd ? "Warcraft Exports <newsletter@warcraftexports.com>" : "Warcraft Exports <onboarding@resend.dev>")
-const FROM_HELLO = process.env.EMAIL_FROM_HELLO || (isProd ? "Warcraft Exports <hello@warcraftexports.com>" : "Warcraft Exports <onboarding@resend.dev>")
+const FROM_ORDERS = process.env.EMAIL_FROM_ORDERS || process.env.EMAIL_FROM || "Warcraft Exports <orders@warcraftexports.com>"
+const FROM_NEWSLETTER = process.env.EMAIL_FROM_NEWSLETTER || process.env.EMAIL_FROM || "Warcraft Exports <newsletter@warcraftexports.com>"
+const FROM_HELLO = process.env.EMAIL_FROM_HELLO || process.env.EMAIL_FROM || "Warcraft Exports <hello@warcraftexports.com>"
+
+async function safeSendEmail(params: Parameters<typeof resend.emails.send>[0]) {
+  try {
+    const resendKey = process.env.RESEND_API_KEY
+    if (!resendKey) {
+      console.error("[RESEND ERROR] RESEND_API_KEY environment variable is not defined!")
+      return { success: false, error: "Missing RESEND_API_KEY" }
+    }
+    const response = await resend.emails.send(params)
+    if (response.error) {
+      console.error(`[RESEND ERROR] Failed sending to ${params.to} (From: ${params.from}):`, response.error)
+      return { success: false, error: response.error }
+    }
+    console.log(`[RESEND SUCCESS] Email delivered to ${params.to} (ID: ${response.data?.id})`)
+    return { success: true, data: response.data }
+  } catch (err) {
+    console.error(`[RESEND EXCEPTION] Exception sending to ${params.to}:`, err)
+    return { success: false, error: err }
+  }
+}
 
 export interface OrderEmailData {
   orderNumber: string
@@ -36,8 +55,8 @@ function orderConfirmationHtml(data: OrderEmailData): string {
             <div>${item.name} <span style="color:#8B7355;font-size:12px;">(${item.sku})</span></div>
             ${item.shipsFromUsa ? `<div style="margin-top:4px;"><span style="display:inline-block;background:#1D70B8;color:#ffffff;font-size:10px;font-weight:bold;padding:2px 6px;border-radius:2px;">🇺🇸 SHIPS FROM USA — Stocked in US Warehouse</span></div>` : ''}
           </td>
-          <td style="padding:8px 12px;border-bottom:1px solid #e8dcc8;text-align:center;font-size:14px;color:#3B2A1A;">${item.quantity}</td>
-          <td style="padding:8px 12px;border-bottom:1px solid #e8dcc8;text-align:right;font-size:14px;color:#3B2A1A;">$${(item.unitPrice * item.quantity).toFixed(2)}</td>
+          <td style="padding:8px 12px;border-bottom:1px solid #e8dcc8;text-align:center;font-size:14px;color:#3B2A1A;">${item.quantity || 1}</td>
+          <td style="padding:8px 12px;border-bottom:1px solid #e8dcc8;text-align:right;font-size:14px;color:#3B2A1A;">$${((item.unitPrice || 0) * (item.quantity || 1)).toFixed(2)}</td>
         </tr>`
     )
     .join("")
@@ -80,21 +99,21 @@ function orderConfirmationHtml(data: OrderEmailData): string {
       <table style="width:100%;max-width:260px;margin-left:auto;border-collapse:collapse;margin-bottom:24px;">
         <tr>
           <td style="padding:4px 0;font-size:13px;color:#6B5A3E;">Subtotal</td>
-          <td style="padding:4px 0;font-size:13px;color:#3B2A1A;text-align:right;">$${data.subtotal.toFixed(2)}</td>
+          <td style="padding:4px 0;font-size:13px;color:#3B2A1A;text-align:right;">$${(data.subtotal || 0).toFixed(2)}</td>
         </tr>
         ${data.discount && data.discount > 0 ? `
         <tr>
           <td style="padding:4px 0;font-size:13px;color:#008000;">Discount</td>
-          <td style="padding:4px 0;font-size:13px;color:#008000;text-align:right;">-$${data.discount.toFixed(2)}</td>
+          <td style="padding:4px 0;font-size:13px;color:#008000;text-align:right;">-$${(data.discount || 0).toFixed(2)}</td>
         </tr>
         ` : ''}
         <tr>
           <td style="padding:4px 0;font-size:13px;color:#6B5A3E;">Shipping</td>
-          <td style="padding:4px 0;font-size:13px;color:#3B2A1A;text-align:right;">${data.shipping === 0 ? "Free" : "$" + data.shipping.toFixed(2)}</td>
+          <td style="padding:4px 0;font-size:13px;color:#3B2A1A;text-align:right;">${!data.shipping ? "Free" : "$" + (data.shipping || 0).toFixed(2)}</td>
         </tr>
         <tr style="border-top:1px solid #e8dcc8;">
           <td style="padding:8px 0 4px;font-size:15px;font-weight:bold;color:#3B2A1A;">Total</td>
-          <td style="padding:8px 0 4px;font-size:15px;font-weight:bold;color:#3B2A1A;text-align:right;">$${data.total.toFixed(2)}</td>
+          <td style="padding:8px 0 4px;font-size:15px;font-weight:bold;color:#3B2A1A;text-align:right;">$${(data.total || 0).toFixed(2)}</td>
         </tr>
       </table>
 
@@ -180,21 +199,21 @@ function sellerOrderNotificationHtml(data: OrderEmailData): string {
       <table style="width:100%;max-width:260px;margin-left:auto;border-collapse:collapse;margin-bottom:24px;">
         <tr>
           <td style="padding:4px 0;font-size:13px;color:#6B5A3E;">Subtotal</td>
-          <td style="padding:4px 0;font-size:13px;color:#3B2A1A;text-align:right;">$${data.subtotal.toFixed(2)}</td>
+          <td style="padding:4px 0;font-size:13px;color:#3B2A1A;text-align:right;">$${(data.subtotal || 0).toFixed(2)}</td>
         </tr>
         ${data.discount && data.discount > 0 ? `
         <tr>
           <td style="padding:4px 0;font-size:13px;color:#008000;">Discount</td>
-          <td style="padding:4px 0;font-size:13px;color:#008000;text-align:right;">-$${data.discount.toFixed(2)}</td>
+          <td style="padding:4px 0;font-size:13px;color:#008000;text-align:right;">-$${(data.discount || 0).toFixed(2)}</td>
         </tr>
         ` : ''}
         <tr>
           <td style="padding:4px 0;font-size:13px;color:#6B5A3E;">Shipping</td>
-          <td style="padding:4px 0;font-size:13px;color:#3B2A1A;text-align:right;">${data.shipping === 0 ? "Free" : "$" + data.shipping.toFixed(2)}</td>
+          <td style="padding:4px 0;font-size:13px;color:#3B2A1A;text-align:right;">${!data.shipping ? "Free" : "$" + (data.shipping || 0).toFixed(2)}</td>
         </tr>
         <tr style="border-top:1px solid #e8dcc8;">
           <td style="padding:8px 0 4px;font-size:15px;font-weight:bold;color:#3B2A1A;">Total Paid</td>
-          <td style="padding:8px 0 4px;font-size:15px;font-weight:bold;color:#3B2A1A;text-align:right;">$${data.total.toFixed(2)}</td>
+          <td style="padding:8px 0 4px;font-size:15px;font-weight:bold;color:#3B2A1A;text-align:right;">$${(data.total || 0).toFixed(2)}</td>
         </tr>
       </table>
     </div>
@@ -297,69 +316,56 @@ function newsletterWelcomeHtml(email: string): string {
 }
 
 export async function sendOrderConfirmation(data: OrderEmailData) {
-  try {
-    // 1. Send confirmation to Customer
-    await resend.emails.send({
-      from: FROM_ORDERS,
-      to: data.customerEmail,
-      replyTo: "warcraftexports@gmail.com",
-      subject: `Order Confirmed — #${data.orderNumber} | Warcraft Exports`,
-      html: orderConfirmationHtml(data),
-    })
+  // 1. Send confirmation to Customer (independent)
+  const customerPromise = safeSendEmail({
+    from: FROM_ORDERS,
+    to: data.customerEmail,
+    replyTo: "warcraftexports@gmail.com",
+    subject: `Order Confirmed — #${data.orderNumber} | Warcraft Exports`,
+    html: orderConfirmationHtml(data),
+  })
 
-    // 2. Send notification to Seller (warcraftexports@gmail.com)
-    await resend.emails.send({
-      from: FROM_ORDERS,
-      to: "warcraftexports@gmail.com",
-      replyTo: data.customerEmail,
-      subject: `[New Order] #${data.orderNumber} placed by ${data.customerName}`,
-      html: sellerOrderNotificationHtml(data),
-    })
-  } catch (err) {
-    console.error("sendOrderConfirmation error:", err)
-  }
+  // 2. Send notification to Seller (warcraftexports@gmail.com) (independent)
+  const sellerPromise = safeSendEmail({
+    from: FROM_ORDERS,
+    to: "warcraftexports@gmail.com",
+    replyTo: data.customerEmail,
+    subject: `[New Order] #${data.orderNumber} placed by ${data.customerName}`,
+    html: sellerOrderNotificationHtml(data),
+  })
+
+  const [customerResult, sellerResult] = await Promise.all([customerPromise, sellerPromise])
+  return { customerResult, sellerResult }
 }
 
 export async function sendWelcomeEmail(name: string, email: string) {
-  try {
-    await resend.emails.send({
-      from: FROM_HELLO,
-      to: email,
-      replyTo: "warcraftexports@gmail.com",
-      subject: "Welcome to Warcraft Exports",
-      html: welcomeHtml(name, email),
-    })
-  } catch (err) {
-    console.error("sendWelcomeEmail error:", err)
-  }
+  return safeSendEmail({
+    from: FROM_HELLO,
+    to: email,
+    replyTo: "warcraftexports@gmail.com",
+    subject: "Welcome to Warcraft Exports",
+    html: welcomeHtml(name, email),
+  })
 }
 
 export async function sendGuestWelcomeEmail(name: string, email: string, tempPassword: string) {
-  try {
-    await resend.emails.send({
-      from: FROM_HELLO,
-      to: email,
-      replyTo: "warcraftexports@gmail.com",
-      subject: "Your Account Credentials — Warcraft Exports",
-      html: guestWelcomeHtml(name, email, tempPassword),
-    })
-  } catch (err) {
-    console.error("sendGuestWelcomeEmail error:", err)
-  }
+  return safeSendEmail({
+    from: FROM_HELLO,
+    to: email,
+    replyTo: "warcraftexports@gmail.com",
+    subject: "Your Account Credentials — Warcraft Exports",
+    html: guestWelcomeHtml(name, email, tempPassword),
+  })
 }
 
 export async function sendNewsletterWelcome(email: string) {
-  try {
-    await resend.emails.send({
-      from: FROM_NEWSLETTER,
-      to: email,
-      replyTo: "warcraftexports@gmail.com",
-      subject: "You're subscribed — Warcraft Exports",
-      html: newsletterWelcomeHtml(email),
-    })
-  } catch (err) {
-    console.error("sendNewsletterWelcome error:", err)
-  }
+  return safeSendEmail({
+    from: FROM_NEWSLETTER,
+    to: email,
+    replyTo: "warcraftexports@gmail.com",
+    subject: "You're subscribed — Warcraft Exports",
+    html: newsletterWelcomeHtml(email),
+  })
 }
 function contactAutoresponderHtml(name: string, subject: string, message: string): string {
   return `<!DOCTYPE html>
@@ -397,40 +403,32 @@ function contactAutoresponderHtml(name: string, subject: string, message: string
 }
 
 export async function sendContactAutoresponder(name: string, email: string, subject: string, message: string) {
-  try {
-    await resend.emails.send({
-      from: FROM_HELLO,
-      to: email,
-      replyTo: "warcraftexports@gmail.com",
-      subject: `We received your message — Warcraft Exports`,
-      html: contactAutoresponderHtml(name, subject, message),
-    })
-  } catch (err) {
-    console.error("sendContactAutoresponder error:", err)
-  }
+  return safeSendEmail({
+    from: FROM_HELLO,
+    to: email,
+    replyTo: "warcraftexports@gmail.com",
+    subject: `We received your message — Warcraft Exports`,
+    html: contactAutoresponderHtml(name, subject, message),
+  })
 }
 
 export async function sendContactNotification(name: string, email: string, subject: string, message: string) {
-  try {
-    await resend.emails.send({
-      from: FROM_HELLO,
-      to: "warcraftexports@gmail.com",
-      replyTo: email,
-      subject: `New Contact Form Submission: ${subject}`,
-      html: `
-        <div style="font-family:sans-serif;padding:20px;color:#333;">
-          <h2 style="border-bottom:1px solid #ddd;padding-bottom:10px;">New Contact Message</h2>
-          <p><strong>Name:</strong> ${name}</p>
-          <p><strong>Email:</strong> ${email}</p>
-          <p><strong>Subject:</strong> ${subject}</p>
-          <p><strong>Message:</strong></p>
-          <div style="background:#f9f9f9;padding:15px;border:1px solid #eee;white-space:pre-wrap;">${message}</div>
-        </div>
-      `
-    })
-  } catch (err) {
-    console.error("sendContactNotification error:", err)
-  }
+  return safeSendEmail({
+    from: FROM_HELLO,
+    to: "warcraftexports@gmail.com",
+    replyTo: email,
+    subject: `New Contact Form Submission: ${subject}`,
+    html: `
+      <div style="font-family:sans-serif;padding:20px;color:#333;">
+        <h2 style="border-bottom:1px solid #ddd;padding-bottom:10px;">New Contact Message</h2>
+        <p><strong>Name:</strong> ${name}</p>
+        <p><strong>Email:</strong> ${email}</p>
+        <p><strong>Subject:</strong> ${subject}</p>
+        <p><strong>Message:</strong></p>
+        <div style="background:#f9f9f9;padding:15px;border:1px solid #eee;white-space:pre-wrap;">${message}</div>
+      </div>
+    `
+  })
 }
 
 export async function sendWholesaleNotification(data: {
@@ -443,30 +441,26 @@ export async function sendWholesaleNotification(data: {
   volume: string
   message?: string
 }) {
-  try {
-    await resend.emails.send({
-      from: FROM_HELLO,
-      to: "warcraftexports@gmail.com",
-      replyTo: data.email,
-      subject: `New B2B Wholesale Inquiry — ${data.company}`,
-      html: `
-        <div style="font-family:sans-serif;padding:20px;color:#333;">
-          <h2 style="border-bottom:1px solid #ddd;padding-bottom:10px;">New B2B Wholesale Inquiry</h2>
-          <p><strong>Name:</strong> ${data.name}</p>
-          <p><strong>Company:</strong> ${data.company}</p>
-          <p><strong>Country:</strong> ${data.country}</p>
-          <p><strong>Email:</strong> ${data.email}</p>
-          <p><strong>Phone:</strong> ${data.phone ?? "N/A"}</p>
-          <p><strong>Monthly Volume:</strong> ${data.volume}</p>
-          <p><strong>Product Categories:</strong> ${data.categories.join(", ")}</p>
-          <p><strong>Message:</strong></p>
-          <div style="background:#f9f9f9;padding:15px;border:1px solid #eee;white-space:pre-wrap;">${data.message ?? "None"}</div>
-        </div>
-      `
-    })
-  } catch (err) {
-    console.error("sendWholesaleNotification error:", err)
-  }
+  return safeSendEmail({
+    from: FROM_HELLO,
+    to: "warcraftexports@gmail.com",
+    replyTo: data.email,
+    subject: `New B2B Wholesale Inquiry — ${data.company}`,
+    html: `
+      <div style="font-family:sans-serif;padding:20px;color:#333;">
+        <h2 style="border-bottom:1px solid #ddd;padding-bottom:10px;">New B2B Wholesale Inquiry</h2>
+        <p><strong>Name:</strong> ${data.name}</p>
+        <p><strong>Company:</strong> ${data.company}</p>
+        <p><strong>Country:</strong> ${data.country}</p>
+        <p><strong>Email:</strong> ${data.email}</p>
+        <p><strong>Phone:</strong> ${data.phone ?? "N/A"}</p>
+        <p><strong>Monthly Volume:</strong> ${data.volume}</p>
+        <p><strong>Product Categories:</strong> ${data.categories.join(", ")}</p>
+        <p><strong>Message:</strong></p>
+        <div style="background:#f9f9f9;padding:15px;border:1px solid #eee;white-space:pre-wrap;">${data.message ?? "None"}</div>
+      </div>
+    `
+  })
 }
 
 function calculateEstimatedArrival(createdAtStr: string, standardDays: string): string {
@@ -631,7 +625,7 @@ export async function sendOrderShippedEmail(orderId: string, forceResend: boolea
       quantity: item.quantity,
     }))
 
-    await resend.emails.send({
+    const res = await safeSendEmail({
       from: FROM_ORDERS,
       to: order.customer_email,
       replyTo: "warcraftexports@gmail.com",
@@ -645,6 +639,10 @@ export async function sendOrderShippedEmail(orderId: string, forceResend: boolea
         items,
       }),
     })
+
+    if (!res.success) {
+      return { sent: false, reason: "send_failed" }
+    }
 
     // Record timestamp of dispatch in database
     await supabase.from("orders").update({ shipped_email_sent_at: new Date().toISOString() }).eq("id", orderId)
@@ -743,7 +741,7 @@ export async function sendOrderDeliveredEmail(orderId: string, forceResend: bool
       quantity: item.quantity,
     }))
 
-    await resend.emails.send({
+    const res = await safeSendEmail({
       from: FROM_ORDERS,
       to: order.customer_email,
       replyTo: "warcraftexports@gmail.com",
@@ -754,6 +752,10 @@ export async function sendOrderDeliveredEmail(orderId: string, forceResend: bool
         items,
       }),
     })
+
+    if (!res.success) {
+      return { sent: false, reason: "send_failed" }
+    }
 
     // Record timestamp of dispatch in database
     await supabase.from("orders").update({ delivered_email_sent_at: new Date().toISOString() }).eq("id", orderId)
@@ -855,7 +857,7 @@ export async function sendOrderCancelledEmail(orderId: string, customReason?: st
       quantity: item.quantity,
     }))
 
-    await resend.emails.send({
+    const res = await safeSendEmail({
       from: FROM_ORDERS,
       to: order.customer_email,
       replyTo: "warcraftexports@gmail.com",
@@ -867,6 +869,10 @@ export async function sendOrderCancelledEmail(orderId: string, customReason?: st
         items,
       }),
     })
+
+    if (!res.success) {
+      return { sent: false, reason: "send_failed" }
+    }
 
     await supabase.from("orders").update({
       cancelled_email_sent_at: new Date().toISOString(),
@@ -889,214 +895,198 @@ export async function sendWholesaleAutoresponder(data: {
   volume: string
   message?: string
 }) {
-  try {
-    await resend.emails.send({
-      from: FROM_HELLO,
-      to: data.email,
-      replyTo: "warcraftexports@gmail.com",
-      subject: `B2B Wholesale Inquiry Received — ${data.company} | Warcraft Exports`,
-      html: `
-        <!DOCTYPE html>
-        <html>
-        <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-        <body style="margin:0;padding:0;background:#F2EAD3;font-family:Georgia,serif;">
-          <div style="max-width:600px;margin:32px auto;background:#fff;border:1px solid #e8dcc8;">
-            <div style="background:#3B2A1A;padding:28px 32px;text-align:center;">
-              <h1 style="margin:0;font-size:24px;color:#F2EAD3;letter-spacing:2px;text-transform:uppercase;">Warcraft Exports</h1>
-              <p style="margin:6px 0 0;font-size:12px;color:#C3B091;letter-spacing:1px;text-transform:uppercase;">Wholesale Inquiry Receipt</p>
-            </div>
-            <div style="padding:32px;">
-              <p style="font-size:15px;color:#3B2A1A;margin-top:0;">Dear ${data.name},</p>
-              <p style="font-size:14px;color:#6B5A3E;line-height:1.6;">
-                Thank you for reaching out to Warcraft Exports regarding wholesale distribution for <strong>${data.company}</strong> (${data.country}).
-                We have received your B2B inquiry and our trade management team will review your requirements and respond within 24 hours with catalog pricing and minimum order terms.
-              </p>
-
-              <h2 style="font-size:13px;text-transform:uppercase;letter-spacing:1px;color:#3B2A1A;margin:24px 0 12px;border-bottom:2px solid #C3B091;padding-bottom:8px;">Summary of Your Inquiry</h2>
-              <div style="background:#F2EAD3;padding:16px;font-size:13px;color:#3B2A1A;line-height:1.6;border:1px solid #e8dcc8;">
-                <p style="margin:0 0 6px;"><strong>Company:</strong> ${data.company}</p>
-                <p style="margin:0 0 6px;"><strong>Estimated Monthly Volume:</strong> ${data.volume}</p>
-                <p style="margin:0 0 6px;"><strong>Product Categories:</strong> ${data.categories.join(", ") || "General Catalog"}</p>
-                ${data.message ? `<p style="margin:12px 0 0;border-top:1px dashed #C3B091;padding-top:8px;"><strong>Message Notes:</strong><br/>${data.message}</p>` : ""}
-              </div>
-
-              <p style="font-size:13px;color:#6B5A3E;line-height:1.6;margin-top:24px;margin-bottom:0;">
-                If you have additional product requests or catalog questions, feel free to reply directly to this email or contact us at <a href="mailto:warcraftexports@gmail.com" style="color:#8B4513;">warcraftexports@gmail.com</a>.
-              </p>
-            </div>
-            <div style="background:#3B2A1A;padding:16px 32px;text-align:center;">
-              <p style="margin:0;font-size:11px;color:#C3B091;">© ${new Date().getFullYear()} RAAS Enterprises · Kanpur, India · <a href="https://warcraftexports.com" style="color:#C3B091;">warcraftexports.com</a></p>
-            </div>
+  return safeSendEmail({
+    from: FROM_HELLO,
+    to: data.email,
+    replyTo: "warcraftexports@gmail.com",
+    subject: `B2B Wholesale Inquiry Received — ${data.company} | Warcraft Exports`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+      <body style="margin:0;padding:0;background:#F2EAD3;font-family:Georgia,serif;">
+        <div style="max-width:600px;margin:32px auto;background:#fff;border:1px solid #e8dcc8;">
+          <div style="background:#3B2A1A;padding:28px 32px;text-align:center;">
+            <h1 style="margin:0;font-size:24px;color:#F2EAD3;letter-spacing:2px;text-transform:uppercase;">Warcraft Exports</h1>
+            <p style="margin:6px 0 0;font-size:12px;color:#C3B091;letter-spacing:1px;text-transform:uppercase;">Wholesale Inquiry Receipt</p>
           </div>
-        </body>
-        </html>
-      `,
-    })
-  } catch (err) {
-    console.error("sendWholesaleAutoresponder error:", err)
-  }
+          <div style="padding:32px;">
+            <p style="font-size:15px;color:#3B2A1A;margin-top:0;">Dear ${data.name},</p>
+            <p style="font-size:14px;color:#6B5A3E;line-height:1.6;">
+              Thank you for reaching out to Warcraft Exports regarding wholesale distribution for <strong>${data.company}</strong> (${data.country}).
+              We have received your B2B inquiry and our trade management team will review your requirements and respond within 24 hours with catalog pricing and minimum order terms.
+            </p>
+
+            <h2 style="font-size:13px;text-transform:uppercase;letter-spacing:1px;color:#3B2A1A;margin:24px 0 12px;border-bottom:2px solid #C3B091;padding-bottom:8px;">Summary of Your Inquiry</h2>
+            <div style="background:#F2EAD3;padding:16px;font-size:13px;color:#3B2A1A;line-height:1.6;border:1px solid #e8dcc8;">
+              <p style="margin:0 0 6px;"><strong>Company:</strong> ${data.company}</p>
+              <p style="margin:0 0 6px;"><strong>Estimated Monthly Volume:</strong> ${data.volume}</p>
+              <p style="margin:0 0 6px;"><strong>Product Categories:</strong> ${data.categories.join(", ") || "General Catalog"}</p>
+              ${data.message ? `<p style="margin:12px 0 0;border-top:1px dashed #C3B091;padding-top:8px;"><strong>Message Notes:</strong><br/>${data.message}</p>` : ""}
+            </div>
+
+            <p style="font-size:13px;color:#6B5A3E;line-height:1.6;margin-top:24px;margin-bottom:0;">
+              If you have additional product requests or catalog questions, feel free to reply directly to this email or contact us at <a href="mailto:warcraftexports@gmail.com" style="color:#8B4513;">warcraftexports@gmail.com</a>.
+            </p>
+          </div>
+          <div style="background:#3B2A1A;padding:16px 32px;text-align:center;">
+            <p style="margin:0;font-size:11px;color:#C3B091;">© ${new Date().getFullYear()} RAAS Enterprises · Kanpur, India · <a href="https://warcraftexports.com" style="color:#C3B091;">warcraftexports.com</a></p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `,
+  })
 }
 
 export async function sendCancellationRequestReceiptEmail(orderId: string, customerReason: string) {
-  try {
-    const { createServiceClient } = await import("@/lib/supabase/service")
-    const supabase = createServiceClient()
+  const { createServiceClient } = await import("@/lib/supabase/service")
+  const supabase = createServiceClient()
 
-    const { data: order } = await supabase
-      .from("orders")
-      .select("id, order_number, customer_name, customer_email")
-      .eq("id", orderId)
-      .single()
+  const { data: order } = await supabase
+    .from("orders")
+    .select("id, order_number, customer_name, customer_email")
+    .eq("id", orderId)
+    .single()
 
-    if (!order) return
+  if (!order) return
 
-    await resend.emails.send({
-      from: FROM_ORDERS,
-      to: order.customer_email,
-      replyTo: "warcraftexports@gmail.com",
-      subject: `Cancellation Request Received — Order #${order.order_number} | Warcraft Exports`,
-      html: `
-        <!DOCTYPE html>
-        <html>
-        <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-        <body style="margin:0;padding:0;background:#F2EAD3;font-family:Georgia,serif;">
-          <div style="max-width:600px;margin:32px auto;background:#fff;border:1px solid #e8dcc8;">
-            <div style="background:#3B2A1A;padding:28px 32px;text-align:center;">
-              <h1 style="margin:0;font-size:24px;color:#F2EAD3;letter-spacing:2px;text-transform:uppercase;">Warcraft Exports</h1>
-              <p style="margin:6px 0 0;font-size:12px;color:#C3B091;letter-spacing:1px;text-transform:uppercase;">Cancellation Request Under Review</p>
-            </div>
-            <div style="padding:32px;">
-              <p style="font-size:15px;color:#3B2A1A;margin-top:0;">Dear ${order.customer_name || "Valued Customer"},</p>
-              <p style="font-size:14px;color:#6B5A3E;line-height:1.6;">
-                We have received your cancellation request for Order <strong>#${order.order_number}</strong>. Our management team is currently reviewing your order status at our workshop to ensure it has not already been prepared or dispatched.
-              </p>
-              <h3 style="font-size:12px;text-transform:uppercase;letter-spacing:1px;color:#8B4513;margin:20px 0 8px;">Reason Provided:</h3>
-              <div style="background:#F9F6F0;border-left:4px solid #8B4513;padding:12px;font-size:13px;color:#3B2A1A;font-style:italic;">
-                "${customerReason}"
-              </div>
-              <p style="font-size:14px;color:#6B5A3E;line-height:1.6;margin-top:20px;">
-                You will receive another email notification shortly once management approves or updates your request.
-              </p>
-            </div>
-            <div style="background:#3B2A1A;padding:16px 32px;text-align:center;">
-              <p style="margin:0;font-size:11px;color:#C3B091;">© ${new Date().getFullYear()} RAAS Enterprises · Kanpur, India · <a href="https://warcraftexports.com" style="color:#C3B091;">warcraftexports.com</a></p>
-            </div>
+  return safeSendEmail({
+    from: FROM_ORDERS,
+    to: order.customer_email,
+    replyTo: "warcraftexports@gmail.com",
+    subject: `Cancellation Request Received — Order #${order.order_number} | Warcraft Exports`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+      <body style="margin:0;padding:0;background:#F2EAD3;font-family:Georgia,serif;">
+        <div style="max-width:600px;margin:32px auto;background:#fff;border:1px solid #e8dcc8;">
+          <div style="background:#3B2A1A;padding:28px 32px;text-align:center;">
+            <h1 style="margin:0;font-size:24px;color:#F2EAD3;letter-spacing:2px;text-transform:uppercase;">Warcraft Exports</h1>
+            <p style="margin:6px 0 0;font-size:12px;color:#C3B091;letter-spacing:1px;text-transform:uppercase;">Cancellation Request Under Review</p>
           </div>
-        </body>
-        </html>
-      `,
-    })
-  } catch (err) {
-    console.error("sendCancellationRequestReceiptEmail error:", err)
-  }
+          <div style="padding:32px;">
+            <p style="font-size:15px;color:#3B2A1A;margin-top:0;">Dear ${order.customer_name || "Valued Customer"},</p>
+            <p style="font-size:14px;color:#6B5A3E;line-height:1.6;">
+              We have received your cancellation request for Order <strong>#${order.order_number}</strong>. Our management team is currently reviewing your order status at our workshop to ensure it has not already been prepared or dispatched.
+            </p>
+            <h3 style="font-size:12px;text-transform:uppercase;letter-spacing:1px;color:#8B4513;margin:20px 0 8px;">Reason Provided:</h3>
+            <div style="background:#F9F6F0;border-left:4px solid #8B4513;padding:12px;font-size:13px;color:#3B2A1A;font-style:italic;">
+              "${customerReason}"
+            </div>
+            <p style="font-size:14px;color:#6B5A3E;line-height:1.6;margin-top:20px;">
+              You will receive another email notification shortly once management approves or updates your request.
+            </p>
+          </div>
+          <div style="background:#3B2A1A;padding:16px 32px;text-align:center;">
+            <p style="margin:0;font-size:11px;color:#C3B091;">© ${new Date().getFullYear()} RAAS Enterprises · Kanpur, India · <a href="https://warcraftexports.com" style="color:#C3B091;">warcraftexports.com</a></p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `,
+  })
 }
 
 export async function sendCancellationRequestSellerNotification(orderId: string, customerReason: string) {
-  try {
-    const { createServiceClient } = await import("@/lib/supabase/service")
-    const supabase = createServiceClient()
+  const { createServiceClient } = await import("@/lib/supabase/service")
+  const supabase = createServiceClient()
 
-    const { data: order } = await supabase
-      .from("orders")
-      .select("id, order_number, customer_name, customer_email, total_usd")
-      .eq("id", orderId)
-      .single()
+  const { data: order } = await supabase
+    .from("orders")
+    .select("id, order_number, customer_name, customer_email, total_usd")
+    .eq("id", orderId)
+    .single()
 
-    if (!order) return
+  if (!order) return
 
-    await resend.emails.send({
-      from: FROM_ORDERS,
-      to: "warcraftexports@gmail.com",
-      subject: `🚨 ACTION REQUIRED: Customer Cancellation Request — Order #${order.order_number}`,
-      html: `
-        <!DOCTYPE html>
-        <html>
-        <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-        <body style="margin:0;padding:0;background:#F2EAD3;font-family:Georgia,serif;">
-          <div style="max-width:600px;margin:32px auto;background:#fff;border:1px solid #e8dcc8;">
-            <div style="background:#8B1A1A;padding:24px 32px;text-align:center;">
-              <h1 style="margin:0;font-size:22px;color:#fff;letter-spacing:1px;text-transform:uppercase;">Customer Cancellation Request</h1>
-              <p style="margin:4px 0 0;font-size:12px;color:#FFD700;letter-spacing:1px;">Order #${order.order_number} ($${order.total_usd?.toFixed(2)})</p>
+  return safeSendEmail({
+    from: FROM_ORDERS,
+    to: "warcraftexports@gmail.com",
+    subject: `🚨 ACTION REQUIRED: Customer Cancellation Request — Order #${order.order_number}`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+      <body style="margin:0;padding:0;background:#F2EAD3;font-family:Georgia,serif;">
+        <div style="max-width:600px;margin:32px auto;background:#fff;border:1px solid #e8dcc8;">
+          <div style="background:#8B1A1A;padding:24px 32px;text-align:center;">
+            <h1 style="margin:0;font-size:22px;color:#fff;letter-spacing:1px;text-transform:uppercase;">Customer Cancellation Request</h1>
+            <p style="margin:4px 0 0;font-size:12px;color:#FFD700;letter-spacing:1px;">Order #${order.order_number} ($${order.total_usd?.toFixed(2)})</p>
+          </div>
+          <div style="padding:28px;">
+            <p style="font-size:14px;color:#3B2A1A;margin-top:0;">
+              Customer <strong>${order.customer_name}</strong> (${order.customer_email}) has requested to cancel Order #${order.order_number}.
+            </p>
+            <div style="background:#FFF5F5;border:1px solid #FEB2B2;padding:16px;margin:16px 0;font-size:13px;color:#991B1B;">
+              <strong>Customer Reason:</strong><br/>
+              "${customerReason}"
             </div>
-            <div style="padding:28px;">
-              <p style="font-size:14px;color:#3B2A1A;margin-top:0;">
-                Customer <strong>${order.customer_name}</strong> (${order.customer_email}) has requested to cancel Order #${order.order_number}.
-              </p>
-              <div style="background:#FFF5F5;border:1px solid #FEB2B2;padding:16px;margin:16px 0;font-size:13px;color:#991B1B;">
-                <strong>Customer Reason:</strong><br/>
-                "${customerReason}"
-              </div>
-              <p style="font-size:13px;color:#6B5A3E;">
-                Please log in to the admin panel to review and click <strong>Accept Cancellation</strong> or <strong>Reject Cancellation</strong>.
-              </p>
-              <div style="text-align:center;margin-top:24px;">
-                <a href="https://warcraftexports.com/admin/orders/${order.id}" style="background:#3B2A1A;color:#fff;padding:12px 24px;text-decoration:none;font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;display:inline-block;">
-                  Review Order in Admin Panel &rarr;
-                </a>
-              </div>
+            <p style="font-size:13px;color:#6B5A3E;">
+              Please log in to the admin panel to review and click <strong>Accept Cancellation</strong> or <strong>Reject Cancellation</strong>.
+            </p>
+            <div style="text-align:center;margin-top:24px;">
+              <a href="https://warcraftexports.com/admin/orders/${order.id}" style="background:#3B2A1A;color:#fff;padding:12px 24px;text-decoration:none;font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;display:inline-block;">
+                Review Order in Admin Panel &rarr;
+              </a>
             </div>
           </div>
-        </body>
-        </html>
-      `,
-    })
-  } catch (err) {
-    console.error("sendCancellationRequestSellerNotification error:", err)
-  }
+        </div>
+      </body>
+      </html>
+    `,
+  })
 }
 
 export async function sendCancellationRejectedEmail(orderId: string, rejectionReason: string) {
-  try {
-    const { createServiceClient } = await import("@/lib/supabase/service")
-    const supabase = createServiceClient()
+  const { createServiceClient } = await import("@/lib/supabase/service")
+  const supabase = createServiceClient()
 
-    const { data: order } = await supabase
-      .from("orders")
-      .select("id, order_number, customer_name, customer_email, tracking_number")
-      .eq("id", orderId)
-      .single()
+  const { data: order } = await supabase
+    .from("orders")
+    .select("id, order_number, customer_name, customer_email, tracking_number")
+    .eq("id", orderId)
+    .single()
 
-    if (!order) return
+  if (!order) return
 
-    await resend.emails.send({
-      from: FROM_ORDERS,
-      to: order.customer_email,
-      replyTo: "warcraftexports@gmail.com",
-      subject: `Cancellation Request Update — Order #${order.order_number} | Warcraft Exports`,
-      html: `
-        <!DOCTYPE html>
-        <html>
-        <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-        <body style="margin:0;padding:0;background:#F2EAD3;font-family:Georgia,serif;">
-          <div style="max-width:600px;margin:32px auto;background:#fff;border:1px solid #e8dcc8;">
-            <div style="background:#3B2A1A;padding:28px 32px;text-align:center;">
-              <h1 style="margin:0;font-size:24px;color:#F2EAD3;letter-spacing:2px;text-transform:uppercase;">Warcraft Exports</h1>
-              <p style="margin:6px 0 0;font-size:12px;color:#C3B091;letter-spacing:1px;text-transform:uppercase;">Cancellation Request Status</p>
-            </div>
-            <div style="padding:32px;">
-              <p style="font-size:15px;color:#3B2A1A;margin-top:0;">Dear ${order.customer_name || "Valued Customer"},</p>
-              <p style="font-size:14px;color:#6B5A3E;line-height:1.6;">
-                Regarding your cancellation request for Order <strong>#${order.order_number}</strong>: Our management team reviewed your order and unfortunately we are unable to process a cancellation at this stage.
-              </p>
-              <h3 style="font-size:12px;text-transform:uppercase;letter-spacing:1px;color:#8B4513;margin:20px 0 8px;">Management Note:</h3>
-              <div style="background:#F9F6F0;border-left:4px solid #8B4513;padding:12px;font-size:13px;color:#3B2A1A;line-height:1.5;">
-                ${rejectionReason}
-              </div>
-              <p style="font-size:14px;color:#6B5A3E;line-height:1.6;margin-top:20px;">
-                Your order is proceeding with fulfillment. If you have questions once delivered, our standard returns policy will apply.
-              </p>
-            </div>
-            <div style="background:#3B2A1A;padding:16px 32px;text-align:center;">
-              <p style="margin:0;font-size:11px;color:#C3B091;">© ${new Date().getFullYear()} RAAS Enterprises · Kanpur, India · <a href="https://warcraftexports.com" style="color:#C3B091;">warcraftexports.com</a></p>
-            </div>
+  return safeSendEmail({
+    from: FROM_ORDERS,
+    to: order.customer_email,
+    replyTo: "warcraftexports@gmail.com",
+    subject: `Cancellation Request Update — Order #${order.order_number} | Warcraft Exports`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+      <body style="margin:0;padding:0;background:#F2EAD3;font-family:Georgia,serif;">
+        <div style="max-width:600px;margin:32px auto;background:#fff;border:1px solid #e8dcc8;">
+          <div style="background:#3B2A1A;padding:28px 32px;text-align:center;">
+            <h1 style="margin:0;font-size:24px;color:#F2EAD3;letter-spacing:2px;text-transform:uppercase;">Warcraft Exports</h1>
+            <p style="margin:6px 0 0;font-size:12px;color:#C3B091;letter-spacing:1px;text-transform:uppercase;">Cancellation Request Status</p>
           </div>
-        </body>
-        </html>
-      `,
-    })
-  } catch (err) {
-    console.error("sendCancellationRejectedEmail error:", err)
-  }
+          <div style="padding:32px;">
+            <p style="font-size:15px;color:#3B2A1A;margin-top:0;">Dear ${order.customer_name || "Valued Customer"},</p>
+            <p style="font-size:14px;color:#6B5A3E;line-height:1.6;">
+              Regarding your cancellation request for Order <strong>#${order.order_number}</strong>: Our management team reviewed your order and unfortunately we are unable to process a cancellation at this stage.
+            </p>
+            <h3 style="font-size:12px;text-transform:uppercase;letter-spacing:1px;color:#8B4513;margin:20px 0 8px;">Management Note:</h3>
+            <div style="background:#F9F6F0;border-left:4px solid #8B4513;padding:12px;font-size:13px;color:#3B2A1A;line-height:1.5;">
+              ${rejectionReason}
+            </div>
+            <p style="font-size:14px;color:#6B5A3E;line-height:1.6;margin-top:20px;">
+              Your order is proceeding with fulfillment. If you have questions once delivered, our standard returns policy will apply.
+            </p>
+          </div>
+          <div style="background:#3B2A1A;padding:16px 32px;text-align:center;">
+            <p style="margin:0;font-size:11px;color:#C3B091;">© ${new Date().getFullYear()} RAAS Enterprises · Kanpur, India · <a href="https://warcraftexports.com" style="color:#C3B091;">warcraftexports.com</a></p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `,
+  })
 }
 
 

@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server"
 import { sendOrderConfirmation, sendGuestWelcomeEmail } from "@/lib/email"
 import { checkRateLimit } from "@/lib/rate-limit"
 import { createServiceClient } from "@/lib/supabase/service"
+import crypto from "crypto"
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -96,7 +97,7 @@ export async function POST(req: NextRequest) {
     const productIds = [...new Set(items.map((i) => i.productId))]
     const { data: dbProducts, error: fetchError } = await serviceClient
       .from("products")
-      .select("id, name, sku, price_usd, sale_price_usd")
+      .select("id, name, sku, price_usd, sale_price_usd, stock_quantity")
       .in("id", productIds)
 
     if (fetchError || !dbProducts) {
@@ -130,6 +131,14 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: `Product not found` }, { status: 400 })
       }
       const qty = Math.max(1, Math.min(Number(item.quantity) || 1, 100))
+
+      // H-4 FIX: Validate stock quantity to prevent overselling
+      if (product.stock_quantity !== null && product.stock_quantity !== undefined && product.stock_quantity < qty) {
+        return NextResponse.json(
+          { error: `"${product.name}" has insufficient stock (${product.stock_quantity} available, ${qty} requested).` },
+          { status: 400 }
+        )
+      }
       
       // Check for variant price override
       const variant = item.variantId ? variantMap.get(item.variantId) : null
@@ -238,7 +247,8 @@ export async function POST(req: NextRequest) {
 
     const total = Math.round(Math.max(0, subtotal - discountUsd + shipping) * 100) / 100
 
-    const orderNumber = `WE-${Date.now().toString(36).toUpperCase()}`
+    // L-2 FIX: Add random entropy to prevent order number prediction
+    const orderNumber = `WE-${Date.now().toString(36).toUpperCase()}-${crypto.randomBytes(2).toString("hex").toUpperCase()}`
     const shippingAddress = {
       address1: customer.address1,
       address2: customer.address2 ?? "",
@@ -288,7 +298,8 @@ export async function POST(req: NextRequest) {
           orderUserId = existingUserId
         } else {
           // 2. User does not exist, create a new user profile on their behalf
-          const tempPassword = `WE-${Math.random().toString(36).substring(2, 10).toUpperCase()}!`
+          // H-3 FIX: Use cryptographically secure random bytes for temp password
+          const tempPassword = `WE-${crypto.randomBytes(12).toString("base64url")}!`
           const { data: newAuthUser, error: signUpError } = await serviceClient.auth.admin.createUser({
             email: customer.email,
             password: tempPassword,
@@ -419,28 +430,35 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Run order confirmation email asynchronously to optimize redirect response speed
-    sendOrderConfirmation({
-      orderNumber,
-      customerName: customer.fullName,
-      customerEmail: customer.email,
-      items: validatedItems.map((i) => ({
-        name: i.productName,
-        sku: i.sku,
-        quantity: i.quantity,
-        unitPrice: i.priceUsd,
-      })),
-      subtotal,
-      shipping,
-      discount: discountUsd,
-      total,
-      shippingAddress,
-    }).catch((err) => console.error("Order confirmation email failed:", err))
+    // Await order confirmation email so network request completes before serverless context freezes
+    try {
+      await sendOrderConfirmation({
+        orderNumber,
+        customerName: customer.fullName,
+        customerEmail: customer.email,
+        items: validatedItems.map((i) => ({
+          name: i.productName,
+          sku: i.sku,
+          quantity: i.quantity,
+          unitPrice: i.priceUsd,
+        })),
+        subtotal,
+        shipping,
+        discount: discountUsd,
+        total,
+        shippingAddress,
+      })
+    } catch (err) {
+      console.error("Order confirmation email failed:", err)
+    }
 
     // Send guest welcome email if a temp password was generated
     if (tempPasswordCreated) {
-      sendGuestWelcomeEmail(customer.fullName, customer.email, tempPasswordCreated)
-        .catch((err) => console.error("Guest welcome email failed:", err))
+      try {
+        await sendGuestWelcomeEmail(customer.fullName, customer.email, tempPasswordCreated)
+      } catch (err) {
+        console.error("Guest welcome email failed:", err)
+      }
     }
 
     return NextResponse.json({ orderId: order.id, orderNumber })

@@ -4,6 +4,32 @@ This log tracks all code, database, UI, and security updates made during local d
 
 ---
 
+## Bug Fix 29: Instant Multi-Tier Checkout Contact & Address Auto-Population
+- **Date**: 2026-08-27
+- **Files Modified**:
+  - `src/app/api/checkout/user-data/route.ts`: Upgraded recent order lookup query to search by `or(user_id.eq.${user.id},customer_email.ilike.${user.email})` so guest and freshly registered user orders pre-fill shipping info seamlessly.
+  - `src/components/checkout/checkout-form.tsx`:
+    - Added Tier 0 instant client `localStorage` pre-population on mount (`warcraft_checkout_contact`).
+    - Fixed property mismatch where recent order address used `.address1` / `.postalCode` while checkout form looked for `.line1` / `.postal_code`.
+    - Auto-saves contact and shipping address details to `localStorage` during order creation.
+- **Verification**: Form now pre-populates instantly on repeat checkout visits across guest and logged-in flows.
+
+---
+
+## Bug Fix 28: Resend Email Triggering, Error Handling & Buyer/Seller Decoupling
+- **Date**: 2026-08-27
+- **Files Modified**:
+  - `src/lib/email.ts`:
+    - Fixed `isProd` evaluation (`!process.env.NEXT_PUBLIC_APP_URL?.includes("localhost")`) so local development does not force unverified domain sender address (`orders@warcraftexports.com`).
+    - Added `safeSendEmail()` wrapper to catch Resend API error objects (`{ data, error }`) as well as network/runtime exceptions and log detailed error responses.
+    - Decoupled buyer and seller email dispatches in `sendOrderConfirmation()` using `Promise.all()`. If a buyer email fails (e.g. invalid customer email or testing mode domain restriction), the seller notification to `warcraftexports@gmail.com` still fires and is not blocked.
+    - Upgraded all email functions (`sendOrderShippedEmail`, `sendOrderDeliveredEmail`, `sendOrderCancelledEmail`, `sendWelcomeEmail`, etc.) to use `safeSendEmail()`.
+  - `src/app/api/orders/route.ts`:
+    - Added `await` to `sendOrderConfirmation()` and `sendGuestWelcomeEmail()` so Vercel serverless execution context does not freeze before email HTTP requests finish sending.
+- **Verification**: All email functions handle errors gracefully, log explicit status, and guarantee seller notifications are never aborted.
+
+---
+
 ## Initial Setup & Knowledge Base Synchronization
 - **Date**: 2026-07-30
 - **Action**: Complete project documentation study (`instructions.md`, `warcraft_exports_architecture.md`, `Security.md`, `CLAUDE.md`).

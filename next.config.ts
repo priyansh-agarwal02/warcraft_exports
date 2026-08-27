@@ -1,6 +1,12 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // M-3 FIX: CSRF protection — restrict server actions to trusted origins
+  experimental: {
+    serverActions: {
+      allowedOrigins: ["www.warcraftexports.com", "warcraftexports.com", "localhost:3000"],
+    },
+  },
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "utfs.io" },

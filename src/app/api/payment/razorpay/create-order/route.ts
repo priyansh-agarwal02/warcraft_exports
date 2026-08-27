@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
 
   const { totalUsd, currency = "USD" } = body
 
-  if (!totalUsd || totalUsd <= 0) {
+  if (!totalUsd || totalUsd <= 0 || totalUsd > 25000) {
     return NextResponse.json({ error: "Invalid amount" }, { status: 400 })
   }
 
