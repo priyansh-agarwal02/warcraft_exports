@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import Link from "next/link"
+import { ExternalLink } from "lucide-react"
 import { createClient } from "@/lib/supabase/server"
 import { OrderFulfillmentManager } from "@/components/admin/order-fulfillment-manager"
 
@@ -15,20 +16,25 @@ export default async function AdminOrderDetailPage({ params }: Props) {
   const { data: order } = await supabase
     .from("orders")
     .select(`id, order_number, notes, customer_name, customer_email, customer_phone, payment_method, payment_intent_id, status, total_usd, subtotal_usd, shipping_usd, discount_usd, tax_usd, created_at, tracking_number, tracking_url, shipping_address, shipped_email_sent_at, delivered_email_sent_at, cancelled_email_sent_at, cancellation_reason, cancellation_requested, customer_cancellation_reason, cancellation_request_status, cancellation_rejection_reason,
-      order_items(id, quantity, unit_price_usd, product:products(name, sku, slug, ships_from_usa, images:product_images(url, is_hero)))`)
+      order_items(id, quantity, unit_price_usd, product_snapshot, variant_id, variant:product_variants(id, color, size, sku_suffix, image_url), product:products(name, sku, slug, ships_from_usa, images:product_images(url, is_hero)))`)
     .eq("id", id)
     .single()
 
   if (!order) notFound()
 
+  type OrderItemWithVariant = {
+    id: string
+    quantity: number
+    unit_price_usd: number
+    product_snapshot?: { name?: string; sku?: string; variant_label?: string; color?: string; size?: string } | null
+    variant_id?: string | null
+    variant?: { id?: string; color?: string; size?: string; sku_suffix?: string; image_url?: string } | null
+    product: { name: string; sku: string; slug: string; ships_from_usa?: boolean; images: { url: string; is_hero: boolean }[] } | null
+  }
+
   // Compute items & check if any item is US Warehouse stocked
   const items = Array.isArray(order.order_items)
-    ? (order.order_items as unknown as {
-        id: string
-        quantity: number
-        unit_price_usd: number
-        product: { name: string; sku: string; slug: string; ships_from_usa?: boolean; images: { url: string; is_hero: boolean }[] } | null
-      }[])
+    ? (order.order_items as unknown as OrderItemWithVariant[])
     : []
 
   const hasUsWarehouseItem = items.some((item) => item.product?.ships_from_usa)
@@ -112,13 +118,47 @@ export default async function AdminOrderDetailPage({ params }: Props) {
                   <div key={item.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#F4F4F4] last:border-0 last:pb-0">
                     <div className="flex items-start gap-4">
                       {img ? (
-                        <img src={img} alt={item.product?.name ?? ""} className="w-16 h-16 object-cover bg-[#F4F4F4] shrink-0 rounded-xs border border-[#E4E4E7]" />
+                        item.product?.slug ? (
+                          <Link href={`/product/${item.product.slug}`} target="_blank" rel="noopener noreferrer" className="shrink-0 group">
+                            <img src={img} alt={item.product?.name ?? ""} className="w-16 h-16 object-cover bg-[#F4F4F4] rounded-xs border border-[#E4E4E7] group-hover:border-[#33450D] transition-colors" />
+                          </Link>
+                        ) : (
+                          <img src={img} alt={item.product?.name ?? ""} className="w-16 h-16 object-cover bg-[#F4F4F4] shrink-0 rounded-xs border border-[#E4E4E7]" />
+                        )
                       ) : (
                         <div className="w-16 h-16 bg-[#F4F4F4] shrink-0 rounded-xs border border-[#E4E4E7]" />
                       )}
                       <div className="space-y-1">
-                        <p className="font-sans font-semibold text-[13px] text-[#18181B]">{item.product?.name}</p>
-                        <p className="font-sans text-[11px] text-[#71717A]">SKU: {item.product?.sku ?? "N/A"} · Qty: {item.quantity} × ${item.unit_price_usd.toFixed(2)}</p>
+                        {item.product?.slug ? (
+                          <Link
+                            href={`/product/${item.product.slug}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-sans font-semibold text-[13px] text-[#18181B] hover:text-[#33450D] hover:underline transition-colors inline-flex items-center gap-1.5 group"
+                          >
+                            <span>{item.product.name}</span>
+                            <ExternalLink size={12} className="text-[#71717A] group-hover:text-[#33450D] transition-colors shrink-0" />
+                          </Link>
+                        ) : (
+                          <p className="font-sans font-semibold text-[13px] text-[#18181B]">{item.product?.name ?? item.product_snapshot?.name}</p>
+                        )}
+                        {(() => {
+                          const variantText = item.product_snapshot?.variant_label
+                            || [item.variant?.color, item.variant?.size].filter(Boolean).join(" / ")
+                            || item.variant?.size
+                            || item.variant?.color
+                            || null
+
+                          if (!variantText) return null
+
+                          return (
+                            <div className="inline-flex items-center gap-1.5 bg-[#33450D]/10 text-[#33450D] border border-[#33450D]/20 px-2 py-0.5 rounded-xs text-[11px] font-sans font-bold uppercase tracking-wider">
+                              <span>Option:</span>
+                              <span className="text-[#18181B]">{variantText}</span>
+                            </div>
+                          )
+                        })()}
+                        <p className="font-sans text-[11px] text-[#71717A]">SKU: {item.product?.sku ?? item.product_snapshot?.sku ?? "N/A"} · Qty: {item.quantity} × ${item.unit_price_usd.toFixed(2)}</p>
                         {item.product?.ships_from_usa && (
                           <div className="inline-flex items-center gap-2 bg-[#1D70B8]/10 text-[#1D70B8] border border-[#1D70B8]/20 px-2.5 py-1 rounded-xs text-[11px] font-sans font-bold uppercase tracking-wider mt-1">
                             <img src="/images/us-flag.png" alt="USA Flag" className="w-4 h-3 object-cover shrink-0" />

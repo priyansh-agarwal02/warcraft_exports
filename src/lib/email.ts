@@ -31,7 +31,14 @@ export interface OrderEmailData {
   customerEmail: string
   shippingMethodLabel?: string
   estimatedDeliveryWindow?: string
-  items: { name: string; quantity: number; unitPrice: number; sku: string; shipsFromUsa?: boolean }[]
+  items: {
+    name: string
+    quantity: number
+    unitPrice: number
+    sku: string
+    shipsFromUsa?: boolean
+    variantLabel?: string
+  }[]
   subtotal: number
   shipping: number
   discount?: number
@@ -53,6 +60,7 @@ function orderConfirmationHtml(data: OrderEmailData): string {
         `<tr>
           <td style="padding:8px 12px;border-bottom:1px solid #e8dcc8;font-size:14px;color:#3B2A1A;">
             <div>${item.name} <span style="color:#8B7355;font-size:12px;">(${item.sku})</span></div>
+            ${item.variantLabel ? `<div style="color:#8B4513;font-size:12px;font-weight:bold;margin-top:2px;">Option: ${item.variantLabel}</div>` : ''}
             ${item.shipsFromUsa ? `<div style="margin-top:4px;"><span style="display:inline-block;background:#1D70B8;color:#ffffff;font-size:10px;font-weight:bold;padding:2px 6px;border-radius:2px;">🇺🇸 SHIPS FROM USA — Stocked in US Warehouse</span></div>` : ''}
           </td>
           <td style="padding:8px 12px;border-bottom:1px solid #e8dcc8;text-align:center;font-size:14px;color:#3B2A1A;">${item.quantity || 1}</td>
@@ -143,7 +151,10 @@ function sellerOrderNotificationHtml(data: OrderEmailData): string {
     .map(
       (item) =>
         `<tr>
-          <td style="padding:8px 12px;border-bottom:1px solid #e8dcc8;font-size:14px;color:#3B2A1A;">${item.name} <span style="color:#8B7355;font-size:12px;">(${item.sku})</span></td>
+          <td style="padding:8px 12px;border-bottom:1px solid #e8dcc8;font-size:14px;color:#3B2A1A;">
+            <div>${item.name} <span style="color:#8B7355;font-size:12px;">(${item.sku})</span></div>
+            ${item.variantLabel ? `<div style="color:#8B4513;font-size:12px;font-weight:bold;margin-top:2px;">Selected Option: ${item.variantLabel}</div>` : ''}
+          </td>
           <td style="padding:8px 12px;border-bottom:1px solid #e8dcc8;text-align:center;font-size:14px;color:#3B2A1A;">${item.quantity}</td>
           <td style="padding:8px 12px;border-bottom:1px solid #e8dcc8;text-align:right;font-size:14px;color:#3B2A1A;">$${(item.unitPrice * item.quantity).toFixed(2)}</td>
         </tr>`
@@ -418,16 +429,58 @@ export async function sendContactNotification(name: string, email: string, subje
     to: "warcraftexports@gmail.com",
     replyTo: email,
     subject: `New Contact Form Submission: ${subject}`,
-    html: `
-      <div style="font-family:sans-serif;padding:20px;color:#333;">
-        <h2 style="border-bottom:1px solid #ddd;padding-bottom:10px;">New Contact Message</h2>
-        <p><strong>Name:</strong> ${name}</p>
-        <p><strong>Email:</strong> ${email}</p>
-        <p><strong>Subject:</strong> ${subject}</p>
-        <p><strong>Message:</strong></p>
-        <div style="background:#f9f9f9;padding:15px;border:1px solid #eee;white-space:pre-wrap;">${message}</div>
+    html: `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#F2EAD3;font-family:Georgia,serif;">
+  <div style="max-width:600px;margin:32px auto;background:#fff;border:1px solid #e8dcc8;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+    <div style="background:#3B2A1A;padding:28px 32px;text-align:center;">
+      <h1 style="margin:0;font-size:24px;color:#F2EAD3;letter-spacing:2px;text-transform:uppercase;">Warcraft Exports</h1>
+      <p style="margin:6px 0 0;font-size:12px;color:#C3B091;letter-spacing:1px;text-transform:uppercase;font-weight:bold;">New Contact Form Message</p>
+    </div>
+
+    <div style="padding:32px;">
+      <p style="font-size:15px;color:#3B2A1A;margin-top:0;">Hello Admin,</p>
+      <p style="font-size:14px;color:#6B5A3E;line-height:1.6;margin-bottom:24px;">
+        A customer has submitted a message via the storefront contact form:
+      </p>
+
+      <h2 style="font-size:13px;text-transform:uppercase;letter-spacing:1px;color:#3B2A1A;margin:0 0 12px;border-bottom:2px solid #C3B091;padding-bottom:8px;">Message Details</h2>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:24px;font-size:13px;">
+        <tbody>
+          <tr style="border-bottom:1px solid #F2EAD3;">
+            <td style="padding:10px 12px;color:#8B7355;font-weight:bold;width:30%;background:#FAF7F2;">Sender Name</td>
+            <td style="padding:10px 12px;color:#3B2A1A;font-weight:bold;">${name}</td>
+          </tr>
+          <tr style="border-bottom:1px solid #F2EAD3;">
+            <td style="padding:10px 12px;color:#8B7355;font-weight:bold;background:#FAF7F2;">Sender Email</td>
+            <td style="padding:10px 12px;color:#3B2A1A;">
+              <a href="mailto:${email}" style="color:#8B4513;text-decoration:none;font-weight:bold;">${email}</a>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:10px 12px;color:#8B7355;font-weight:bold;background:#FAF7F2;">Subject</td>
+            <td style="padding:10px 12px;color:#3B2A1A;">${subject}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2 style="font-size:13px;text-transform:uppercase;letter-spacing:1px;color:#3B2A1A;margin:24px 0 12px;border-bottom:2px solid #C3B091;padding-bottom:8px;">Message Content</h2>
+      <div style="background:#F2EAD3;padding:16px;font-size:13px;color:#3B2A1A;line-height:1.6;border:1px solid #e8dcc8;white-space:pre-wrap;margin-bottom:28px;">${message}</div>
+
+      <div style="text-align:center;margin:32px 0 12px;">
+        <a href="mailto:${email}?subject=RE: ${encodeURIComponent(subject)} — Warcraft Exports" style="display:inline-block;background:#8B4513;color:#F2EAD3;padding:12px 24px;text-decoration:none;font-weight:bold;font-size:13px;letter-spacing:1px;text-transform:uppercase;border-radius:2px;">
+          Reply to ${name}
+        </a>
       </div>
-    `
+    </div>
+
+    <div style="background:#3B2A1A;padding:16px 32px;text-align:center;">
+      <p style="margin:0;font-size:11px;color:#C3B091;">© ${new Date().getFullYear()} RAAS Enterprises · Kanpur, India · Admin Contact Notification</p>
+    </div>
+  </div>
+</body>
+</html>`
   })
 }
 
@@ -446,20 +499,86 @@ export async function sendWholesaleNotification(data: {
     to: "warcraftexports@gmail.com",
     replyTo: data.email,
     subject: `New B2B Wholesale Inquiry — ${data.company}`,
-    html: `
-      <div style="font-family:sans-serif;padding:20px;color:#333;">
-        <h2 style="border-bottom:1px solid #ddd;padding-bottom:10px;">New B2B Wholesale Inquiry</h2>
-        <p><strong>Name:</strong> ${data.name}</p>
-        <p><strong>Company:</strong> ${data.company}</p>
-        <p><strong>Country:</strong> ${data.country}</p>
-        <p><strong>Email:</strong> ${data.email}</p>
-        <p><strong>Phone:</strong> ${data.phone ?? "N/A"}</p>
-        <p><strong>Monthly Volume:</strong> ${data.volume}</p>
-        <p><strong>Product Categories:</strong> ${data.categories.join(", ")}</p>
-        <p><strong>Message:</strong></p>
-        <div style="background:#f9f9f9;padding:15px;border:1px solid #eee;white-space:pre-wrap;">${data.message ?? "None"}</div>
+    html: `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#F2EAD3;font-family:Georgia,serif;">
+  <div style="max-width:600px;margin:32px auto;background:#fff;border:1px solid #e8dcc8;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+    <!-- Header -->
+    <div style="background:#3B2A1A;padding:28px 32px;text-align:center;">
+      <h1 style="margin:0;font-size:24px;color:#F2EAD3;letter-spacing:2px;text-transform:uppercase;">Warcraft Exports</h1>
+      <p style="margin:6px 0 0;font-size:12px;color:#C3B091;letter-spacing:1px;text-transform:uppercase;font-weight:bold;">New B2B Wholesale Inquiry</p>
+    </div>
+
+    <!-- Body -->
+    <div style="padding:32px;">
+      <p style="font-size:15px;color:#3B2A1A;margin-top:0;">Hello Admin,</p>
+      <p style="font-size:14px;color:#6B5A3E;line-height:1.6;margin-bottom:24px;">
+        A new B2B wholesale trade inquiry has been submitted through the storefront wholesale portal. Below are the prospective client's details and volume requirements:
+      </p>
+
+      <!-- Prospect Profile Table -->
+      <h2 style="font-size:13px;text-transform:uppercase;letter-spacing:1px;color:#3B2A1A;margin:0 0 12px;border-bottom:2px solid #C3B091;padding-bottom:8px;">Business & Contact Profile</h2>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:24px;font-size:13px;">
+        <tbody>
+          <tr style="border-bottom:1px solid #F2EAD3;">
+            <td style="padding:10px 12px;color:#8B7355;font-weight:bold;width:36%;background:#FAF7F2;">Company Name</td>
+            <td style="padding:10px 12px;color:#3B2A1A;font-weight:bold;">${data.company || "N/A"}</td>
+          </tr>
+          <tr style="border-bottom:1px solid #F2EAD3;">
+            <td style="padding:10px 12px;color:#8B7355;font-weight:bold;background:#FAF7F2;">Contact Person</td>
+            <td style="padding:10px 12px;color:#3B2A1A;">${data.name}</td>
+          </tr>
+          <tr style="border-bottom:1px solid #F2EAD3;">
+            <td style="padding:10px 12px;color:#8B7355;font-weight:bold;background:#FAF7F2;">Country / Region</td>
+            <td style="padding:10px 12px;color:#3B2A1A;">${data.country}</td>
+          </tr>
+          <tr style="border-bottom:1px solid #F2EAD3;">
+            <td style="padding:10px 12px;color:#8B7355;font-weight:bold;background:#FAF7F2;">Email Address</td>
+            <td style="padding:10px 12px;color:#3B2A1A;">
+              <a href="mailto:${data.email}" style="color:#8B4513;text-decoration:none;font-weight:bold;">${data.email}</a>
+            </td>
+          </tr>
+          <tr style="border-bottom:1px solid #F2EAD3;">
+            <td style="padding:10px 12px;color:#8B7355;font-weight:bold;background:#FAF7F2;">Phone / WhatsApp</td>
+            <td style="padding:10px 12px;color:#3B2A1A;">
+              ${data.phone ? `<a href="tel:${data.phone}" style="color:#8B4513;text-decoration:none;">${data.phone}</a>` : '<span style="color:#8B7355;">Not provided</span>'}
+            </td>
+          </tr>
+          <tr style="border-bottom:1px solid #F2EAD3;">
+            <td style="padding:10px 12px;color:#8B7355;font-weight:bold;background:#FAF7F2;">Estimated Volume</td>
+            <td style="padding:10px 12px;color:#3B2A1A;font-weight:bold;">
+              <span style="display:inline-block;background:#F2EAD3;color:#3B2A1A;padding:3px 8px;border:1px solid #e8dcc8;border-radius:3px;font-size:12px;">${data.volume}</span>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:10px 12px;color:#8B7355;font-weight:bold;background:#FAF7F2;vertical-align:top;">Categories of Interest</td>
+            <td style="padding:10px 12px;color:#3B2A1A;">
+              ${data.categories && data.categories.length > 0 ? data.categories.join(", ") : "General Catalog"}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Message / Specifications -->
+      <h2 style="font-size:13px;text-transform:uppercase;letter-spacing:1px;color:#3B2A1A;margin:24px 0 12px;border-bottom:2px solid #C3B091;padding-bottom:8px;">Client Message & Specifications</h2>
+      <div style="background:#F2EAD3;padding:16px;font-size:13px;color:#3B2A1A;line-height:1.6;border:1px solid #e8dcc8;white-space:pre-wrap;margin-bottom:28px;">${data.message && data.message.trim() ? data.message : '<em style="color:#8B7355;">No additional message provided.</em>'}</div>
+
+      <!-- Reply Button -->
+      <div style="text-align:center;margin:32px 0 12px;">
+        <a href="mailto:${data.email}?subject=RE: Wholesale Inquiry — Warcraft Exports" style="display:inline-block;background:#8B4513;color:#F2EAD3;padding:14px 28px;text-decoration:none;font-weight:bold;font-size:13px;letter-spacing:1px;text-transform:uppercase;border-radius:2px;">
+          Reply to ${data.name} (${data.company})
+        </a>
       </div>
-    `
+    </div>
+
+    <!-- Footer -->
+    <div style="background:#3B2A1A;padding:16px 32px;text-align:center;">
+      <p style="margin:0;font-size:11px;color:#C3B091;">© ${new Date().getFullYear()} RAAS Enterprises · Kanpur, India · Admin Wholesale Notification · <a href="https://warcraftexports.com/admin" style="color:#C3B091;">warcraftexports.com/admin</a></p>
+    </div>
+  </div>
+</body>
+</html>`
   })
 }
 
@@ -494,13 +613,16 @@ function orderShippedHtml(data: {
   trackingNumber: string
   trackingUrl: string
   estimatedArrival: string
-  items: { name: string; quantity: number; sku: string }[]
+  items: { name: string; quantity: number; sku: string; variantLabel?: string }[]
 }): string {
   const itemRows = data.items
     .map(
       (item) =>
         `<tr>
-          <td style="padding:8px 12px;border-bottom:1px solid #e8dcc8;font-size:14px;color:#3B2A1A;">${item.name} <span style="color:#8B7355;font-size:12px;">(${item.sku})</span></td>
+          <td style="padding:8px 12px;border-bottom:1px solid #e8dcc8;font-size:14px;color:#3B2A1A;">
+            <div>${item.name} <span style="color:#8B7355;font-size:12px;">(${item.sku})</span></div>
+            ${item.variantLabel ? `<div style="color:#8B4513;font-size:12px;font-weight:bold;margin-top:2px;">Option: ${item.variantLabel}</div>` : ''}
+          </td>
           <td style="padding:8px 12px;border-bottom:1px solid #e8dcc8;text-align:center;font-size:14px;color:#3B2A1A;">${item.quantity}</td>
         </tr>`
     )
@@ -575,7 +697,7 @@ export async function sendOrderShippedEmail(orderId: string, forceResend: boolea
 
     const { data: order, error } = await supabase
       .from("orders")
-      .select("id, order_number, customer_name, customer_email, created_at, tracking_number, tracking_url, shipped_email_sent_at, shipping_address, order_items(id, quantity, unit_price_usd, price_usd, product_snapshot, product:products(name, sku))")
+      .select("id, order_number, customer_name, customer_email, created_at, tracking_number, tracking_url, shipped_email_sent_at, shipping_address, order_items(id, quantity, unit_price_usd, price_usd, product_snapshot, variant:product_variants(color, size), product:products(name, sku))")
       .eq("id", orderId)
       .single()
 
@@ -619,11 +741,18 @@ export async function sendOrderShippedEmail(orderId: string, forceResend: boolea
       }
     }
 
-    const items = (order.order_items as any[]).map((item) => ({
-      name: item.product?.name || item.product_snapshot?.name || "Product Item",
-      sku: item.product?.sku || item.product_snapshot?.sku || "N/A",
-      quantity: item.quantity,
-    }))
+    const items = (order.order_items as any[]).map((item) => {
+      const variantLabel = item.product_snapshot?.variant_label
+        || [item.variant?.color, item.variant?.size].filter(Boolean).join(" / ")
+        || undefined
+
+      return {
+        name: item.product?.name || item.product_snapshot?.name || "Product Item",
+        sku: item.product?.sku || item.product_snapshot?.sku || "N/A",
+        quantity: item.quantity,
+        variantLabel,
+      }
+    })
 
     const res = await safeSendEmail({
       from: FROM_ORDERS,

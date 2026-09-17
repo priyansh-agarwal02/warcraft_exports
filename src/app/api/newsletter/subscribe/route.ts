@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { sendNewsletterWelcome } from "@/lib/email"
 import { checkRateLimit } from "@/lib/rate-limit"
+import { createServiceClient } from "@/lib/supabase/service"
+import { revalidatePath } from "next/cache"
 
 const EMAIL_REGEX = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/
 
@@ -34,35 +36,38 @@ export async function POST(req: NextRequest) {
       email = `${userWithoutDots}@${parts[1]}`
     }
 
-    // M-1 FIX: Lazy-evaluate service credentials at request time
-    const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
-    const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
+    const supabase = createServiceClient()
 
-    const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/newsletter_subscribers`,
-      {
-        method: "POST",
-        headers: {
-          "apikey": SERVICE_KEY,
-          "Authorization": `Bearer ${SERVICE_KEY}`,
-          "Content-Type": "application/json",
-          "Prefer": "resolution=merge-duplicates",
-        },
-        body: JSON.stringify({ email }),
-      }
-    )
+    // Check if subscriber already exists
+    const { data: existing } = await supabase
+      .from("newsletter_subscribers")
+      .select("id")
+      .eq("email", email)
+      .maybeSingle()
 
-    if (!res.ok && res.status !== 409) {
+    const isNew = !existing
+
+    const { error: upsertError } = await supabase
+      .from("newsletter_subscribers")
+      .upsert(
+        { email, is_active: true },
+        { onConflict: "email" }
+      )
+
+    if (upsertError) {
+      console.error("[NEWSLETTER SUBSCRIBE ERROR]:", upsertError)
       return NextResponse.json({ ok: false }, { status: 500 })
     }
 
-    const isNew = res.status !== 409
     if (isNew) {
       await sendNewsletterWelcome(email)
     }
 
+    revalidatePath("/admin/subscribers")
+
     return NextResponse.json({ ok: true })
-  } catch {
+  } catch (err) {
+    console.error("[NEWSLETTER SUBSCRIBE EXCEPTION]:", err)
     return NextResponse.json({ ok: false }, { status: 500 })
   }
 }

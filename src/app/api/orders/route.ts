@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
         notes?: string
         honeypot?: string
       }
-      items: { productId: string; variantId: string | null; quantity: number }[]
+      items: { productId: string; variantId: string | null; variantLabel?: string | null; quantity: number }[]
       paymentMethod?: "razorpay" | "paypal"
       paymentIntentId?: string
       shippingMethod?: "standard" | "express"
@@ -110,7 +110,7 @@ export async function POST(req: NextRequest) {
     if (variantIds.length > 0) {
       const { data, error } = await serviceClient
         .from("product_variants")
-        .select("id, price_override")
+        .select("id, price_override, color, size, sku_suffix, image_url")
         .in("id", variantIds)
       if (!error && data) {
         dbVariants = data
@@ -120,8 +120,16 @@ export async function POST(req: NextRequest) {
 
     const productMap = new Map(dbProducts.map((p) => [p.id, p]))
     const validatedItems: {
-      productId: string; productName: string; sku: string
-      priceUsd: number; quantity: number; variantId: string | null
+      productId: string
+      productName: string
+      sku: string
+      priceUsd: number
+      quantity: number
+      variantId: string | null
+      variantLabel: string | null
+      color: string | null
+      size: string | null
+      shipsFromUsa: boolean
     }[] = []
     let subtotal = 0
 
@@ -140,11 +148,16 @@ export async function POST(req: NextRequest) {
         )
       }
       
-      // Check for variant price override
+      // Check for variant price override and details
       const variant = item.variantId ? variantMap.get(item.variantId) : null
       const unitPrice = variant?.price_override != null
         ? Number(variant.price_override)
         : (product.sale_price_usd ?? product.price_usd)
+
+      const derivedVariantLabel = variant
+        ? [variant.color, variant.size].filter(Boolean).join(" / ")
+        : null
+      const variantLabel = item.variantLabel || derivedVariantLabel || null
 
       subtotal += unitPrice * qty
       validatedItems.push({
@@ -154,6 +167,10 @@ export async function POST(req: NextRequest) {
         priceUsd: unitPrice,
         quantity: qty,
         variantId: item.variantId ?? null,
+        variantLabel,
+        color: variant?.color ?? null,
+        size: variant?.size ?? null,
+        shipsFromUsa: Boolean((product as any).ships_from_usa),
       })
     }
 
@@ -407,7 +424,13 @@ export async function POST(req: NextRequest) {
         quantity: item.quantity,
         unit_price_usd: item.priceUsd,
         price_usd: item.priceUsd,
-        product_snapshot: { name: item.productName, sku: item.sku }
+        product_snapshot: {
+          name: item.productName,
+          sku: item.sku,
+          variant_label: item.variantLabel,
+          color: item.color,
+          size: item.size,
+        },
       }))
     )
 
@@ -440,6 +463,8 @@ export async function POST(req: NextRequest) {
           sku: i.sku,
           quantity: i.quantity,
           unitPrice: i.priceUsd,
+          variantLabel: i.variantLabel ?? undefined,
+          shipsFromUsa: i.shipsFromUsa,
         })),
         subtotal,
         shipping,

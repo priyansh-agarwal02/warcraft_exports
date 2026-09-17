@@ -2,6 +2,8 @@ import type { Metadata } from "next"
 import { createServiceClient } from "@/lib/supabase/service"
 import { revalidatePath } from "next/cache"
 
+export const dynamic = "force-dynamic"
+
 export const metadata: Metadata = { title: "Subscribers — Warcraft Exports Admin" }
 
 async function toggleSubscriber(formData: FormData) {

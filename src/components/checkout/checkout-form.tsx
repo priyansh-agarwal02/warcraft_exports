@@ -337,6 +337,7 @@ export function CheckoutForm() {
         items: items.map((i) => ({
           productId: i.productId,
           variantId: i.variantId,
+          variantLabel: i.variantLabel || null,
           quantity: i.quantity,
         })),
         shippingMethod,

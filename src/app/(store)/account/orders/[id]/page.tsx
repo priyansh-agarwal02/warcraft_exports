@@ -66,7 +66,8 @@ export default async function OrderDetailPage({ params }: Props) {
       id, order_number, notes, status, total_usd, created_at, shipping_address, customer_name, tracking_number, tracking_url,
       cancellation_requested, cancellation_request_status, customer_cancellation_reason, cancellation_rejection_reason,
       order_items (
-        id, quantity, unit_price_usd,
+        id, quantity, unit_price_usd, product_snapshot, variant_id,
+        variant:product_variants ( color, size, sku_suffix ),
         products ( name, slug, ships_from_usa, images:product_images ( url, is_hero ) )
       )
     `
@@ -102,6 +103,9 @@ export default async function OrderDetailPage({ params }: Props) {
     id: string
     quantity: number
     unit_price_usd: number
+    product_snapshot?: { name?: string; sku?: string; variant_label?: string; color?: string; size?: string } | null
+    variant_id?: string | null
+    variant?: { color?: string; size?: string; sku_suffix?: string } | null
     products: { name: string; slug: string; ships_from_usa?: boolean; images: { url: string; is_hero: boolean }[] } | null
   }
 
@@ -476,9 +480,25 @@ export default async function OrderDetailPage({ params }: Props) {
                           </Link>
                         ) : (
                           <p className="font-sans font-semibold text-sm text-leather-dark line-clamp-2">
-                            {product?.name ?? "Unknown Product"}
+                            {product?.name ?? item.product_snapshot?.name ?? "Unknown Product"}
                           </p>
                         )}
+                        {(() => {
+                          const variantText = item.product_snapshot?.variant_label
+                            || [item.variant?.color, item.variant?.size].filter(Boolean).join(" / ")
+                            || item.variant?.size
+                            || item.variant?.color
+                            || null
+
+                          if (!variantText) return null
+
+                          return (
+                            <p className="text-xs font-sans mt-0.5">
+                              <span className="text-khaki">Option: </span>
+                              <span className="font-semibold text-leather">{variantText}</span>
+                            </p>
+                          )
+                        })()}
                         <p className="text-xs font-sans text-khaki mt-1">
                           Qty: {item.quantity} × ${item.unit_price_usd.toFixed(2)}
                         </p>

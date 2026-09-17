@@ -45,7 +45,7 @@ export default async function CheckoutSuccessPage({ searchParams }: { searchPara
     const serviceClient = createServiceClient()
     const { data } = await serviceClient
       .from("orders")
-      .select("id, order_number, notes, total_usd, shipping_usd, created_at, customer_name, shipping_address, user_id, payment_intent_id, order_items(id, quantity, unit_price_usd, price_usd, product_snapshot, product:products(name, sku, ships_from_usa, images:product_images(url, is_hero)))")
+      .select("id, order_number, notes, total_usd, shipping_usd, created_at, customer_name, shipping_address, user_id, payment_intent_id, order_items(id, quantity, unit_price_usd, price_usd, product_snapshot, variant:product_variants(color, size), product:products(name, sku, ships_from_usa, images:product_images(url, is_hero)))")
       .eq("id", order_id)
       .single()
     
@@ -262,6 +262,17 @@ export default async function CheckoutSuccessPage({ searchParams }: { searchPara
                           <p className="font-sans text-[11px] text-[#76786B] mt-0.5">
                             SKU: {productSku} &middot; Qty: {item.quantity}
                           </p>
+                          {(() => {
+                            const variantText = item.product_snapshot?.variant_label
+                              || [item.variant?.color, item.variant?.size].filter(Boolean).join(" / ")
+                              || null
+                            if (!variantText) return null
+                            return (
+                              <p className="font-sans text-[11px] text-leather font-semibold">
+                                Option: {variantText}
+                              </p>
+                            )
+                          })()}
                         </div>
                         <p className="font-serif text-xs font-bold text-[#1A1C1C] flex-shrink-0 pl-2">
                           ${itemTotal.toFixed(2)}

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useTransition } from "react"
+import { useRouter } from "next/navigation"
 import { Loader2 } from "lucide-react"
 
 interface WholesaleFormProps {
@@ -37,6 +38,7 @@ const INPUT =
   "w-full border border-khaki/60 bg-parchment/60 rounded-sm px-3 py-2 font-sans text-sm text-leather-dark placeholder-khaki focus:outline-none focus:border-leather transition-colors"
 
 export function WholesaleForm({ onSubmit }: WholesaleFormProps) {
+  const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -127,6 +129,8 @@ export function WholesaleForm({ onSubmit }: WholesaleFormProps) {
             message: "",
           })
           setSelectedCategories([])
+          // Seamlessly route to dedicated Wholesale Thank You page
+          router.push("/wholesale/thank-you")
         } else {
           setError(res.error || "Failed to submit wholesale inquiry. Please try again.")
         }

@@ -53,7 +53,7 @@ export default async function AccountPage() {
     serviceClient
       .from("orders")
       .select(
-        `id, order_number, status, total_usd, created_at, order_items(id, quantity, product:products(name, images:product_images(url, is_hero)))`
+        `id, order_number, status, total_usd, created_at, order_items(id, quantity, product_snapshot, variant:product_variants(color, size), product:products(name, images:product_images(url, is_hero)))`
       )
       .or(orderFilter)
       .order("created_at", { ascending: false })
@@ -185,6 +185,17 @@ export default async function AccountPage() {
                             <p className="font-sans font-bold text-xs text-leather-dark truncate group-hover:text-leather transition-colors">
                               {firstItemName}
                             </p>
+                            {(() => {
+                              const variantText = (rawItems[0] as any)?.product_snapshot?.variant_label
+                                || [(rawItems[0] as any)?.variant?.color, (rawItems[0] as any)?.variant?.size].filter(Boolean).join(" / ")
+                                || null
+                              if (!variantText) return null
+                              return (
+                                <span className="text-[10px] text-leather font-semibold block">
+                                  Option: {variantText}
+                                </span>
+                              )
+                            })()}
                             {itemCount > 1 && (
                               <span className="text-[10px] text-khaki font-medium block">
                                 +{itemCount - 1} more item{itemCount > 2 ? "s" : ""}

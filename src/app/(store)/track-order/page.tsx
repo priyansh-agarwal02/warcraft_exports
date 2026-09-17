@@ -43,6 +43,11 @@ async function getOrder(orderNumber: string, email: string) {
         price_usd,
         unit_price_usd,
         product_snapshot,
+        variant_id,
+        variant:product_variants (
+          color,
+          size
+        ),
         product:products (
           name,
           slug,
@@ -247,6 +252,18 @@ export default async function TrackOrderPage({ searchParams }: { searchParams: S
                         <p className="text-xs font-mono text-khaki mt-0.5">
                           SKU: {sku}
                         </p>
+                        {(() => {
+                          const variantText = snap?.variant_label
+                            || [item.variant?.color, item.variant?.size].filter(Boolean).join(" / ")
+                            || null
+                          if (!variantText) return null
+                          return (
+                            <p className="text-xs font-sans mt-0.5">
+                              <span className="text-khaki">Option: </span>
+                              <span className="font-semibold text-leather">{variantText}</span>
+                            </p>
+                          )
+                        })()}
                         <p className="text-xs font-sans text-khaki mt-1">
                           Qty: {item.quantity} × ${unitPrice.toFixed(2)}
                         </p>

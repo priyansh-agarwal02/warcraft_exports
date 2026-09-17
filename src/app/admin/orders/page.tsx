@@ -29,7 +29,7 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
 
   let query = supabase
     .from("orders")
-    .select("id, order_number, customer_email, status, total_usd, created_at, cancellation_requested, cancellation_request_status, order_items(id, product:products(name, images:product_images(url, is_hero)))", { count: "exact" })
+    .select("id, order_number, customer_email, status, total_usd, created_at, cancellation_requested, cancellation_request_status, order_items(id, product_snapshot, variant:product_variants(color, size), product:products(name, images:product_images(url, is_hero)))", { count: "exact" })
     .order("created_at", { ascending: false })
     .range(from, from + PAGE_SIZE - 1)
 
