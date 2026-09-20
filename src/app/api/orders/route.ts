@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server"
 import { sendOrderConfirmation, sendGuestWelcomeEmail } from "@/lib/email"
 import { checkRateLimit } from "@/lib/rate-limit"
 import { createServiceClient } from "@/lib/supabase/service"
+import { isBlatantTypo, suggestEmailCorrection } from "@/lib/email-validator"
 import crypto from "crypto"
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -57,6 +58,13 @@ export async function POST(req: NextRequest) {
     const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!EMAIL_RE.test(customer.email.trim())) {
       return NextResponse.json({ error: "Invalid email address" }, { status: 400 })
+    }
+
+    if (isBlatantTypo(customer.email.trim())) {
+      const suggestion = suggestEmailCorrection(customer.email.trim())
+      return NextResponse.json({
+        error: `Please check your email address. Did you mean "${suggestion}"?`
+      }, { status: 400 })
     }
 
     // Phone format validation (if provided)

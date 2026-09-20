@@ -73,6 +73,9 @@ export async function GET(request: NextRequest) {
     { data: activeCoupons },
     { data: activeQtyPromos },
     { data: statusBreakdownData },
+    { data: contactMessages },
+    { count: totalSubscribers },
+    { count: totalReviews },
   ] = await Promise.all([
     // All-time revenue (for Total Revenue card)
     supabase.from("orders").select("total_usd").neq("status", "cancelled").neq("status", "refunded"),
@@ -121,6 +124,14 @@ export async function GET(request: NextRequest) {
     })(),
     // Order status breakdown (all time)
     supabase.from("orders").select("status"),
+    // Contact messages in range
+    supabase.from("contact_messages").select("id, created_at")
+      .gte("created_at", startISO).lte("created_at", endISO),
+    // Subscribers in range
+    supabase.from("newsletter_subscribers").select("*", { count: "exact", head: true })
+      .gte("created_at", startISO).lte("created_at", endISO),
+    // Total reviews
+    supabase.from("reviews").select("*", { count: "exact", head: true }),
   ])
 
   // Aggregate total revenue (all time)
@@ -243,6 +254,9 @@ export async function GET(request: NextRequest) {
       totalProducts: totalProducts ?? 0,
       lowStockAlerts: lowStockCount ?? 0,
       wholesaleInquiries: wholesaleInquiries?.length ?? 0,
+      contactMessages: contactMessages?.length ?? 0,
+      totalSubscribers: totalSubscribers ?? 0,
+      totalReviews: totalReviews ?? 0,
       activePromotions: promotionsList.length,
     },
     charts: {

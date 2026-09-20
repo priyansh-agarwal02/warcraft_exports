@@ -42,6 +42,9 @@ async function getInitialDashboardData() {
     { data: wholesaleInquiries },
     { data: activeCoupons },
     { data: statusBreakdownData },
+    { data: contactMessages },
+    { count: totalSubscribers },
+    { count: totalReviews },
   ] = await Promise.all([
     supabase.from("orders").select("total_usd").neq("status", "cancelled").neq("status", "refunded"),
     supabase.from("orders").select("id, total_usd, display_currency, status, created_at")
@@ -66,6 +69,11 @@ async function getInitialDashboardData() {
       .gte("created_at", startISO).lte("created_at", endISO),
     supabase.from("coupons").select("id, code, type, value, is_active, expires_at").eq("is_active", true),
     supabase.from("orders").select("status"),
+    supabase.from("contact_messages").select("id, created_at")
+      .gte("created_at", startISO).lte("created_at", endISO),
+    supabase.from("newsletter_subscribers").select("*", { count: "exact", head: true })
+      .gte("created_at", startISO).lte("created_at", endISO),
+    supabase.from("reviews").select("*", { count: "exact", head: true }),
   ])
 
   // Active quantity promotions (graceful if table missing)
@@ -183,6 +191,9 @@ async function getInitialDashboardData() {
       totalProducts: totalProducts ?? 0,
       lowStockAlerts: lowStockCount ?? 0,
       wholesaleInquiries: wholesaleInquiries?.length ?? 0,
+      contactMessages: contactMessages?.length ?? 0,
+      totalSubscribers: totalSubscribers ?? 0,
+      totalReviews: totalReviews ?? 0,
       activePromotions: promotionsList.length,
     },
     charts: {

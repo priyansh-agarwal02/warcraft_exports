@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect } from "react"
 import Link from "next/link"
 import {
   DollarSign, ShoppingCart, Clock, Package, AlertTriangle, Users,
-  ExternalLink, ChevronRight, Inbox,
+  ExternalLink, ChevronRight, Inbox, MessageSquare, Mail, Star,
 } from "lucide-react"
 
 import { MetricCard } from "./MetricCard"
@@ -17,7 +17,6 @@ import { CurrencyRevenueChart } from "./CurrencyRevenueChart"
 import { RegisteredCustomersChart } from "./RegisteredCustomersChart"
 import { ConversionRate } from "./ConversionRate"
 import { ActivePromotions } from "./ActivePromotions"
-import { OrderStatusSelect } from "@/app/admin/order-status-select"
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -31,6 +30,9 @@ interface DashboardData {
     totalProducts: number
     lowStockAlerts: number
     wholesaleInquiries: number
+    contactMessages?: number
+    totalSubscribers?: number
+    totalReviews?: number
     activePromotions: number
   }
   charts: {
@@ -269,9 +271,9 @@ export function DashboardClient({ initialData, initialAnalytics }: DashboardClie
       </div>
 
       {/* ── Recent Orders & Low Stock ──────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Orders Feed */}
-        <div className="lg:col-span-2 bg-white border border-[#E4E4E7] p-6 shadow-sm">
+        <div className="bg-white border border-[#E4E4E7] p-6 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-heading text-[15px] uppercase tracking-wider text-[#18181B]">Recent Orders</h2>
             <Link href="/admin/orders" className="text-[10px] font-sans font-bold uppercase tracking-wider text-[#33450D] hover:underline">
@@ -283,31 +285,36 @@ export function DashboardClient({ initialData, initialAnalytics }: DashboardClie
             <table className="w-full text-left text-[12px] font-sans">
               <thead>
                 <tr className="border-b border-[#E4E4E7] text-[#71717A] font-bold uppercase tracking-wider text-[10px]">
-                  <th className="py-2.5">Order</th>
-                  <th className="py-2.5">Customer</th>
-                  <th className="py-2.5 text-right">Total</th>
-                  <th className="py-2.5 text-center">Status</th>
-                  <th className="py-2.5 text-right w-36">Change Status</th>
+                  <th className="py-2.5 w-[26%]">Order</th>
+                  <th className="py-2.5 w-[26%]">Customer</th>
+                  <th className="py-2.5 text-center w-[24%]">Total</th>
+                  <th className="py-2.5 text-center w-[24%]">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#F4F4F4]">
                 {data.feeds.latestOrders.map((order: any) => (
                   <tr key={order.id} className="hover:bg-[#FAF9F6]/40 transition-colors">
-                    <td className="py-3 font-mono font-bold text-[#18181B]">{order.order_number}</td>
-                    <td className="py-3 text-[#71717A] truncate max-w-[120px]" title={order.guest_email}>{order.guest_email || "Customer"}</td>
-                    <td className="py-3 text-right font-bold text-[#18181B]">${Number(order.total_usd).toFixed(2)}</td>
+                    <td className="py-3 font-mono font-bold text-[#18181B]">
+                      <Link href={`/admin/orders/${order.id}`} className="hover:text-[#33450D] hover:underline">
+                        {order.order_number}
+                      </Link>
+                    </td>
+                    <td className="py-3 text-[#71717A] truncate max-w-[150px]" title={order.guest_email}>
+                      {order.guest_email || "Customer"}
+                    </td>
+                    <td className="py-3 text-center font-bold text-[#18181B]">
+                      ${Number(order.total_usd).toFixed(2)}
+                    </td>
                     <td className="py-3 text-center">
-                      <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${
+                      <span className={`inline-block px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${
                         order.status === "delivered" ? "bg-green-100 text-green-800" :
                         order.status === "confirmed" ? "bg-blue-100 text-blue-800" :
+                        order.status === "shipped" ? "bg-amber-100 text-amber-800" :
                         order.status === "cancelled" ? "bg-red-100 text-red-800" :
                         "bg-zinc-100 text-zinc-800"
                       }`}>
                         {order.status}
                       </span>
-                    </td>
-                    <td className="py-3 text-right">
-                      <OrderStatusSelect orderId={order.id} currentStatus={order.status} />
                     </td>
                   </tr>
                 ))}
@@ -412,8 +419,8 @@ export function DashboardClient({ initialData, initialAnalytics }: DashboardClie
         </div>
 
         {/* Quick Management */}
-        <div className="bg-white border border-[#E4E4E7] p-6 shadow-sm">
-          <h2 className="font-heading text-[15px] uppercase tracking-wider text-[#18181B] mb-4">Quick Management</h2>
+        <div className="bg-white border border-[#E4E4E7] p-6 shadow-sm flex flex-col gap-4">
+          <h2 className="font-heading text-[15px] uppercase tracking-wider text-[#18181B]">Quick Management</h2>
           <div className="grid grid-cols-2 gap-3">
             {[
               { label: "New Product", href: "/admin/products/new", desc: "Add single catalog item" },
@@ -421,42 +428,118 @@ export function DashboardClient({ initialData, initialAnalytics }: DashboardClie
               { label: "Run Catalog Sale", href: "/admin/sale", desc: "Setup active sale prices" },
               { label: "Coupons & Promos", href: "/admin/promotions", desc: "Setup custom coupon tier" },
               { label: "B2B Inquiries", href: "/admin/b2b", desc: "View wholesale requests" },
-              { label: "Subscribers", href: "/admin/subscribers", desc: "Email subscriber list" },
+              { label: "Manage Shipping", href: "/admin/shipping", desc: "Country shipping rates" },
             ].map((btn) => (
               <Link key={btn.label} href={btn.href} className="border border-[#E4E4E7] p-3 text-left hover:border-[#33450D] hover:bg-[#FAF9F6] transition-all group">
                 <span className="font-sans font-bold text-[12px] text-[#18181B] group-hover:text-[#33450D] flex items-center justify-between">
                   {btn.label}
-                  <ChevronRight size={12} className="text-[#A1A1AA]" />
+                  <ChevronRight size={12} className="text-[#A1A1AA] group-hover:text-[#33450D]" />
                 </span>
                 <span className="block text-[10px] text-[#71717A] mt-1">{btn.desc}</span>
               </Link>
             ))}
+
+            {/* Total Reviews Quick Box */}
+            <Link
+              href="/admin/reviews"
+              className="col-span-2 border border-[#E4E4E7] p-3 text-left hover:border-[#33450D] hover:bg-[#FAF9F6] transition-all group flex items-center justify-between"
+            >
+              <div>
+                <span className="font-sans font-bold text-[12px] text-[#18181B] group-hover:text-[#33450D] flex items-center gap-2">
+                  Customer Reviews
+                  <span className="text-[10px] bg-amber-50 text-amber-800 border border-amber-200 font-bold px-1.5 py-0.5 rounded">
+                    {data.stats.totalReviews ?? 0} Total
+                  </span>
+                </span>
+                <span className="block text-[10px] text-[#71717A] mt-1">Manage customer ratings & testimonials</span>
+              </div>
+              <ChevronRight size={14} className="text-[#A1A1AA] group-hover:text-[#33450D] flex-shrink-0" />
+            </Link>
           </div>
         </div>
 
-        {/* Wholesale Inquiries mini widget */}
-        <div className="bg-white border border-[#E4E4E7] p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-heading text-[15px] uppercase tracking-wider text-[#18181B]">Wholesale Inquiries</h2>
-            <Link href="/admin/b2b" className="text-[10px] font-sans font-bold uppercase tracking-wider text-[#33450D] hover:underline">
-              View All
-            </Link>
-          </div>
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 bg-purple-50 flex items-center justify-center">
-              <Inbox size={20} className="text-purple-600" />
-            </div>
+        {/* Inquiries & Subscribers mini widget */}
+        <div className="bg-white border border-[#E4E4E7] p-6 shadow-sm flex flex-col justify-between">
+          <div className="space-y-4">
+            {/* Wholesale Inquiries */}
             <div>
-              <p className="font-heading text-[24px] font-black text-[#18181B]">{data.stats.wholesaleInquiries}</p>
-              <p className="text-[10px] uppercase font-bold text-[#71717A] tracking-wider">In this period</p>
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="font-heading text-[14px] uppercase tracking-wider text-[#18181B]">Wholesale Inquiries</h2>
+                <Link href="/admin/b2b" className="text-[10px] font-sans font-bold uppercase tracking-wider text-[#33450D] hover:underline">
+                  View All
+                </Link>
+              </div>
+              <div className="flex items-center gap-3 mb-2.5">
+                <div className="w-10 h-10 bg-purple-50 flex items-center justify-center flex-shrink-0">
+                  <Inbox size={18} className="text-purple-600" />
+                </div>
+                <div>
+                  <p className="font-heading text-[22px] font-black text-[#18181B]">{data.stats.wholesaleInquiries}</p>
+                  <p className="text-[9px] uppercase font-bold text-[#71717A] tracking-wider">In this period</p>
+                </div>
+              </div>
+              <Link
+                href="/admin/b2b"
+                className="block text-center border border-[#E4E4E7] py-1.5 text-[11px] font-sans font-bold uppercase tracking-wider text-[#18181B] hover:bg-[#FAF9F6] transition-colors"
+              >
+                View B2B Inquiries
+              </Link>
+            </div>
+
+            <div className="border-t border-[#E4E4E7]" />
+
+            {/* Contact Queries */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="font-heading text-[14px] uppercase tracking-wider text-[#18181B]">Contact Queries</h2>
+                <Link href="/admin/contact" className="text-[10px] font-sans font-bold uppercase tracking-wider text-[#33450D] hover:underline">
+                  View All
+                </Link>
+              </div>
+              <div className="flex items-center gap-3 mb-2.5">
+                <div className="w-10 h-10 bg-blue-50 flex items-center justify-center flex-shrink-0">
+                  <MessageSquare size={18} className="text-blue-600" />
+                </div>
+                <div>
+                  <p className="font-heading text-[22px] font-black text-[#18181B]">{data.stats.contactMessages ?? 0}</p>
+                  <p className="text-[9px] uppercase font-bold text-[#71717A] tracking-wider">In this period</p>
+                </div>
+              </div>
+              <Link
+                href="/admin/contact"
+                className="block text-center border border-[#E4E4E7] py-1.5 text-[11px] font-sans font-bold uppercase tracking-wider text-[#18181B] hover:bg-[#FAF9F6] transition-colors"
+              >
+                View Contact Messages
+              </Link>
+            </div>
+
+            <div className="border-t border-[#E4E4E7]" />
+
+            {/* Newsletter Subscribers */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="font-heading text-[14px] uppercase tracking-wider text-[#18181B]">Subscribers</h2>
+                <Link href="/admin/subscribers" className="text-[10px] font-sans font-bold uppercase tracking-wider text-[#33450D] hover:underline">
+                  View All
+                </Link>
+              </div>
+              <div className="flex items-center gap-3 mb-2.5">
+                <div className="w-10 h-10 bg-emerald-50 flex items-center justify-center flex-shrink-0">
+                  <Mail size={18} className="text-emerald-700" />
+                </div>
+                <div>
+                  <p className="font-heading text-[22px] font-black text-[#18181B]">{data.stats.totalSubscribers ?? 0}</p>
+                  <p className="text-[9px] uppercase font-bold text-[#71717A] tracking-wider">In this period</p>
+                </div>
+              </div>
+              <Link
+                href="/admin/subscribers"
+                className="block text-center border border-[#E4E4E7] py-1.5 text-[11px] font-sans font-bold uppercase tracking-wider text-[#18181B] hover:bg-[#FAF9F6] transition-colors"
+              >
+                View Subscribers
+              </Link>
             </div>
           </div>
-          <Link
-            href="/admin/b2b"
-            className="block text-center border border-[#E4E4E7] py-2 text-[11px] font-sans font-bold uppercase tracking-wider text-[#18181B] hover:bg-[#FAF9F6] transition-colors"
-          >
-            View B2B Inquiries
-          </Link>
         </div>
       </div>
     </div>

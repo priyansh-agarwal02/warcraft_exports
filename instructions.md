@@ -43,5 +43,5 @@ Deleting files · Renaming files · Changing existing exports · Restructuring f
 Installing packages without flagging · `@ts-ignore` · Leaving TODOs · Skipping error handling ·
 Hardcoding API keys · Writing SQL inline in app code · Skipping RLS on user-data tables ·
 Committing .env.local
-
+Commiting to github as its a PROD website, only after my approval 
 ## IF SOMETHING BREAKS: Stop → Identify → Revert → Report → Replan

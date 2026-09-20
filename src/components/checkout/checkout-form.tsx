@@ -13,6 +13,7 @@ import { PayPalCheckout } from "./paypal-button"
 import { createClient } from "@/lib/supabase/client"
 import { PhoneInput } from "@/components/ui/phone-input"
 import { parsePhoneNumber } from "@/lib/phone"
+import { suggestEmailCorrection, isBlatantTypo } from "@/lib/email-validator"
 
 const COUNTRIES = [
   "United States", "United Kingdom", "Canada", "Australia", "Germany", "France",
@@ -277,6 +278,14 @@ export function CheckoutForm() {
     )
   }
 
+  const emailSuggestion = suggestEmailCorrection(form.email)
+
+  function applyEmailSuggestion(corrected: string) {
+    setForm((prev) => ({ ...prev, email: corrected }))
+    setError(null)
+    setFormValidated(false)
+  }
+
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
     setFormValidated(false)
@@ -296,6 +305,12 @@ export function CheckoutForm() {
     }
     if (!EMAIL_RE.test(form.email.trim())) {
       setError("Please enter a valid email address.")
+      setErrorKey((k) => k + 1)
+      return false
+    }
+    if (isBlatantTypo(form.email.trim())) {
+      const suggestion = suggestEmailCorrection(form.email.trim())
+      setError(`Please check your email address. Did you mean "${suggestion}"? Click the suggestion below the email field to fix it.`)
       setErrorKey((k) => k + 1)
       return false
     }
@@ -424,6 +439,28 @@ export function CheckoutForm() {
               <div>
                 <label htmlFor="email" className={labelClass}>Email *</label>
                 <input id="email" name="email" type="email" required maxLength={254} value={form.email} onChange={handleChange} placeholder="you@example.com" className={inputClass} />
+                {emailSuggestion && (
+                  <div className="mt-1.5 flex items-center justify-between text-[11px] bg-amber-50/90 border border-amber-300 text-amber-900 px-2.5 py-1.5 rounded-sm">
+                    <div className="flex items-center gap-1.5 truncate">
+                      <span className="text-amber-800">Did you mean</span>
+                      <button
+                        type="button"
+                        onClick={() => applyEmailSuggestion(emailSuggestion)}
+                        className="font-bold underline text-[#33450D] hover:text-black transition-colors cursor-pointer truncate"
+                      >
+                        {emailSuggestion}
+                      </button>
+                      <span>?</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => applyEmailSuggestion(emailSuggestion)}
+                      className="ml-2 text-[9px] font-bold uppercase tracking-wider bg-[#33450D] text-white px-2 py-0.5 rounded hover:bg-[#28360a] transition-colors flex-shrink-0"
+                    >
+                      Fix typo
+                    </button>
+                  </div>
+                )}
               </div>
               <div>
                 <label htmlFor="phone" className={labelClass}>Phone *</label>
