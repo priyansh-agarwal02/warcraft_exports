@@ -120,7 +120,10 @@ export default async function ShopPage({ searchParams }: { searchParams: SearchP
             <Suspense>
               <SortControls total={total} />
             </Suspense>
-            <ProductGrid products={products} />
+            <ProductGrid 
+              products={products} 
+              searchQuery={typeof sp.search === "string" ? sp.search : typeof sp.q === "string" ? sp.q : undefined} 
+            />
             <Suspense>
               <Pagination total={total} />
             </Suspense>

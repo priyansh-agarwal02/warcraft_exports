@@ -7,6 +7,31 @@ const STOP_WORDS = new Set([
   "and", "the", "a", "an", "or", "with", "for", "to", "in", "on", "at", "by", "of", "this", "that", "these", "those"
 ])
 
+// Common military militaria & cross-over search synonyms
+const SEARCH_SYNONYMS: Record<string, string[]> = {
+  k98: ["k98", "kar98k", "kar98", "mauser"],
+  kar98: ["kar98", "kar98k", "k98", "mauser"],
+  kar98k: ["kar98k", "k98", "mauser"],
+  garand: ["garand", "m1"],
+  m1: ["m1", "garand", "carbine"],
+  carbine: ["carbine", "m1"],
+  webley: ["webley", "revolver"],
+  luger: ["luger", "p08"],
+  colt: ["colt", "1911"],
+  "1911": ["1911", "colt"],
+  thompson: ["thompson", "smg", "grease"],
+  chicom: ["chest rig", "chicom"],
+  rhodesian: ["chest rig", "brushstroke"],
+  jawa: ["bandolier", "p1903", "martini"],
+  pirate: ["bandolier", "flintlock"],
+  cowboy: ["western", "revolver", "holster"],
+  western: ["western", "revolver", "holster"],
+  puttees: ["puttees", "gaiters", "leg wraps"],
+  gaiters: ["gaiters", "puttees"],
+  urn: ["urn", "cremation", "keepsake"],
+  airsoft: ["sling", "holster", "webbing", "pouch", "bandolier"],
+}
+
 export function compileSearchWords(search: string, fields: string[]): string[] {
   // Split by whitespace and common delimiters
   const words = search
@@ -23,8 +48,20 @@ export function compileSearchWords(search: string, fields: string[]): string[] {
     }
   }
 
-  return finalWords.map(word => {
-    return fields.map(field => `${field}.ilike.%${word}%`).join(",")
+  // Filter out intent words (like "airsoft", "buy", "replica") if more specific weapon/gear words exist
+  const substantiveWords = finalWords.filter(w => !["airsoft", "buy", "replica", "reproduction", "costume", "vintage", "gear"].includes(w))
+  const wordsToSearch = substantiveWords.length > 0 ? substantiveWords : finalWords
+
+  return wordsToSearch.map(word => {
+    // If we have direct synonyms, include them in the OR group for that word
+    const synonyms = SEARCH_SYNONYMS[word] || [word]
+    const conditions: string[] = []
+    synonyms.forEach(syn => {
+      fields.forEach(field => {
+        conditions.push(`${field}.ilike.%${syn}%`)
+      })
+    })
+    return conditions.join(",")
   })
 }
 
@@ -61,61 +98,82 @@ export async function getProducts(
       }
     }
 
-    let query = supabase
-      .from("products")
-      .select(
-        `id, name, slug, sku, price_usd, sale_price_usd,
-         nation, era, is_featured, stock_quantity, ships_from_usa,
-         category:categories!category_id(name, slug),
-         images:product_images(url, alt_text, is_hero, sort_order)`,
-        { count: "exact" }
-      )
-      .eq("is_active", true)
+    const buildQuery = (searchQueryString?: string) => {
+      let q = supabase
+        .from("products")
+        .select(
+          `id, name, slug, sku, price_usd, sale_price_usd,
+           nation, era, is_featured, stock_quantity, ships_from_usa,
+           category:categories!category_id(name, slug),
+           images:product_images(url, alt_text, is_hero, sort_order)`,
+          { count: "exact" }
+        )
+        .eq("is_active", true)
 
-    if (filters.nation) {
-      query = query.ilike("nation", filters.nation)
-    }
-    if (filters.era) query = query.ilike("era", filters.era)
-    if (filters.search) {
-      const orStrings = compileSearchWords(filters.search, [
-        "name",
-        "sku",
-        "description",
-        "short_description",
-        "material",
-        "style",
-      ])
-      orStrings.forEach(orStr => {
-        query = query.or(orStr)
-      })
-    }
-    if (fallbackToLegacyFilter && categoryId) {
-      query = query.eq("category_id", categoryId)
-    } else if (productIds) {
-      query = query.in("id", productIds)
-    }
-    if (filters.in_stock) query = query.gt("stock_quantity", 0)
-    if (filters.price_min != null) query = query.gte("price_usd", filters.price_min)
-    if (filters.price_max != null) query = query.lte("price_usd", filters.price_max)
+      if (filters.nation) {
+        q = q.ilike("nation", filters.nation)
+      }
+      if (filters.era) q = q.ilike("era", filters.era)
 
-    switch (filters.sort) {
-      case "price_asc":
-        query = query.order("price_usd", { ascending: true })
-        break
-      case "price_desc":
-        query = query.order("price_usd", { ascending: false })
-        break
-      case "newest":
-        query = query.order("created_at", { ascending: false })
-        break
-      default:
-        query = query
-          .order("is_featured", { ascending: false })
-          .order("created_at", { ascending: false })
+      if (searchQueryString) {
+        const orStrings = compileSearchWords(searchQueryString, [
+          "name",
+          "sku",
+          "description",
+          "short_description",
+          "material",
+          "style",
+          "subtitle",
+          "nation",
+          "era",
+        ])
+        orStrings.forEach(orStr => {
+          q = q.or(orStr)
+        })
+      }
+
+      if (fallbackToLegacyFilter && categoryId) {
+        q = q.eq("category_id", categoryId)
+      } else if (productIds) {
+        q = q.in("id", productIds)
+      }
+      if (filters.in_stock) q = q.gt("stock_quantity", 0)
+      if (filters.price_min != null) q = q.gte("price_usd", filters.price_min)
+      if (filters.price_max != null) q = q.lte("price_usd", filters.price_max)
+
+      switch (filters.sort) {
+        case "price_asc":
+          q = q.order("price_usd", { ascending: true })
+          break
+        case "price_desc":
+          q = q.order("price_usd", { ascending: false })
+          break
+        case "newest":
+          q = q.order("created_at", { ascending: false })
+          break
+        default:
+          q = q
+            .order("is_featured", { ascending: false })
+            .order("created_at", { ascending: false })
+      }
+      return q
     }
 
-    const { data, count, error } = await query.range(offset, offset + PAGE_SIZE - 1)
+    let { data, count, error } = await buildQuery(filters.search).range(offset, offset + PAGE_SIZE - 1)
     if (error) throw error
+
+    // Fallback: If a multi-word search produced 0 results, retry with first substantive keyword
+    if ((!data || data.length === 0) && filters.search && filters.search.trim().includes(" ")) {
+      const words = filters.search.trim().split(/\s+/).filter(w => !STOP_WORDS.has(w.toLowerCase()))
+      if (words.length > 1) {
+        const primaryWord = words.find(w => !["airsoft", "buy", "replica", "reproduction", "costume", "vintage", "gear"].includes(w.toLowerCase())) || words[0]
+        const fallbackRes = await buildQuery(primaryWord).range(offset, offset + PAGE_SIZE - 1)
+        if (!fallbackRes.error && fallbackRes.data && fallbackRes.data.length > 0) {
+          data = fallbackRes.data
+          count = fallbackRes.count
+        }
+      }
+    }
 
     // Try to fetch multi-categories if the table exists
     const productCategoryMap: Record<string, any[]> = {}

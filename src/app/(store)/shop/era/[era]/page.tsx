@@ -10,27 +10,36 @@ import type { Metadata } from "next"
 
 export const dynamic = "force-dynamic"
 
-const ERA_META: Record<string, { label: string; description: string }> = {
+const ERA_META: Record<string, { label: string; title: string; description: string; keywords: string[] }> = {
   ww1: {
     label: "WW1 Collection",
-    description:
-      "Great War reproduction gear — leather holsters, pouches, and equipment from 1914–1918.",
+    title: "WW1 Military Reproduction Gear | Great War Uniforms, Holsters & Leather Belts",
+    description: "Authentic WW1 Great War reproduction military gear. Hand-stitched leather holsters, canvas pouches, Brodie helmet liners, and equipment from 1914–1918.",
+    keywords: ["ww1 gear", "ww1 reproduction", "great war militaria", "ww1 helmet", "ww1 leather holsters", "ww1 reenactment supplies", "1907 pattern sling"],
   },
   ww2: {
     label: "WW2 Collection",
-    description: "WWII reproduction gear for all major theaters. US, German, British, Soviet, Japanese, and more.",
+    title: "WW2 Military Reproduction Gear | WWII Holsters, Slings, Belts & Field Equipment",
+    description: "Shop 300+ authentic WWII military reproductions. US, German, British, Soviet, and Japanese gear. Manufacturer-direct from Warcraft Exports with free shipping over $50.",
+    keywords: ["ww2 gear", "ww2 militaria reproductions", "world war 2 gear for sale", "ww2 surplus reproduction", "ww2 reenactment gear", "m1 garand sling", "kar98k sling", "m3 shoulder holster"],
   },
   "cold-war": {
     label: "Cold War Collection",
-    description: "Post-WWII military reproduction gear from the Cold War era.",
+    title: "Cold War Military Reproduction Gear & Tactical Surplus | Warcraft Exports",
+    description: "Post-WWII military reproduction gear from the Cold War era. Authentic field gear, webbing, and collectible accessories.",
+    keywords: ["cold war militaria", "cold war gear", "chicom chest rig", "military surplus reproduction"],
   },
   "modern-tactical": {
     label: "Modern Tactical",
-    description: "Modern-era tactical gear and accessories.",
+    title: "Modern Tactical Gear, Holsters & Range Accessories | Warcraft Exports",
+    description: "Modern-era tactical gear, heavy-duty leather gun belts, and rugged range accessories built to demanding field standards.",
+    keywords: ["tactical gear", "range accessories", "heavy duty gun belts", "leather holsters"],
   },
   universal: {
     label: "Universal Collection",
-    description: "Cross-era gear that suits reenactors of any period.",
+    title: "Universal Military Reproduction Gear, Slings & Leather Straps | Warcraft Exports",
+    description: "Cross-era historical reproduction gear, buffalo leather rifle straps, and accessories for collectors, hunters, and living historians.",
+    keywords: ["leather rifle sling", "hunting rifle strap", "buffalo leather sling", "historical reproduction gear"],
   },
 }
 
@@ -42,8 +51,15 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   const meta = ERA_META[era.toLowerCase()]
   if (!meta) return {}
   return {
-    title: `${meta.label} — Warcraft Exports`,
+    title: `${meta.title} | Warcraft Exports`,
     description: meta.description,
+    keywords: meta.keywords,
+    openGraph: {
+      title: `${meta.title} | Warcraft Exports`,
+      description: meta.description,
+      url: `https://www.warcraftexports.com/shop/era/${era.toLowerCase()}`,
+      siteName: "Warcraft Exports",
+    },
     alternates: { canonical: `https://www.warcraftexports.com/shop/era/${era.toLowerCase()}` },
   }
 }

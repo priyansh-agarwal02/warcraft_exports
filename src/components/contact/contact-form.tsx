@@ -26,9 +26,30 @@ export function ContactForm({ onSubmit }: ContactFormProps) {
     message: "",
   })
 
-  // Auto-populate Subject only if product query parameter is present in URL
+  // Auto-populate Subject and message if product, subject, or item query parameters are present in URL
   useEffect(() => {
-    if (productParam) {
+    const subjectParam = searchParams.get("subject")
+    const itemParam = searchParams.get("item") || searchParams.get("request_item")
+    const nameParam = searchParams.get("name")
+    const emailParam = searchParams.get("email")
+
+    if (subjectParam) {
+      setForm((f) => ({
+        ...f,
+        subject: subjectParam,
+        name: f.name || nameParam || "",
+        email: f.email || emailParam || "",
+        message: f.message || (itemParam ? `Hello Warcraft Exports team,\n\nI am looking for: "${itemParam}". Could you please let me know if your workshop can produce this historical reproduction, along with estimated pricing and turnaround?\n\nThank you!` : f.message),
+      }))
+    } else if (itemParam) {
+      setForm((f) => ({
+        ...f,
+        subject: `Item Request: ${itemParam}`,
+        name: f.name || nameParam || "",
+        email: f.email || emailParam || "",
+        message: f.message || `Hello Warcraft Exports team,\n\nI am looking for: "${itemParam}". Could you please let me know if your workshop can produce this historical reproduction, along with estimated pricing and turnaround?\n\nThank you!`,
+      }))
+    } else if (productParam) {
       const formattedTitle = productParam
         .split("-")
         .map((word) => {
@@ -47,7 +68,7 @@ export function ContactForm({ onSubmit }: ContactFormProps) {
         subject: `Product Inquiry: ${formattedTitle}`,
       }))
     }
-  }, [productParam])
+  }, [productParam, searchParams])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }))

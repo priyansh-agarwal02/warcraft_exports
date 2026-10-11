@@ -49,17 +49,9 @@ export default async function SearchPage({ searchParams }: { searchParams: SP })
           <Suspense><FilterSidebar /></Suspense>
           <div className="flex-1 min-w-0">
             <Suspense><SortControls total={total} /></Suspense>
-            {products.length === 0 ? (
-              <div className="py-20 text-center">
-                <p className="font-sans text-base text-leather-dark mb-2">No results found for &ldquo;{q}&rdquo;</p>
-                <p className="font-sans text-sm text-khaki mb-6">Try different keywords, or browse all products.</p>
-                <a href="/shop" className="inline-block bg-leather text-parchment font-sans font-bold text-xs uppercase tracking-widest px-8 py-3 hover:bg-leather-dark transition-colors">Browse All Products</a>
-              </div>
-            ) : (
-              <>
-                <ProductGrid products={products} />
-                <Suspense><Pagination total={total} /></Suspense>
-              </>
+            <ProductGrid products={products} searchQuery={q} />
+            {products.length > 0 && (
+              <Suspense><Pagination total={total} /></Suspense>
             )}
           </div>
         </div>

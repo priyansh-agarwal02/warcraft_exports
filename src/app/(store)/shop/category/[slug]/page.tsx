@@ -13,15 +13,85 @@ export const dynamic = "force-dynamic"
 type Params = Promise<{ slug: string }>
 type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>
 
+interface CategorySeoInfo {
+  title: string
+  description: string
+  keywords: string[]
+}
+
+const CATEGORY_SEO_MAP: Record<string, CategorySeoInfo> = {
+  slings: {
+    title: "WW1 & WW2 Gun Slings | M1 Garand, Kar98k, 1907 Pattern, Kerr Leather Slings",
+    description: "Shop authentic reproduction WW1 & WW2 rifle slings. Hand-stitched 1907 pattern leather slings, M1 Garand canvas web slings, Kar98k Mauser slings, and 1-inch buffalo leather straps. Free shipping over $50.",
+    keywords: ["m1 garand sling", "1907 pattern leather sling", "kar98k sling", "kerr sling", "m1 carbine sling", "leather rifle sling", "ww2 gun slings", "buffalo leather rifle strap", "military reproduction slings"],
+  },
+  holsters: {
+    title: "WW1 & WW2 Military & Western Holsters | Leather Revolver, Webley, Luger, M3",
+    description: "Handcrafted leather military and western cowboy holsters. Authentic reproductions for Webley .455, German Luger P08, M3 shoulder rigs, and tooled western revolvers. Fast worldwide delivery.",
+    keywords: ["western holster", "revolver holster", "m3 shoulder holster", "webley holster", "luger holster", "colt 1911 holster", "leather revolver holster", "44 mag holster", "cowboy gun holster"],
+  },
+  "belts-straps": {
+    title: "Military Cartridge Belts, Bandoliers & Leather Suspenders | P1903, M1923, Y-Straps",
+    description: "Reproduction WW1 & WW2 cartridge belts, leather bandoliers, and heavy-duty suspenders. P-1903 British bandoliers, M1923 10-pocket Garand belts, and authentic Y-straps.",
+    keywords: ["leather bandolier", "british p-1903 bandolier", "m1923 cartridge belt", "leather suspenders for men", "y strap", "m1 garand 10 pocket belt", "jawa costume bandolier"],
+  },
+  uniforms: {
+    title: "WW1 & WW2 Military Reproduction Uniforms | British, US & German Battle Dress",
+    description: "Authentic WW1 and WW2 reproduction military uniforms. British Pattern 37 tunics, US field uniforms, and German battle dress tailored from accurate historical wool and cotton.",
+    keywords: ["ww2 reproduction uniforms", "british 37 pattern tunic", "ww2 reenactment uniforms", "military battle dress", "ww1 military uniforms"],
+  },
+  headgear: {
+    title: "Historical Military Helmets, Side Caps & Liners | WW1 & WW2 Reproductions",
+    description: "Military reproduction headgear including M1917A1 helmet liners, side caps, and field caps for US, British, and Commonwealth reenactment kits.",
+    keywords: ["m1917a1 helmet liners", "ww1 helmet", "side cap", "ww2 headgear", "military reenactment caps"],
+  },
+  "bags-satchels": {
+    title: "WW1 & WW2 Military Bags & Satchels | Musette Bags, Thompson Cal Bags",
+    description: "Authentic reproduction military canvas bags and field satchels. M1936 musette bags, Thompson submachine gun cal bags, and haversacks crafted to military specs.",
+    keywords: ["m1936 musette bag", "thompson cal bag", "grease gun bag", "military satchel", "canvas field bag", "ww2 military bag"],
+  },
+  equipment: {
+    title: "WW1 & WW2 Field Equipment & Pouches | First Aid, MP40 Pouches, Puttees",
+    description: "Field gear, canvas pouches, first aid kits, MP40 magazine pouches, chest rigs, and puttees leg wraps. Direct manufacturer reproductions for collectors and reenactors.",
+    keywords: ["first aid pouch", "mp40 pouch set", "puttees leg wraps", "gaiters for hiking", "military surplus reproduction", "chicom chest rig", "1911 mag pouch"],
+  },
+  collectibles: {
+    title: "Historical Military Collectibles & Keepsakes | Warcraft Exports",
+    description: "Handcrafted historical collectibles, militaria memorabilia, and handcrafted wooden keepsake urns by Warcraft Exports.",
+    keywords: ["militaria collectibles", "military reproduction memorabilia", "wooden keepsake urns", "dog urn", "pet urn"],
+  },
+  "optics-accessories": {
+    title: "Vintage Optics Covers & Leather Scope Accessories | Warcraft Exports",
+    description: "Leather scope covers and vintage optics accessories designed for historical rifles including Mauser, Enfield, and Springfield models.",
+    keywords: ["rifle scope covers leather", "vintage optics accessories", "mauser scope mount", "k98 optics"],
+  },
+  "weapon-cases": {
+    title: "Military Rifle Scabbards & Canvas Weapon Cases | M1 Garand, Carbine Covers",
+    description: "Heavy-duty canvas and leather rifle scabbards. Fleece-lined M1 Carbine carry cases, Garand rifle scabbards, and historical long gun covers.",
+    keywords: ["m1 garand rifle scabbard", "m1 carbine case", "canvas rifle case", "leather rifle scabbard", "gun scabbard"],
+  },
+}
+
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { slug } = await params
   const category = await getCategoryBySlug(slug)
   if (!category) return {}
+
+  const seo = CATEGORY_SEO_MAP[slug]
+  const title = seo ? `${seo.title} | Warcraft Exports` : `${category.name} — Historical Military Reproductions | Warcraft Exports`
+  const description = seo ? seo.description : (category.description ?? `Browse authentic ${category.name} historical military reproduction gear. Manufacturer-direct from Warcraft Exports. Ships worldwide.`)
+  const keywords = seo ? seo.keywords : [category.name.toLowerCase(), "military reproduction", "ww2 gear", "ww1 gear", "warcraft exports"]
+
   return {
-    title: `${category.name} — Warcraft Exports`,
-    description:
-      category.description ??
-      `Browse ${category.name} historical reproduction gear. Manufacturer-direct from Kanpur, India.`,
+    title,
+    description,
+    keywords,
+    openGraph: {
+      title,
+      description,
+      url: `https://www.warcraftexports.com/shop/category/${slug}`,
+      siteName: "Warcraft Exports",
+    },
     alternates: { canonical: `https://www.warcraftexports.com/shop/category/${slug}` },
   }
 }

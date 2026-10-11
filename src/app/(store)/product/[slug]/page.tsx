@@ -29,14 +29,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const nationLabel = product.nation && product.nation !== "Universal" ? ` ${product.nation}` : ""
   const title = `${product.name}${nationLabel}${eraLabel} Reproduction | Warcraft Exports`
 
-  // Smart Keyword Generation
+  // Master 22-Cluster Keyword & Intent Classification Engine
   const keywordSet = new Set<string>()
+  const pName = (product.name ?? "").toLowerCase()
+  const pDesc = (product.description ?? "").toLowerCase()
+  const pShort = (product.short_description ?? "").toLowerCase()
+  const pText = `${pName} ${pDesc} ${pShort}`
+
   if (product.name) {
     keywordSet.add(product.name.toLowerCase())
     const nameWords = product.name.split(/\s+/).map(w => w.replace(/[^a-zA-Z0-9]/g, "").trim()).filter(w => w.length > 1)
     nameWords.forEach(w => {
       const lower = w.toLowerCase()
-      if (lower !== "and" && lower !== "with" && lower !== "for" && lower !== "reproduction" && lower !== "gear") {
+      if (!["and", "with", "for", "the", "reproduction", "gear"].includes(lower)) {
         keywordSet.add(lower)
       }
     })
@@ -55,10 +60,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     keywordSet.add(nation.toLowerCase())
     keywordSet.add(`${nation} militaria`.toLowerCase())
     keywordSet.add(`${nation} reproduction`.toLowerCase())
+    keywordSet.add(`${nation} military gear`.toLowerCase())
   }
   if (era && era !== "Universal") {
     keywordSet.add(era.toLowerCase())
     keywordSet.add(`${era} reproduction`.toLowerCase())
+    keywordSet.add(`${era} military collectibles`.toLowerCase())
   }
   if (nation && era && nation !== "Universal" && era !== "Universal") {
     keywordSet.add(`${era} ${nation}`.toLowerCase())
@@ -85,44 +92,267 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     })
   }
 
-  const productNameLower = (product.name ?? "").toLowerCase()
-  if (productNameLower.includes("garand") || productNameLower.includes("sling")) {
-    keywordSet.add("m1 garand sling")
-    keywordSet.add("us gi sling")
-    keywordSet.add("british ww2 enfield sling")
-    keywordSet.add("mauser g98 sling")
-    keywordSet.add("wwii rifle sling")
+  // 1. M1 Carbine & Combo Oiler
+  if (pText.includes("carbine") || pText.includes("oiler") || pText.includes("m1 carbine")) {
+    keywordSet.add("m1 carbine")
+    keywordSet.add("m1 carbine accessories")
+    keywordSet.add("m1 carbine sling")
+    keywordSet.add("m1 carbine bayonet")
+    keywordSet.add("m1 carbine magazine pouch")
+    keywordSet.add("m1 carbine sling oiler buttstock pouch")
+    keywordSet.add("od green m1 carbine pouch and oiler")
+    keywordSet.add("airsoft m1 carbine sling")
+    keywordSet.add("1907 carbine canvas")
   }
-  if (productNameLower.includes("helmet") || productNameLower.includes("liner")) {
-    keywordSet.add("m1917a1 helmet liners")
-    keywordSet.add("ww1 helmet")
-    keywordSet.add("german ww1 helmet")
-    keywordSet.add("ww1 replica helmet")
-    keywordSet.add("ww2 us helmet liner")
-    keywordSet.add("m1917a1 helmet for sale")
+
+  // 2. 1907 Pattern M1 Steel Brown Leather Sling
+  if (pText.includes("1907") || (pText.includes("leather") && pText.includes("sling"))) {
+    keywordSet.add("1907 pattern leather sling")
+    keywordSet.add("brown genuine leather military reproduction")
+    keywordSet.add("hand stitched leather strap")
+    keywordSet.add("copper rivets steel hardware")
+    keywordSet.add("vintage military sling replacement")
+    keywordSet.add("classic leather rifle strap")
+    keywordSet.add("historical reproduction sling")
   }
-  if (productNameLower.includes("musette") || productNameLower.includes("bag") || productNameLower.includes("haversack")) {
-    keywordSet.add("m1936 musette bag")
-    keywordSet.add("ww2 us field gear")
-    keywordSet.add("wwii reenactment gear")
+
+  // 3. 1-Inch Sling & Buffalo Leather / Hunting
+  if (pText.includes("buffalo") || pText.includes("hunting") || pText.includes("1 inch") || pText.includes("1\"")) {
+    keywordSet.add("leather rifle sling")
+    keywordSet.add("gun sling")
+    keywordSet.add("shotgun sling")
+    keywordSet.add("10/22 sling")
+    keywordSet.add("buffalo leather hunting rifle strap")
+    keywordSet.add("crazy horse leather gun")
+    keywordSet.add("hand stitched leather sling")
+    keywordSet.add("rifle strap for hunting")
+    keywordSet.add("adjustable gun shoulder strap")
   }
-  if (productNameLower.includes("pouch") || productNameLower.includes("first aid")) {
+
+  // 4. Western Cowboy & Revolver Holsters
+  if (pText.includes("western") || pText.includes("cowboy") || pText.includes("revolver") || pText.includes("tooled")) {
+    keywordSet.add("western holster")
+    keywordSet.add("revolver holster")
+    keywordSet.add("cowboy gun holster")
+    keywordSet.add("leather revolver holster")
+    keywordSet.add("22 revolver holster")
+    keywordSet.add("cowboy holster .22 .38 .44 .45 .357 .358 caliber holster")
+    keywordSet.add("4 to 8 inch barrel holster")
+    keywordSet.add("western cowboy holster vintage")
+    keywordSet.add("tooled leather holster")
+  }
+
+  // 5. Y-Strap & Suspenders
+  if (pText.includes("y-strap") || pText.includes("y strap") || pText.includes("suspender") || pText.includes("braces")) {
+    keywordSet.add("suspenders for men")
+    keywordSet.add("leather suspenders for men")
+    keywordSet.add("brown suspenders for men")
+    keywordSet.add("occidental leather suspenders")
+    keywordSet.add("genuine leather braces")
+    keywordSet.add("adjustable shoulder straps")
+    keywordSet.add("vintage leather straps")
+    keywordSet.add("heavy duty leather suspenders")
+    keywordSet.add("y strap costume accessories")
+    keywordSet.add("durable leather harness")
+  }
+
+  // 6 & 8. Bandoliers (5-Pocket & 9-Pocket P1903 British & Jawa Costume)
+  if (pText.includes("bandolier") || pText.includes("p1903") || pText.includes("p-1903") || pText.includes("jawa") || pText.includes("martini")) {
+    keywordSet.add("bandolier")
+    keywordSet.add("leather bandolier belt")
+    keywordSet.add("leather bandolier")
+    keywordSet.add("bandolier bag")
+    keywordSet.add("crossbody ww1 gear")
+    keywordSet.add("pirate bandolier")
+    keywordSet.add("jawa products")
+    keywordSet.add("german luger martini costume belt")
+    keywordSet.add("magazine bandolier")
+    keywordSet.add("costume bandolier")
+    keywordSet.add("british p-1903 leather nine pocket bandolier")
+    keywordSet.add("british army infantry military reproduction")
+    keywordSet.add("p1903 1903 ww1 ammo clips shoulder rig")
+  }
+
+  // 7. 10-Pocket Khaki M1 Garand Belt
+  if (pText.includes("10 pocket") || pText.includes("cartridge belt") || (pText.includes("garand") && pText.includes("belt"))) {
+    keywordSet.add("m1 garand cartridge belt")
+    keywordSet.add("m1 garand clips")
+    keywordSet.add("ww2 rifles belt")
+    keywordSet.add("cartridge ammunition ammo pouch")
+    keywordSet.add("us airsoft webbing")
+    keywordSet.add("8 round clips parts canvas")
+    keywordSet.add("m1923 m1 garand cartridge 10 pocket canvas belt")
+  }
+
+  // 9. First Aid & Medical Pouch
+  if (pText.includes("first aid") || pText.includes("medical") || pText.includes("m1910") || pText.includes("trauma")) {
+    keywordSet.add("first aid pouch molle")
+    keywordSet.add("medical pouch")
+    keywordSet.add("ww2 uniform")
+    keywordSet.add("ww1 gear")
+    keywordSet.add("military surplus gear")
+    keywordSet.add("ww2 german gear")
+    keywordSet.add("roll 1 trauma pouch")
+    keywordSet.add("canvas belt pouch")
     keywordSet.add("m1910 1st aid pouches")
     keywordSet.add("m1910 first aid kit")
   }
 
+  // 10. M3 Shoulder & Chest Holster
+  if (pText.includes("m3") || pText.includes("shoulder holster") || pText.includes("chest holster")) {
+    keywordSet.add("m3 shoulder holster")
+    keywordSet.add("revolver holster")
+    keywordSet.add("44 mag holster")
+    keywordSet.add("n frame holster")
+    keywordSet.add("chest holster for revolver")
+    keywordSet.add("taurus raging hunter holster")
+    keywordSet.add("shoulder holster for men")
+    keywordSet.add("chest holsters for pistols")
+    keywordSet.add("snub nose revolver holster")
+    keywordSet.add("38 special holster")
+  }
+
+  // 11. Chest Rig (Chicom & Rhodesian)
+  if (pText.includes("chest rig") || pText.includes("chicom") || pText.includes("rhodesian")) {
+    keywordSet.add("chest rig")
+    keywordSet.add("rhodesian chicom chest rig")
+    keywordSet.add("308 mag pouch")
+    keywordSet.add("tactical chest rig")
+    keywordSet.add("rhodesian brushstroke camo")
+    keywordSet.add("krydex chest rig")
+    keywordSet.add("split rig chest rig")
+    keywordSet.add("7.62 mag pouch")
+  }
+
+  // 12. Cal Bag & Thompson / Grease Gun
+  if (pText.includes("thompson") || pText.includes("grease gun") || pText.includes("cal bag") || pText.includes("d 90242")) {
+    keywordSet.add("smg magazine pouch")
+    keywordSet.add("grease gun holder")
+    keywordSet.add("airsoft thompson")
+    keywordSet.add("ww2 guns")
+    keywordSet.add("thompson magazine pouch")
+    keywordSet.add("thompson shoulder bag")
+    keywordSet.add("cal bag 45 sub mg clip d 90242")
+    keywordSet.add("thompson carry case pouch")
+  }
+
+  // 13. Kar98k K98 Mauser Sling
+  if (pText.includes("kar98") || pText.includes("k98") || pText.includes("mauser") || pText.includes("g43") || pText.includes("yugo")) {
+    keywordSet.add("kar98k leather rifle sling")
+    keywordSet.add("ww2 german gear")
+    keywordSet.add("mauser sling keeper")
+    keywordSet.add("sks sling")
+    keywordSet.add("kar98k airsoft")
+    keywordSet.add("g43 accessories")
+    keywordSet.add("dak kar98k")
+    keywordSet.add("m98 yugo 98")
+    keywordSet.add("k98 bayonet")
+    keywordSet.add("m98 mauser rifle sling")
+  }
+
+  // 14. Kerr Sling & Springfield M1A1
+  if (pText.includes("kerr") || pText.includes("m1a") || pText.includes("sr3") || pText.includes("1903")) {
+    keywordSet.add("kerr sling")
+    keywordSet.add("wwii sr3 sling")
+    keywordSet.add("m1 carbine sling")
+    keywordSet.add("m1a sling")
+    keywordSet.add("m16 sling")
+    keywordSet.add("lever action sling")
+    keywordSet.add("thompson m1a1 carbine ww1 web 1907 rifle sling")
+    keywordSet.add("warcraft exports us m1 kerr sling")
+    keywordSet.add("1903 springfield clips")
+    keywordSet.add("springfield m1a accessories")
+  }
+
+  // 15. M1 Garand & Web Sling
+  if (pText.includes("garand") || pText.includes("web sling") || pText.includes("usgi")) {
+    keywordSet.add("m1 garand sling")
+    keywordSet.add("m16 sling")
+    keywordSet.add("usgi sling")
+    keywordSet.add("airsoft m1 garand")
+    keywordSet.add("springfield m1a accessories")
+    keywordSet.add("m1903 springfield sling")
+    keywordSet.add("rifle web sling od green canvas cotton military sling")
+    keywordSet.add("wwii rifle sling")
+  }
+
+  // 17. Double Magazine Pouch & Colt 1911
+  if (pText.includes("1911") || pText.includes("magazine pouch") || pText.includes("mag pouch") || pText.includes("glock")) {
+    keywordSet.add("leather magazine holder")
+    keywordSet.add("glock 19 accessories")
+    keywordSet.add("ammo storage mag pouch")
+    keywordSet.add("9mm magazine holder")
+    keywordSet.add("wwii mag pouch")
+    keywordSet.add("colt 1911 magazine pouch")
+    keywordSet.add("1911 mag holder")
+    keywordSet.add("leather ammo pouch double magazine pouch")
+    keywordSet.add("45 acp mag pouch")
+  }
+
+  // 18 & 20. Weapon Cases & Scabbards
+  if (pText.includes("scabbard") || pText.includes("case") || pText.includes("cover") || pText.includes("fleece")) {
+    keywordSet.add("m1 carry case")
+    keywordSet.add("m1 carbine gun cover")
+    keywordSet.add("canvas carry case for m1 garand rifle")
+    keywordSet.add("wwii fleece lined m1 carbine case with carry strap marked us")
+    keywordSet.add("m1 garand rifle scabbard")
+    keywordSet.add("airsoft m1 garand")
+    keywordSet.add("gun scabbard")
+    keywordSet.add("soft gun cases for rifles")
+  }
+
+  // 19. Gaiters & Puttees Leg Wraps
+  if (pText.includes("gaiter") || pText.includes("puttee") || pText.includes("leg wrap") || pText.includes("chaps")) {
+    keywordSet.add("gaiters for hiking")
+    keywordSet.add("ww2 gear")
+    keywordSet.add("ww2 boots")
+    keywordSet.add("boot gaiters")
+    keywordSet.add("tick gaiters")
+    keywordSet.add("leg gaiters for men")
+    keywordSet.add("snake gaiters for men")
+    keywordSet.add("ww2 costume puttees")
+    keywordSet.add("ww2 uniform")
+    keywordSet.add("puttees leg wraps")
+    keywordSet.add("half chaps")
+    keywordSet.add("surplus military equipment")
+  }
+
+  // 21. Wooden Urns (Pet & Human Keepsakes)
+  if (pText.includes("urn") || pText.includes("ashes") || pText.includes("cremation")) {
+    keywordSet.add("dog urn")
+    keywordSet.add("urn for dog ashes")
+    keywordSet.add("dog ashes keepsake")
+    keywordSet.add("small dog urns for ashes")
+    keywordSet.add("urn for cat ashes")
+    keywordSet.add("pet urn")
+    keywordSet.add("wooden dog cremation urns")
+    keywordSet.add("wooden urns for human ashes")
+    keywordSet.add("cremation boxes for human ashes")
+    keywordSet.add("custom urns for human ashes")
+  }
+
+  // 22. MP38 / MP40 Pouch Set
+  if (pText.includes("mp40") || pText.includes("mp38") || pText.includes("umarex")) {
+    keywordSet.add("mp40 airsoft")
+    keywordSet.add("umarex mp40 airsoft")
+    keywordSet.add("mp40 airsoft gun")
+    keywordSet.add("ww2 german gear")
+    keywordSet.add("smg magazine pouch")
+    keywordSet.add("leather ammo pouch")
+  }
+
+  // Universal High-Authority MilSurp & Reenactment Terms
+  keywordSet.add("warcraft exports")
   keywordSet.add("historical reproduction")
   keywordSet.add("military reenactment gear")
   keywordSet.add("militaria collectibles")
   keywordSet.add("reenactor equipment")
   keywordSet.add("world war 2 gear")
-  keywordSet.add("ww2 military surplus")
-  keywordSet.add("ww2 army surplus")
-  keywordSet.add("ww2 reenactment supplies")
+  keywordSet.add("ww2 military surplus reproduction")
   keywordSet.add("military gear manufacturer")
-  keywordSet.add("reproduction militaria")
+  keywordSet.add("reproduction militaria direct")
 
-  const finalKeywords = Array.from(keywordSet).filter(Boolean).slice(0, 45)
+  const finalKeywords = Array.from(keywordSet).filter(Boolean).slice(0, 50)
 
   return {
     title,
@@ -232,9 +462,46 @@ export default async function ProductPage({ params }: Props) {
       "@type": "Offer",
       priceCurrency: "USD",
       price: String(product.sale_price_usd ?? product.price_usd),
+      priceValidUntil: "2027-12-31",
+      itemCondition: "https://schema.org/NewCondition",
       availability: product.is_in_stock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
       url: `${BASE_URL}/product/${slug}`,
       seller: { "@type": "Organization", name: "Warcraft Exports" },
+      shippingDetails: {
+        "@type": "OfferShippingDetails",
+        shippingRate: {
+          "@type": "MonetaryAmount",
+          value: "0.00",
+          currency: "USD",
+        },
+        shippingDestination: {
+          "@type": "DefinedRegion",
+          addressCountry: "US",
+        },
+        deliveryTime: {
+          "@type": "ShippingDeliveryTime",
+          handlingTime: {
+            "@type": "QuantitativeValue",
+            minValue: 1,
+            maxValue: 3,
+            unitCode: "d",
+          },
+          transitTime: {
+            "@type": "QuantitativeValue",
+            minValue: 5,
+            maxValue: 12,
+            unitCode: "d",
+          },
+        },
+      },
+      hasMerchantReturnPolicy: {
+        "@type": "MerchantReturnPolicy",
+        applicableCountry: "US",
+        returnPolicyCategory: "https://schema.org/MerchantReturnFiniteReturnWindow",
+        merchantReturnDays: 30,
+        returnMethod: "https://schema.org/ReturnByMail",
+        returnFees: "https://schema.org/FreeReturn",
+      },
     },
     audience: {
       "@type": "PeopleAudience",

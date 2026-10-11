@@ -10,38 +10,54 @@ import type { Metadata } from "next"
 
 export const dynamic = "force-dynamic"
 
-const NATION_META: Record<string, { label: string; description: string }> = {
+const NATION_META: Record<string, { label: string; title: string; description: string; keywords: string[] }> = {
   us: {
     label: "American Gear",
-    description: "WW1 & WW2 US Army reproduction gear — holsters, belts, pouches, and reenactment sets.",
+    title: "US WW1 & WW2 Military Reproduction Gear | M1 Garand, Holsters & Webbing",
+    description: "Authentic US Army reproduction militaria for WW1 & WW2. Handcrafted M1 Garand slings, 1907 leather slings, M3 shoulder holsters, M1923 cartridge belts, and reenactment kits.",
+    keywords: ["us militaria reproduction", "ww2 us gear", "m1 garand sling", "1907 pattern sling", "m3 shoulder holster", "m1 carbine accessories", "colt 1911 magazine pouch", "us army reenactment"],
   },
   german: {
     label: "German Gear",
-    description: "Wehrmacht and Imperial German reproduction gear for reenactors and collectors.",
+    title: "German WW1 & WW2 Militaria Reproductions | Kar98k, Luger, MP40 & P08 Holsters",
+    description: "Authentic Wehrmacht and Imperial German reproduction gear. Kar98k leather slings, Luger P08 holsters, MP40 pouch sets, and field equipment crafted to strict historical patterns.",
+    keywords: ["german militaria", "ww2 german gear", "kar98k leather rifle sling", "luger holster", "mp40 pouch set", "german ww1 helmet", "mauser sling keeper", "german reenactment gear"],
   },
   british: {
     label: "British Gear",
-    description: "British Army WW1 & WW2 reproduction leather and canvas equipment.",
+    title: "British Army WW1 & WW2 Reproduction Gear | Webley, P1903 Bandoliers & Slings",
+    description: "British Army WW1 & WW2 reproduction leather and canvas equipment. Authentic Webley .455 holsters, P-1903 5-pocket and 9-pocket bandoliers, Enfield slings, and Pattern 37 uniforms.",
+    keywords: ["british militaria", "british ww2 enfield sling", "webley holster", "british p-1903 bandolier", "leather bandolier belt", "british 37 pattern tunic", "martini henry accessories"],
   },
   japanese: {
     label: "Japanese Gear",
-    description: "Imperial Japanese Army reproduction gear and collectibles.",
+    title: "Imperial Japanese Army Reproduction Militaria & Gear | Warcraft Exports",
+    description: "Imperial Japanese Army (IJA) WW2 reproduction leather equipment, Arisaka slings, ammunition pouches, and field collectibles.",
+    keywords: ["japanese militaria", "ww2 japanese gear", "arisaka sling", "ija reproduction equipment"],
   },
   soviet: {
     label: "Soviet Gear",
-    description: "Red Army WW2 reproduction gear for serious reenactors.",
+    title: "Soviet Red Army WW2 Reproduction Militaria & Field Gear | Warcraft Exports",
+    description: "Red Army WW2 reproduction gear, Mosin Nagant accessories, Tokarev holsters, and Soviet reenactment supplies.",
+    keywords: ["soviet militaria", "red army gear", "ww2 soviet reproduction", "mosin nagant sling"],
   },
   french: {
     label: "French Gear",
-    description: "French Army WW1 & WW2 historical reproduction equipment.",
+    title: "French Army WW1 & WW2 Historical Reproduction Equipment | Warcraft Exports",
+    description: "French Army WW1 & WW2 historical reproduction leather holsters, Lebel accessories, and field equipment.",
+    keywords: ["french militaria", "french ww1 gear", "historical military reproduction"],
   },
   italian: {
     label: "Italian Gear",
-    description: "Italian Army reproduction gear for collectors.",
+    title: "Italian Army WW2 Historical Reproduction Gear & Holsters | Warcraft Exports",
+    description: "Italian Army WW2 historical reproduction leather holsters, Carcano accessories, and militaria collectibles.",
+    keywords: ["italian militaria", "ww2 italian gear", "beretta holster reproduction"],
   },
   universal: {
     label: "Universal Gear",
-    description: "Cross-era and multi-nation gear for reenactors and collectors.",
+    title: "Universal Military & Western Leather Gear, Slings & Suspenders | Warcraft Exports",
+    description: "Cross-era historical reproduction gear, western cowboy holsters, heavy-duty leather suspenders, and rifle scabbards.",
+    keywords: ["western holster", "leather suspenders for men", "buffalo leather rifle sling", "gun scabbard", "historical reproduction gear"],
   },
 }
 
@@ -53,8 +69,15 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   const meta = NATION_META[nation.toLowerCase()]
   if (!meta) return {}
   return {
-    title: `${meta.label} — Warcraft Exports`,
+    title: `${meta.title} | Warcraft Exports`,
     description: meta.description,
+    keywords: meta.keywords,
+    openGraph: {
+      title: `${meta.title} | Warcraft Exports`,
+      description: meta.description,
+      url: `https://www.warcraftexports.com/shop/nation/${nation.toLowerCase()}`,
+      siteName: "Warcraft Exports",
+    },
     alternates: { canonical: `https://www.warcraftexports.com/shop/nation/${nation.toLowerCase()}` },
   }
 }
