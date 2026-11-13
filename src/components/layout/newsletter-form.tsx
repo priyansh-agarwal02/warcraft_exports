@@ -1,27 +1,49 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
+import { createTimeToken } from "@/lib/anti-bot"
 
-async function subscribeNewsletter(email: string, honeypot?: string) {
+async function subscribeNewsletter(
+  email: string,
+  timeToken: string,
+  honeypotWebsite?: string,
+  honeypotRole?: string,
+  honeypotLegacy?: string
+) {
   const res = await fetch("/api/newsletter/subscribe", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, b_website: honeypot || "" }),
+    body: JSON.stringify({
+      email: email.trim(),
+      _t: timeToken,
+      user_website_url: honeypotWebsite || "",
+      organization_role: honeypotRole || "",
+      b_website: honeypotLegacy || "",
+    }),
   })
   return res.ok
 }
 
 export function NewsletterForm() {
   const [email, setEmail] = useState("")
-  const [honeypot, setHoneypot] = useState("")
+  const [honeypotWebsite, setHoneypotWebsite] = useState("")
+  const [honeypotRole, setHoneypotRole] = useState("")
+  const [honeypotLegacy, setHoneypotLegacy] = useState("")
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle")
+  const mountTimeRef = useRef<number>(Date.now())
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!email.trim()) return
     setStatus("loading")
     try {
-      const ok = await subscribeNewsletter(email, honeypot)
+      const ok = await subscribeNewsletter(
+        email,
+        createTimeToken(mountTimeRef.current),
+        honeypotWebsite,
+        honeypotRole,
+        honeypotLegacy
+      )
       setStatus(ok ? "success" : "error")
     } catch {
       setStatus("error")
@@ -38,18 +60,45 @@ export function NewsletterForm() {
 
   return (
     <form onSubmit={handleSubmit} className="flex gap-2 mb-5 relative">
-      {/* 🍯 Invisible Honeypot Trap field (hidden from humans, filled by bots) */}
-      <input
-        type="text"
-        name="b_website"
-        tabIndex={-1}
+      {/* 🍯 Invisible Deceptive Honeypot Trap (Off-screen coordinates trap headless bots without display:none) */}
+      <div
+        style={{
+          position: "absolute",
+          left: "-9999px",
+          top: "-9999px",
+          width: "1px",
+          height: "1px",
+          overflow: "hidden",
+          opacity: 0.01,
+          pointerEvents: "none",
+        }}
         aria-hidden="true"
-        autoComplete="off"
-        value={honeypot}
-        onChange={(e) => setHoneypot(e.target.value)}
-        className="hidden absolute opacity-0 pointer-events-none w-0 h-0"
-        style={{ display: "none" }}
-      />
+      >
+        <input
+          type="text"
+          name="user_website_url"
+          tabIndex={-1}
+          autoComplete="off"
+          value={honeypotWebsite}
+          onChange={(e) => setHoneypotWebsite(e.target.value)}
+        />
+        <input
+          type="text"
+          name="organization_role"
+          tabIndex={-1}
+          autoComplete="off"
+          value={honeypotRole}
+          onChange={(e) => setHoneypotRole(e.target.value)}
+        />
+        <input
+          type="text"
+          name="b_website"
+          tabIndex={-1}
+          autoComplete="off"
+          value={honeypotLegacy}
+          onChange={(e) => setHoneypotLegacy(e.target.value)}
+        />
+      </div>
 
       <input
         type="email"

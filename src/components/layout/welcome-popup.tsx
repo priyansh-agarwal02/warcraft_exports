@@ -1,10 +1,11 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { X, Mail, Sparkles, CheckCircle2 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
+import { createTimeToken } from "@/lib/anti-bot"
 
 export function WelcomePopup() {
   const pathname = usePathname()
@@ -12,8 +13,11 @@ export function WelcomePopup() {
   const [user, setUser] = useState<any>(null)
   const [authInitialized, setAuthInitialized] = useState(false)
   const [email, setEmail] = useState("")
-  const [honeypot, setHoneypot] = useState("")
+  const [honeypotWebsite, setHoneypotWebsite] = useState("")
+  const [honeypotRole, setHoneypotRole] = useState("")
+  const [honeypotLegacy, setHoneypotLegacy] = useState("")
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle")
+  const mountTimeRef = useRef<number>(Date.now())
 
   const isWholesale = pathname === "/wholesale" || pathname?.startsWith("/wholesale")
 
@@ -99,7 +103,13 @@ export function WelcomePopup() {
       const res = await fetch("/api/newsletter/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, b_website: honeypot }),
+        body: JSON.stringify({
+          email: email.trim(),
+          _t: createTimeToken(mountTimeRef.current),
+          user_website_url: honeypotWebsite,
+          organization_role: honeypotRole,
+          b_website: honeypotLegacy,
+        }),
       })
 
       if (res.ok) {
@@ -175,18 +185,45 @@ export function WelcomePopup() {
 
         {/* Newsletter signup tag */}
         <form onSubmit={handleSubscribe} className="space-y-2.5 relative">
-          {/* 🍯 Invisible Honeypot Trap field (hidden from humans, filled by bots) */}
-          <input
-            type="text"
-            name="b_website"
-            tabIndex={-1}
+          {/* 🍯 Invisible Deceptive Honeypot Trap (Off-screen coordinates trap headless bots without display:none) */}
+          <div
+            style={{
+              position: "absolute",
+              left: "-9999px",
+              top: "-9999px",
+              width: "1px",
+              height: "1px",
+              overflow: "hidden",
+              opacity: 0.01,
+              pointerEvents: "none",
+            }}
             aria-hidden="true"
-            autoComplete="off"
-            value={honeypot}
-            onChange={(e) => setHoneypot(e.target.value)}
-            className="hidden absolute opacity-0 pointer-events-none w-0 h-0"
-            style={{ display: "none" }}
-          />
+          >
+            <input
+              type="text"
+              name="user_website_url"
+              tabIndex={-1}
+              autoComplete="off"
+              value={honeypotWebsite}
+              onChange={(e) => setHoneypotWebsite(e.target.value)}
+            />
+            <input
+              type="text"
+              name="organization_role"
+              tabIndex={-1}
+              autoComplete="off"
+              value={honeypotRole}
+              onChange={(e) => setHoneypotRole(e.target.value)}
+            />
+            <input
+              type="text"
+              name="b_website"
+              tabIndex={-1}
+              autoComplete="off"
+              value={honeypotLegacy}
+              onChange={(e) => setHoneypotLegacy(e.target.value)}
+            />
+          </div>
           <label className="block text-[9px] font-sans font-bold uppercase tracking-[0.1em] text-khaki">
             Subscribe for Newsletter
           </label>

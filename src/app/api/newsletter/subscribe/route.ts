@@ -2,25 +2,19 @@ import { NextRequest, NextResponse } from "next/server"
 import { sendNewsletterWelcome } from "@/lib/email"
 import { checkRateLimit } from "@/lib/rate-limit"
 import { createServiceClient } from "@/lib/supabase/service"
+import { evaluateNewsletterBot } from "@/lib/anti-bot"
 import { revalidatePath } from "next/cache"
 
 const EMAIL_REGEX = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown"
-  if (!checkRateLimit(`newsletter:${ip}`, 3, 3_600_000)) {
+  if (!checkRateLimit(`newsletter:${ip}`, 5, 3_600_000)) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 })
   }
 
   try {
     const body = await req.json()
-
-    // 🍯 INVISIBLE HONEYPOT TRAP: Bots fill hidden inputs automatically
-    if (typeof body?.b_website === "string" && body.b_website.trim().length > 0) {
-      // Return fake 200 OK success so bot thinks it succeeded — zero DB insert, zero Resend emails
-      return NextResponse.json({ ok: true })
-    }
-
     let email = typeof body?.email === "string" ? body.email.trim().toLowerCase() : null
 
     if (!email || !EMAIL_REGEX.test(email) || email.length > 254) {
@@ -34,6 +28,18 @@ export async function POST(req: NextRequest) {
       const parts = email.split("@")
       const userWithoutDots = parts[0].replace(/\./g, "").split("+")[0]
       email = `${userWithoutDots}@${parts[1]}`
+    }
+
+    // 🛡️ INVISIBLE MULTI-LAYER ANTI-BOT VALIDATION
+    // (Checks: Deceptive Honeypots, Time-Lock Token, Same-Origin, Spam Domain / Gibberish Patterns)
+    const botCheck = evaluateNewsletterBot(req, body, email)
+    if (botCheck.isBot) {
+      if (process.env.NODE_ENV !== "production") {
+        console.warn(`[NEWSLETTER ANTI-BOT]: Bot trapped (${botCheck.reason}) for email: ${email}`)
+      }
+      // 🍯 SILENT POISON-PILL DROP: Return 200 OK so bot thinks it succeeded.
+      // ZERO database insert, ZERO Resend welcome emails dispatched!
+      return NextResponse.json({ ok: true })
     }
 
     const supabase = createServiceClient()
