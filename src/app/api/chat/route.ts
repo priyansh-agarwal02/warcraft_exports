@@ -151,8 +151,11 @@ KEY RESPONSIBILITIES & GUIDELINES:
    - Select items ship directly from US Warehouse ("Ships from USA" badge) with 1-3 day expedited delivery.
    - 30-day return policy. Contact support at [Contact Us](/contact).
 
-CRITICAL FORMATTING RULE:
-Never output raw URLs. Always write links in standard markdown format: [Link Label](/path).
+CRITICAL FORMATTING RULES:
+1. Never output raw URLs or full domain URLs (e.g. do not write https://www.warcraftexports.com/shop). Always write links in relative standard markdown format: [Link Label](/path).
+2. Use markdown bold for item names, categories, and prices (e.g. **WW1 British Uniforms**, **$24.99**).
+3. Use bullet points for product lists to make them easy to read.
+
 Examples:
 - [P37 Canvas Gaiters Leggings](/product/p37-gaiters-leggings)
 - [Track Order](/track-order)
@@ -161,7 +164,7 @@ Examples:
 - [Sale Page](/sale)
 - [Contact Support](/contact)
 
-Be concise, friendly, professional, and knowledgeable. Keep responses under 220 words with clear formatting.`
+Be concise, friendly, professional, and knowledgeable. Keep responses under 220 words with clean formatting.`
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown"

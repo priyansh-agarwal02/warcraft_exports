@@ -13,28 +13,220 @@ const SUGGESTIONS = [
   "Which items ship from the USA?",
 ]
 
-function FormattedChatMessage({ content }: { content: string }) {
-  // Regex to split markdown links: [label](/path) or [label](https://...)
-  const parts = content.split(/(\[[^\]]+\]\([^)]+\))/g)
+type InlineToken =
+  | { type: "text"; content: string }
+  | { type: "bold"; content: string }
+  | { type: "italic"; content: string }
+  | { type: "code"; content: string }
+  | { type: "link"; label: string; url: string; bold: boolean }
 
+type BlockToken =
+  | { type: "empty" }
+  | { type: "hr" }
+  | { type: "heading"; level: number; inlines: InlineToken[] }
+  | { type: "bullet"; indent: number; inlines: InlineToken[] }
+  | { type: "number"; num: string; indent: number; inlines: InlineToken[] }
+  | { type: "paragraph"; inlines: InlineToken[] }
+
+function normalizeUrl(url: string): string {
+  try {
+    if (
+      url.startsWith("https://www.warcraftexports.com") ||
+      url.startsWith("https://warcraftexports.com") ||
+      url.startsWith("http://www.warcraftexports.com") ||
+      url.startsWith("http://warcraftexports.com")
+    ) {
+      const parsed = new URL(url)
+      return parsed.pathname + parsed.search + parsed.hash
+    }
+  } catch {
+    // fallback
+  }
+  return url
+}
+
+const INLINE_REGEX = /(\*\*\[[^\]]+\]\([^)]+\)\*\*|\[[^\]]+\]\([^)]+\)|\*\*[^*]+\*\*|__[^_]+__|\*(?!\s)[^*]+(?<!\s)\*|_(?!\s)[^_]+(?<!\s)_|`[^`]+`)/g
+
+function parseInlineTokens(text: string): InlineToken[] {
+  const tokens: InlineToken[] = []
+  let lastIndex = 0
+  let match: RegExpExecArray | null
+
+  INLINE_REGEX.lastIndex = 0
+
+  while ((match = INLINE_REGEX.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      tokens.push({ type: "text", content: text.slice(lastIndex, match.index) })
+    }
+    const tokenStr = match[0]
+
+    const boldLinkMatch = tokenStr.match(/^\*\*\[([^\]]+)\]\(([^)]+)\)\*\*$/)
+    if (boldLinkMatch) {
+      tokens.push({
+        type: "link",
+        label: boldLinkMatch[1],
+        url: normalizeUrl(boldLinkMatch[2]),
+        bold: true,
+      })
+    } else {
+      const linkMatch = tokenStr.match(/^\[([^\]]+)\]\(([^)]+)\)$/)
+      if (linkMatch) {
+        tokens.push({
+          type: "link",
+          label: linkMatch[1],
+          url: normalizeUrl(linkMatch[2]),
+          bold: false,
+        })
+      } else {
+        const boldMatch = tokenStr.match(/^\*\*([^*]+)\*\*$/) || tokenStr.match(/^__([^_]+)__$/)
+        if (boldMatch) {
+          tokens.push({ type: "bold", content: boldMatch[1] })
+        } else {
+          const italicMatch = tokenStr.match(/^\*([^*]+)\*$/) || tokenStr.match(/^_([^_]+)_$/)
+          if (italicMatch) {
+            tokens.push({ type: "italic", content: italicMatch[1] })
+          } else {
+            const codeMatch = tokenStr.match(/^`([^`]+)`$/)
+            if (codeMatch) {
+              tokens.push({ type: "code", content: codeMatch[1] })
+            }
+          }
+        }
+      }
+    }
+    lastIndex = INLINE_REGEX.lastIndex
+  }
+
+  if (lastIndex < text.length) {
+    tokens.push({ type: "text", content: text.slice(lastIndex) })
+  }
+
+  return tokens
+}
+
+function parseBlocks(markdown: string): BlockToken[] {
+  const lines = markdown.split(/\r?\n/)
+  const blocks: BlockToken[] = []
+
+  for (let i = 0; i < lines.length; i++) {
+    const rawLine = lines[i]
+    const trimmed = rawLine.trim()
+
+    if (!trimmed) {
+      blocks.push({ type: "empty" })
+      continue
+    }
+
+    if (/^(\-{3,}|\*{3,}|_{3,})$/.test(trimmed)) {
+      blocks.push({ type: "hr" })
+      continue
+    }
+
+    const headingMatch = trimmed.match(/^(#{1,3})\s+(.+)$/)
+    if (headingMatch) {
+      blocks.push({
+        type: "heading",
+        level: headingMatch[1].length,
+        inlines: parseInlineTokens(headingMatch[2]),
+      })
+      continue
+    }
+
+    const bulletMatch = rawLine.match(/^(\s*)(?:[\*\-\+]|•)\s+(.+)$/)
+    if (bulletMatch) {
+      const indent = bulletMatch[1].length >= 2 ? 1 : 0
+      blocks.push({
+        type: "bullet",
+        indent,
+        inlines: parseInlineTokens(bulletMatch[2]),
+      })
+      continue
+    }
+
+    const numberMatch = rawLine.match(/^(\s*)(\d+)\.\s+(.+)$/)
+    if (numberMatch) {
+      const indent = numberMatch[1].length >= 2 ? 1 : 0
+      blocks.push({
+        type: "number",
+        num: numberMatch[2],
+        indent,
+        inlines: parseInlineTokens(numberMatch[3]),
+      })
+      continue
+    }
+
+    blocks.push({
+      type: "paragraph",
+      inlines: parseInlineTokens(trimmed),
+    })
+  }
+
+  return blocks
+}
+
+function RenderInlines({ inlines, isUser }: { inlines: InlineToken[]; isUser?: boolean }) {
   return (
-    <span className="whitespace-pre-wrap leading-relaxed">
-      {parts.map((part, index) => {
-        const match = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/)
-        if (match) {
-          const [, label, url] = match
-          const isExternal = url.startsWith("http://") || url.startsWith("https://")
+    <>
+      {inlines.map((token, index) => {
+        if (token.type === "text") {
+          return <span key={index}>{token.content}</span>
+        }
+
+        if (token.type === "bold") {
+          return (
+            <strong
+              key={index}
+              className={isUser ? "font-bold text-white" : "font-bold text-stone-900"}
+            >
+              {token.content}
+            </strong>
+          )
+        }
+
+        if (token.type === "italic") {
+          return (
+            <em
+              key={index}
+              className={isUser ? "italic text-parchment/90" : "italic text-stone-700"}
+            >
+              {token.content}
+            </em>
+          )
+        }
+
+        if (token.type === "code") {
+          return (
+            <code
+              key={index}
+              className={`px-1 py-0.5 rounded text-[11px] font-mono ${
+                isUser
+                  ? "bg-white/20 text-white"
+                  : "bg-stone-100 text-[#33450D] border border-stone-200"
+              }`}
+            >
+              {token.content}
+            </code>
+          )
+        }
+
+        if (token.type === "link") {
+          const isExternal =
+            token.url.startsWith("http://") || token.url.startsWith("https://")
 
           if (isExternal) {
             return (
               <a
                 key={index}
-                href={url}
+                href={token.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 font-bold text-[#33450D] underline hover:text-[#4A5D23] bg-[#33450D]/10 px-1.5 py-0.5 rounded-xs transition-colors my-0.5"
+                className={`inline-flex items-center gap-1 font-bold underline px-1.5 py-0.5 rounded-xs transition-colors my-0.5 ${
+                  isUser
+                    ? "text-white bg-white/20 hover:bg-white/30"
+                    : "text-[#33450D] hover:text-[#4A5D23] bg-[#33450D]/10 hover:bg-[#33450D]/20"
+                }`}
               >
-                <span>{label}</span>
+                <span>{token.label}</span>
                 <ExternalLink size={10} className="shrink-0" />
               </a>
             )
@@ -43,19 +235,122 @@ function FormattedChatMessage({ content }: { content: string }) {
           return (
             <Link
               key={index}
-              href={url}
-              className="inline-flex items-center gap-1 font-bold text-[#33450D] underline hover:text-[#4A5D23] bg-[#33450D]/10 px-1.5 py-0.5 rounded-xs transition-colors my-0.5 cursor-pointer"
+              href={token.url}
+              className={`inline-flex items-center gap-1 font-bold underline px-1.5 py-0.5 rounded-xs transition-colors my-0.5 cursor-pointer ${
+                isUser
+                  ? "text-white bg-white/20 hover:bg-white/30"
+                  : "text-[#33450D] hover:text-[#4A5D23] bg-[#33450D]/10 hover:bg-[#33450D]/20"
+              }`}
             >
-              <span>{label}</span>
-              <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2.5" className="shrink-0">
+              <span>{token.label}</span>
+              <svg
+                viewBox="0 0 24 24"
+                width="10"
+                height="10"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                className="shrink-0"
+              >
                 <path d="M5 12h14M12 5l7 7-7 7" />
               </svg>
             </Link>
           )
         }
-        return <span key={index}>{part}</span>
+
+        return null
       })}
-    </span>
+    </>
+  )
+}
+
+function FormattedChatMessage({ content, isUser }: { content: string; isUser?: boolean }) {
+  const blocks = parseBlocks(content)
+
+  return (
+    <div className="space-y-1 leading-relaxed">
+      {blocks.map((block, idx) => {
+        if (block.type === "empty") {
+          return <div key={idx} className="h-1" />
+        }
+
+        if (block.type === "hr") {
+          return (
+            <hr
+              key={idx}
+              className={`my-2 ${isUser ? "border-white/20" : "border-khaki/30"}`}
+            />
+          )
+        }
+
+        if (block.type === "heading") {
+          return (
+            <h4
+              key={idx}
+              className={`font-bold mt-2 mb-1 tracking-tight ${
+                block.level === 1
+                  ? "text-[14px]"
+                  : block.level === 2
+                  ? "text-[13px]"
+                  : "text-[12px]"
+              } ${isUser ? "text-white" : "text-stone-900"}`}
+            >
+              <RenderInlines inlines={block.inlines} isUser={isUser} />
+            </h4>
+          )
+        }
+
+        if (block.type === "bullet") {
+          return (
+            <div
+              key={idx}
+              className={`flex items-start gap-1.5 my-0.5 ${
+                block.indent ? "ml-3 text-[12px] opacity-90" : "ml-0.5"
+              }`}
+            >
+              <span
+                className={`font-bold select-none mt-1 shrink-0 text-[10px] leading-none ${
+                  isUser ? "text-white/80" : "text-[#33450D]"
+                }`}
+              >
+                {block.indent ? "◦" : "•"}
+              </span>
+              <span className="flex-1">
+                <RenderInlines inlines={block.inlines} isUser={isUser} />
+              </span>
+            </div>
+          )
+        }
+
+        if (block.type === "number") {
+          return (
+            <div
+              key={idx}
+              className={`flex items-start gap-1.5 my-0.5 ${
+                block.indent ? "ml-3 text-[12px] opacity-90" : "ml-0.5"
+              }`}
+            >
+              <span
+                className={`font-semibold text-[11px] shrink-0 mt-0.5 select-none ${
+                  isUser ? "text-white/90" : "text-[#33450D]"
+                }`}
+              >
+                {block.num}.
+              </span>
+              <span className="flex-1">
+                <RenderInlines inlines={block.inlines} isUser={isUser} />
+              </span>
+            </div>
+          )
+        }
+
+        return (
+          <p key={idx} className="my-0.5">
+            <RenderInlines inlines={block.inlines} isUser={isUser} />
+          </p>
+        )
+      })}
+    </div>
   )
 }
 
@@ -215,7 +510,7 @@ export function ChatbotWidget() {
                         : "bg-white border border-khaki/30 text-leather-dark shadow-xs"
                     }`}
                   >
-                    <FormattedChatMessage content={msg.content} />
+                    <FormattedChatMessage content={msg.content} isUser={msg.role === "user"} />
                   </div>
                 </div>
               ))}
