@@ -204,17 +204,17 @@ export async function POST(req: NextRequest) {
     let completion: any
     try {
       completion = await groq.chat.completions.create({
-        model: "groq/compound-mini",
+        model: "qwen/qwen3.8-27b",
         messages: [{ role: "system", content: dynamicSystemPrompt }, ...safeMessages],
-        max_tokens: 450,
+        max_tokens: 500,
         temperature: 0.6,
       })
     } catch (modelErr: any) {
-      console.warn("Primary model groq/compound-mini failed, trying fallback groq/compound:", modelErr?.message)
+      console.warn("Primary model qwen/qwen3.8-27b failed, trying fallback openai/gpt-oss-120b:", modelErr?.message)
       completion = await groq.chat.completions.create({
-        model: "groq/compound",
+        model: "openai/gpt-oss-120b",
         messages: [{ role: "system", content: dynamicSystemPrompt }, ...safeMessages],
-        max_tokens: 450,
+        max_tokens: 500,
         temperature: 0.6,
       })
     }
