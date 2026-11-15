@@ -82,11 +82,17 @@ export function LoginForm() {
 
     const searchParams = new URLSearchParams(window.location.search)
     // Only allow redirects to pages on this site (blocks https://evil.com, //evil.com, javascript: …)
+    // Resolve with the browser's own URL parser and accept only same-origin results.
     const rawRedirect = searchParams.get("redirectTo")
-    const redirectTo =
-      rawRedirect && rawRedirect.startsWith("/") && !rawRedirect.startsWith("//") && !rawRedirect.startsWith("/\\")
-        ? rawRedirect
-        : null
+    let redirectTo: string | null = null
+    if (rawRedirect && rawRedirect.startsWith("/") && !/[\\\u0000-\u001f]/.test(rawRedirect)) {
+      try {
+        const url = new URL(rawRedirect, window.location.origin)
+        if (url.origin === window.location.origin) redirectTo = url.pathname + url.search + url.hash
+      } catch {
+        redirectTo = null
+      }
+    }
 
     if (profile?.role === "admin") {
       // Admins are allowed to go to /admin or anywhere else

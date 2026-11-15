@@ -3,9 +3,7 @@ import { checkRateLimit } from "@/lib/rate-limit"
 import { createClient } from "@/lib/supabase/server"
 import { createServiceClient } from "@/lib/supabase/service"
 import { computeOrderPricing, type PricingItemInput } from "@/lib/orders/pricing"
-import { getRazorpayKeys, getUsdRate, toRazorpaySmallestUnit } from "@/lib/payments/gateways"
-
-const RAZORPAY_ALLOWED_CURRENCIES = new Set(["USD", "EUR", "GBP", "AUD", "CAD", "JPY", "INR", "RUB", "CNY"])
+import { getRazorpayKeys, getUsdRate, RAZORPAY_ALLOWED_CURRENCIES, toRazorpaySmallestUnit } from "@/lib/payments/gateways"
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown"

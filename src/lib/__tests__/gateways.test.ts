@@ -72,6 +72,10 @@ describe("verifyRazorpayPayment", () => {
     vi.stubGlobal("fetch", vi.fn(async () => jsonResponse(200, { order_id: "order_OTHER1", status: "captured", amount: 100, currency: "INR" })))
     expect((await verifyRazorpayPayment("order_ABC123", "pay_XYZ789")).status).toBe("not_paid")
   })
+  it("never auto-confirms a Razorpay payment in a currency the store doesn't sell in (e.g. KWD)", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => jsonResponse(200, { order_id: "order_ABC123", status: "captured", amount: 15000, currency: "KWD" })))
+    expect((await verifyRazorpayPayment("order_ABC123", "pay_XYZ789")).status).toBe("unverifiable")
+  })
   it("rejects failed payments", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => jsonResponse(200, { order_id: "order_ABC123", status: "failed", amount: 100, currency: "INR" })))
     expect((await verifyRazorpayPayment("order_ABC123", "pay_XYZ789")).status).toBe("not_paid")

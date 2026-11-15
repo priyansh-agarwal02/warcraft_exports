@@ -69,6 +69,7 @@ type ProductRow = {
 
 type VariantRow = {
   id: string
+  product_id: string
   price_override: number | null
   color: string | null
   size: string | null
@@ -114,7 +115,7 @@ export async function computeOrderPricing(
   if (variantIds.length > 0) {
     const { data, error } = await serviceClient
       .from("product_variants")
-      .select("id, price_override, color, size")
+      .select("id, product_id, price_override, color, size")
       .in("id", variantIds)
     if (!error && data) dbVariants = data as VariantRow[]
   }
@@ -140,7 +141,19 @@ export async function computeOrderPricing(
       }
     }
 
-    const variant = item.variantId ? variantMap.get(item.variantId) : null
+    // A variant only counts if it belongs to THIS product — otherwise a cheap variant of another
+    // product could be used to buy an expensive product at the cheap variant's price.
+    const rawVariant = item.variantId ? variantMap.get(item.variantId) : null
+    let variant: VariantRow | null = null
+    if (item.variantId) {
+      if (rawVariant && rawVariant.product_id === product.id) {
+        variant = rawVariant
+      } else if (!lenient) {
+        return { ok: false, status: 400, error: `Please re-select the option for "${product.name}" and try again.` }
+      } else {
+        warnings.push(`Option on "${product.name}" did not match the product — charged the product's normal price`)
+      }
+    }
     const unitPrice = variant?.price_override != null
       ? Number(variant.price_override)
       : Number(product.sale_price_usd ?? product.price_usd)
@@ -155,7 +168,7 @@ export async function computeOrderPricing(
       sku: product.sku,
       priceUsd: unitPrice,
       quantity: qty,
-      variantId: item.variantId ?? null,
+      variantId: variant ? variant.id : null,
       variantLabel,
       color: variant?.color ?? null,
       size: variant?.size ?? null,

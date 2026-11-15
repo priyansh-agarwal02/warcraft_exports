@@ -93,6 +93,37 @@ describe("computeOrderPricing", () => {
     expect(r.ok && r.total).toBe(66.28)
   })
 
+  it("refuses a cheap option (variant) that belongs to a different product", async () => {
+    const V = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
+    const { result } = run(
+      { product_variants: { data: [{ id: V, product_id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc", price_override: 1, color: "Brown", size: null }] } },
+      { items: [{ productId: P1, variantId: V, quantity: 1 }] }
+    )
+    const r = await result
+    expect(r.ok).toBe(false)
+  })
+
+  it("after payment (lenient), a mismatched option falls back to the product price and is flagged", async () => {
+    const V = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
+    const { result } = run(
+      { product_variants: { data: [{ id: V, product_id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc", price_override: 1, color: "Brown", size: null }] } },
+      { items: [{ productId: P1, variantId: V, quantity: 1 }], lenient: true }
+    )
+    const r = await result
+    expect(r.ok && r.validatedItems[0].priceUsd).toBe(38.99)
+    expect(r.ok && r.warnings.length).toBe(1)
+  })
+
+  it("uses the option's own price when it belongs to the product", async () => {
+    const V = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
+    const { result } = run(
+      { product_variants: { data: [{ id: V, product_id: P1, price_override: 42.5, color: "Black", size: "L" }] } },
+      { items: [{ productId: P1, variantId: V, quantity: 1 }] }
+    )
+    const r = await result
+    expect(r.ok && r.validatedItems[0].priceUsd).toBe(42.5)
+  })
+
   it("clamps silly quantities to 1–100", async () => {
     const { result } = run({ products: { data: [{ ...product, stock_quantity: null }] } }, { items: [{ productId: P1, variantId: null, quantity: -5 }] })
     const r = await result

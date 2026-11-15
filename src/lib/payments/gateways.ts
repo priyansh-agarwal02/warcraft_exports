@@ -75,6 +75,8 @@ async function paypalTokenOrFailure(): Promise<{ token: string } | { failure: Ve
 
 // ── Razorpay ──────────────────────────────────────────────────────
 const RAZORPAY_ZERO_DECIMAL = new Set(["JPY"])
+// The store's display currencies — the only ones Razorpay orders are created in
+export const RAZORPAY_ALLOWED_CURRENCIES = new Set(["USD", "EUR", "GBP", "AUD", "CAD", "JPY", "INR", "RUB", "CNY"])
 
 export function toRazorpaySmallestUnit(amount: number, currency: string): number {
   return RAZORPAY_ZERO_DECIMAL.has(currency.toUpperCase()) ? Math.round(amount) : Math.round(amount * 100)
@@ -215,6 +217,11 @@ export async function verifyRazorpayPayment(razorpayOrderId: string | null, razo
   if (payment.status === "authorized") return { status: "unverifiable", reason: "Razorpay payment authorized, capture pending" }
   if (payment.status !== "captured" || typeof payment.amount !== "number" || !payment.currency) {
     return { status: "not_paid", reason: `Razorpay payment status ${payment.status ?? "unknown"}` }
+  }
+  // Only the store's own currencies can be converted reliably (3-decimal currencies such as KWD
+  // would be mis-read by 10×). Anything else is kept for manual review, never auto-confirmed.
+  if (!RAZORPAY_ALLOWED_CURRENCIES.has(payment.currency.toUpperCase())) {
+    return { status: "unverifiable", reason: `Razorpay payment in unexpected currency ${payment.currency}` }
   }
   return {
     status: "paid",
