@@ -19,7 +19,7 @@ function getRazorpayKeys() {
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown"
-  if (!checkRateLimit(`rzp-verify:${ip}`, 10, 60_000)) {
+  if (!(await checkRateLimit(`rzp-verify:${ip}`, 10, 60_000))) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 })
   }
 

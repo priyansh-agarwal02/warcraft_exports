@@ -77,9 +77,10 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   const category = await getCategoryBySlug(slug)
   if (!category) return {}
 
-  const seo = CATEGORY_SEO_MAP[slug]
-  const title = seo ? `${seo.title} | Warcraft Exports` : `${category.name} — Historical Military Reproductions | Warcraft Exports`
-  const description = seo ? seo.description : (category.description ?? `Browse authentic ${category.name} historical military reproduction gear. Manufacturer-direct from Warcraft Exports. Ships worldwide.`)
+  // "military-cases" is the live slug of the category the "weapon-cases" SEO entry was written for
+  const seo = CATEGORY_SEO_MAP[slug] ?? (slug === "military-cases" ? CATEGORY_SEO_MAP["weapon-cases"] : undefined)
+  const title = seo ? (seo.title.includes("Warcraft Exports") ? seo.title : `${seo.title} | Warcraft Exports`) : `${category.name} — Historical Military Reproductions | Warcraft Exports`
+  const description = seo ? seo.description : (category.description || `Browse authentic ${category.name} historical military reproduction gear. Manufacturer-direct from Warcraft Exports. Ships worldwide.`)
   const keywords = seo ? seo.keywords : [category.name.toLowerCase(), "military reproduction", "ww2 gear", "ww1 gear", "warcraft exports"]
 
   return {

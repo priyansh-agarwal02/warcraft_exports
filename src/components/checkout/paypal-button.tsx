@@ -4,8 +4,16 @@ import {
   PayPalButtons,
 } from "@paypal/react-paypal-js"
 
+export interface CheckoutPricingPayload {
+  items: { productId: string; variantId: string | null; variantLabel?: string | null; quantity: number }[]
+  country: string
+  shippingMethod: "standard" | "express"
+  couponCode: string | null
+  email: string
+}
+
 interface PayPalButtonProps {
-  totalUsd: number
+  pricingPayload: CheckoutPricingPayload
   currency: string
   customerName: string
   customerEmail: string
@@ -18,13 +26,13 @@ interface PayPalButtonProps {
     postalCode: string
     country: string
   }
-  onSuccess: (paymentId: string) => void
+  onSuccess: (paymentId: string, gatewayOrderId: string) => void
   onError: (msg?: string) => void
   onClick?: () => boolean
 }
 
 export function PayPalCheckout({
-  totalUsd,
+  pricingPayload,
   currency,
   customerName,
   customerEmail,
@@ -56,7 +64,7 @@ export function PayPalCheckout({
       const res = await fetch("/api/payment/paypal/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ totalUsd, currency: activeCurrency }),
+        body: JSON.stringify({ ...pricingPayload, currency: activeCurrency }),
       })
       const data = await res.json()
       if (!res.ok || !data.paypalOrderId) {
@@ -79,7 +87,7 @@ export function PayPalCheckout({
       })
       const captured = await res.json()
       if (captured.captured) {
-        onSuccess(captured.captureId ?? data.orderID)
+        onSuccess(captured.captureId ?? data.orderID, data.orderID)
       } else {
         onError("PayPal capture did not complete. Please check your account.")
       }

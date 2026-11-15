@@ -17,6 +17,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const title = seo?.meta_title || "Wholesale WW1 & WW2 Military Uniforms & Gear Supplier | Warcraft Exports"
   const description = seo?.meta_description || "Direct factory supplier of WWI & WWII reproduction gear for retailers, wholesale buyers, reenactment groups, museums, film & TV productions, and theater costume departments."
   return {
+    alternates: { canonical: "https://www.warcraftexports.com/wholesale" },
     title,
     description,
     robots: {
@@ -45,7 +46,7 @@ async function submitWholesaleAction(data: {
 
   const headerList = await headers()
   const ip = headerList.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown"
-  if (!checkRateLimit(`wholesale:${ip}`, 3, 300_000)) {
+  if (!(await checkRateLimit(`wholesale:${ip}`, 3, 300_000))) {
     return { success: false, error: "Too many requests. Please try again later." }
   }
 
@@ -56,6 +57,16 @@ async function submitWholesaleAction(data: {
   const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   if (!EMAIL_RE.test(data.email.trim())) {
     return { success: false, error: "Please enter a valid email address." }
+  }
+
+  if (!Array.isArray(data.categories)) data.categories = []
+  data.categories = data.categories.filter((c) => typeof c === "string").slice(0, 10).map((c) => c.slice(0, 50))
+  if (
+    data.name.length > 100 || data.email.length > 254 || data.country.length > 100 ||
+    String(data.company ?? "").length > 150 || String(data.phone ?? "").length > 30 ||
+    String(data.volume).length > 50 || String(data.message ?? "").length > 5000
+  ) {
+    return { success: false, error: "Some fields are too long. Please shorten them and try again." }
   }
 
   const supabase = await createClient()
@@ -77,7 +88,7 @@ async function submitWholesaleAction(data: {
 
   if (error) {
     console.error("Database wholesale insert failed:", error.message)
-    return { success: false, error: error.message }
+    return { success: false, error: "Could not send your inquiry. Please try again or email warcraftexports@gmail.com." }
   }
 
   try {

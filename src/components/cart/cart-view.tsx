@@ -252,11 +252,11 @@ export function CartView() {
                     <X size={16} />
                   </button>
                   <div className="flex items-center border border-khaki rounded-sm">
-                    <button onClick={() => updateQuantity(item.productId, item.variantId, item.quantity - 1)} disabled={item.quantity <= 1} className="w-7 h-7 flex items-center justify-center text-leather-dark hover:bg-parchment-dark transition-colors disabled:opacity-40">
+                    <button onClick={() => updateQuantity(item.productId, item.variantId, item.quantity - 1)} disabled={item.quantity <= 1} aria-label="Decrease quantity" className="w-7 h-7 flex items-center justify-center text-leather-dark hover:bg-parchment-dark transition-colors disabled:opacity-40">
                       <Minus size={12} />
                     </button>
                     <span className="w-8 text-center text-sm font-sans text-leather-dark select-none">{item.quantity}</span>
-                    <button onClick={() => updateQuantity(item.productId, item.variantId, item.quantity + 1)} disabled={item.quantity >= item.maxQuantity} className="w-7 h-7 flex items-center justify-center text-leather-dark hover:bg-parchment-dark transition-colors disabled:opacity-40">
+                    <button onClick={() => updateQuantity(item.productId, item.variantId, item.quantity + 1)} disabled={item.quantity >= item.maxQuantity} aria-label="Increase quantity" className="w-7 h-7 flex items-center justify-center text-leather-dark hover:bg-parchment-dark transition-colors disabled:opacity-40">
                       <Plus size={12} />
                     </button>
                   </div>
@@ -378,7 +378,7 @@ export function CartView() {
             {appliedCoupon ? (
               <div className="flex items-center justify-between bg-green-50 border border-green-200 px-3 py-2 text-xs font-sans">
                 <span className="text-green-700 font-bold">{appliedCoupon.code} applied!</span>
-                <button onClick={removeCoupon} className="text-green-600 hover:text-red-600 transition-colors">
+                <button onClick={removeCoupon} aria-label="Remove coupon" className="text-green-600 hover:text-red-600 transition-colors">
                   <X size={14} />
                 </button>
               </div>

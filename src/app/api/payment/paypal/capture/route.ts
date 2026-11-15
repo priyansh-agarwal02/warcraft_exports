@@ -24,7 +24,7 @@ async function getPayPalAccessToken(clientId: string, clientSecret: string): Pro
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown"
-  if (!checkRateLimit(`pp-capture:${ip}`, 10, 60_000)) {
+  if (!(await checkRateLimit(`pp-capture:${ip}`, 10, 60_000))) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 })
   }
 

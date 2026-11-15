@@ -113,13 +113,7 @@ export function RegisterForm({ defaultCountry = "US" }: RegisterFormProps) {
         return
       }
 
-      // Automatically send the welcome email on success
-      fetch("/api/auth/welcome", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: fullName, email }),
-      }).catch(() => null)
-
+      // Welcome email is now sent by /api/auth/register on the server.
       setSuccess(true)
     } catch {
       setError("An unexpected error occurred. Please try again.")

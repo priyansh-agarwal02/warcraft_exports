@@ -89,7 +89,8 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     manifest: "/site.webmanifest",
     title: {
-      template: "%s | Warcraft Exports",
+      // Page titles already end with "Warcraft Exports"; adding it again here doubled the brand in every title
+      template: "%s",
       default: defaultTitle,
     },
     description: defaultDesc,

@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
+  alternates: { canonical: "https://www.warcraftexports.com/privacy-policy" },
   title: "Privacy Policy — Warcraft Exports",
   description: "Warcraft Exports privacy policy. How we collect, use, and protect your data.",
 }

@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
+  alternates: { canonical: "https://www.warcraftexports.com/returns-policy" },
   title: "Returns Policy — Warcraft Exports",
   description: "30-day returns on unused Warcraft Exports items. Exchange welcome. Buyer pays return shipping.",
 }

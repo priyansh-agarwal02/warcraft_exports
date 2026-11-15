@@ -439,6 +439,7 @@ export function ChatbotWidget() {
               setOpen(true)
               setShowGreeting(false)
             }}
+            data-chat-launcher
             className="fixed bottom-[32px] right-[88px] z-50 bg-[#33450D] text-parchment px-4 py-2.5 shadow-2xl border border-khaki/30 text-xs font-sans font-bold flex items-center gap-2 cursor-pointer select-none rounded-sm hover:bg-[#4A5D23] transition-colors"
             style={{ originX: 1, originY: 0.5 }}
           >
@@ -452,6 +453,7 @@ export function ChatbotWidget() {
       {/* Floating button */}
       <motion.button
         onClick={() => setOpen(o => !o)}
+        data-chat-launcher
         className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-leather-dark text-parchment flex items-center justify-center shadow-xl hover:bg-leather transition-colors rounded-sm focus:outline-none cursor-pointer"
         aria-label="Chat with us"
         animate={{

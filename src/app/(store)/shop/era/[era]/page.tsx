@@ -51,11 +51,11 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   const meta = ERA_META[era.toLowerCase()]
   if (!meta) return {}
   return {
-    title: `${meta.title} | Warcraft Exports`,
+    title: (meta.title.includes("Warcraft Exports") ? meta.title : `${meta.title} | Warcraft Exports`),
     description: meta.description,
     keywords: meta.keywords,
     openGraph: {
-      title: `${meta.title} | Warcraft Exports`,
+      title: (meta.title.includes("Warcraft Exports") ? meta.title : `${meta.title} | Warcraft Exports`),
       description: meta.description,
       url: `https://www.warcraftexports.com/shop/era/${era.toLowerCase()}`,
       siteName: "Warcraft Exports",

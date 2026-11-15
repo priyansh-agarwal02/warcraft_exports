@@ -1,50 +1,19 @@
 import { NextRequest, NextResponse } from "next/server"
 import { checkRateLimit } from "@/lib/rate-limit"
+import { createClient } from "@/lib/supabase/server"
+import { createServiceClient } from "@/lib/supabase/service"
+import { computeOrderPricing, type PricingItemInput } from "@/lib/orders/pricing"
+import { getRazorpayKeys, getUsdRate, toRazorpaySmallestUnit } from "@/lib/payments/gateways"
 
-// Razorpay currencies that need smallest-unit × 1 (zero-decimal)
-const ZERO_DECIMAL = new Set(["JPY"])
-
-function toSmallestUnit(amount: number, currency: string): number {
-  return ZERO_DECIMAL.has(currency) ? Math.round(amount) : Math.round(amount * 100)
-}
-
-// Fetch live USD exchange rates from server side
-async function getRate(currency: string): Promise<number> {
-  if (currency === "USD") return 1
-  try {
-    const res = await fetch("https://api.exchangerate-api.com/v4/latest/USD", {
-      next: { revalidate: 3600 },
-    })
-    const data = await res.json()
-    return data.rates?.[currency] ?? 1
-  } catch {
-    return 1
-  }
-}
-
-function getRazorpayKeys() {
-  const isVercelProd = process.env.VERCEL_ENV === "production" || (process.env.NODE_ENV === "production" && !process.env.NEXT_PUBLIC_APP_URL?.includes("localhost"))
-  if (isVercelProd) {
-    return {
-      keyId: process.env.RAZORPAY_KEY_ID_LIVE || process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-      keySecret: process.env.RAZORPAY_KEY_SECRET_LIVE || process.env.RAZORPAY_KEY_SECRET
-    }
-  } else {
-    return {
-      keyId: process.env.RAZORPAY_KEY_ID_TEST || process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-      keySecret: process.env.RAZORPAY_KEY_SECRET_TEST || process.env.RAZORPAY_KEY_SECRET
-    }
-  }
-}
+const RAZORPAY_ALLOWED_CURRENCIES = new Set(["USD", "EUR", "GBP", "AUD", "CAD", "JPY", "INR", "RUB", "CNY"])
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown"
-  if (!checkRateLimit(`rzp-order:${ip}`, 10, 60_000)) {
+  if (!(await checkRateLimit(`rzp-order:${ip}`, 10, 60_000))) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 })
   }
 
   const { keyId: KEY_ID, keySecret: KEY_SECRET } = getRazorpayKeys()
-
   if (!KEY_ID || !KEY_SECRET) {
     return NextResponse.json(
       { error: "Razorpay is not configured. Please contact us to complete your order." },
@@ -52,23 +21,48 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  let body: { totalUsd: number; currency: string }
+  let body: {
+    items: PricingItemInput[]
+    country: string
+    shippingMethod?: "standard" | "express"
+    couponCode?: string | null
+    email?: string | null
+    currency?: string
+  }
   try {
     body = await req.json()
   } catch {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 })
   }
 
-  const { totalUsd, currency = "USD" } = body
-
-  if (!totalUsd || totalUsd <= 0 || totalUsd > 25000) {
+  // The amount is calculated on the server from the cart — never taken from the browser.
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  const pricing = await computeOrderPricing(createServiceClient(), {
+    items: body.items,
+    country: body.country,
+    shippingMethod: body.shippingMethod,
+    couponCode: body.couponCode,
+    email: body.email,
+    userId: user?.id ?? null,
+  })
+  if (!pricing.ok) return NextResponse.json({ error: pricing.error }, { status: pricing.status })
+  if (pricing.total <= 0 || pricing.total > 25000) {
     return NextResponse.json({ error: "Invalid amount" }, { status: 400 })
   }
 
-  const rate = await getRate(currency)
-  const convertedAmount = totalUsd * rate
-  const amountSmallest = toSmallestUnit(convertedAmount, currency)
-
+  // Only the store's own display currencies (all 2-decimal except JPY). Anything else is charged in USD:
+  // 3-decimal currencies such as KWD would otherwise be charged at a tenth of the price.
+  const requested = String(body.currency ?? "USD").toUpperCase()
+  const currency = RAZORPAY_ALLOWED_CURRENCIES.has(requested) ? requested : "USD"
+  const rate = await getUsdRate(currency)
+  if (!rate) {
+    return NextResponse.json(
+      { error: "Currency conversion is temporarily unavailable. Please switch to USD and try again." },
+      { status: 503 }
+    )
+  }
+  const amountSmallest = toRazorpaySmallestUnit(pricing.total * rate, currency)
   if (amountSmallest < 100) {
     return NextResponse.json(
       { error: "Amount must be at least 1.00 in target currency (e.g. 100 paise or cents)" },
@@ -77,18 +71,15 @@ export async function POST(req: NextRequest) {
   }
 
   const credentials = Buffer.from(`${KEY_ID}:${KEY_SECRET}`).toString("base64")
-
   const rzpRes = await fetch("https://api.razorpay.com/v1/orders", {
     method: "POST",
-    headers: {
-      Authorization: `Basic ${credentials}`,
-      "Content-Type": "application/json",
-    },
+    headers: { Authorization: `Basic ${credentials}`, "Content-Type": "application/json" },
     body: JSON.stringify({
       amount: amountSmallest,
       currency,
       receipt: `we-${Date.now().toString(36)}`,
       payment_capture: 1,
+      notes: { we_total: `usd:${pricing.total.toFixed(2)}` },
     }),
   })
 
@@ -96,19 +87,17 @@ export async function POST(req: NextRequest) {
     const err = await rzpRes.json().catch(() => ({}))
     console.error("Razorpay order error:", err)
     if (rzpRes.status === 401) {
-      return NextResponse.json({ error: "Razorpay credentials are invalid or unauthorized." }, { status: 401 })
+      return NextResponse.json({ error: "Payment provider rejected the request. Please contact support." }, { status: 502 })
     }
-    return NextResponse.json(
-      { error: err.error?.description ?? "Failed to create payment order" },
-      { status: 502 }
-    )
+    return NextResponse.json({ error: "Failed to create payment order" }, { status: 502 })
   }
 
-  const order = await rzpRes.json()
+  const order = (await rzpRes.json()) as { id: string; amount: number; currency: string }
   return NextResponse.json({
     orderId: order.id,
     amount: order.amount,
     currency: order.currency,
     keyId: KEY_ID,
+    totalUsd: pricing.total,
   })
 }

@@ -45,8 +45,23 @@ async function submitContactAction(name: string, email: string, subject: string,
   "use server"
   const headersList = await headers()
   const ip = headersList.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown"
-  if (!checkRateLimit(`contact:${ip}`, 5, 3600_000)) {
+  if (!(await checkRateLimit(`contact:${ip}`, 5, 3600_000))) {
     return { success: false, error: "Too many submissions. Please try again in an hour." }
+  }
+
+  // Server-side validation — never trust the browser
+  name = String(name ?? "").trim()
+  email = String(email ?? "").trim()
+  subject = String(subject ?? "").trim()
+  message = String(message ?? "").trim()
+  if (!name || !email || !subject || !message) {
+    return { success: false, error: "Please fill in all fields." }
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) {
+    return { success: false, error: "Please enter a valid email address." }
+  }
+  if (name.length > 100 || subject.length > 200 || message.length > 5000) {
+    return { success: false, error: "Your message is too long. Please shorten it and try again." }
   }
 
   const supabase = await createClient()
@@ -58,7 +73,7 @@ async function submitContactAction(name: string, email: string, subject: string,
   })
   if (error) {
     console.error("Database contact insert failed:", error.message)
-    return { success: false, error: error.message }
+    return { success: false, error: "Could not send your message. Please try again or email warcraftexports@gmail.com." }
   }
   try {
     await sendContactNotification(name, email, subject, message)

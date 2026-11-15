@@ -3,6 +3,7 @@
 import { createServiceClient } from "@/lib/supabase/service"
 import { headers } from "next/headers"
 import { checkRateLimit } from "@/lib/rate-limit"
+import { likeExact } from "@/lib/like-escape"
 
 export type CouponResult = {
   success: boolean
@@ -22,14 +23,19 @@ export async function validateCouponAction(code: string, subtotal: number): Prom
   // L-1 FIX: Rate limit coupon validation to prevent brute-force code enumeration
   const headersList = await headers()
   const ip = headersList.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown"
-  if (!checkRateLimit(`coupon:${ip}`, 10, 60_000)) {
+  if (!(await checkRateLimit(`coupon:${ip}`, 10, 60_000))) {
     return { success: false, error: "Too many attempts. Please wait a moment before trying again." }
   }
 
-  const cleanCode = code.toUpperCase().trim()
+  const cleanCode = String(code ?? "").toUpperCase().trim()
   if (!cleanCode) {
     return { success: false, error: "Please enter a coupon code." }
   }
+  if (cleanCode.length > 50) {
+    return { success: false, error: "Invalid coupon code." }
+  }
+  // Escape LIKE wildcards so "%" or "A%" can't match (and reveal) real coupon codes
+  const likeSafeCode = likeExact(cleanCode)
 
   try {
     const supabase = createServiceClient()
@@ -37,7 +43,7 @@ export async function validateCouponAction(code: string, subtotal: number): Prom
     const { data: coupon, error } = await supabase
       .from("coupons")
       .select("id, code, type, value, min_order_usd, usage_limit, times_used, is_active, expires_at")
-      .ilike("code", cleanCode)
+      .ilike("code", likeSafeCode)
       .maybeSingle()
 
     if (error || !coupon) {

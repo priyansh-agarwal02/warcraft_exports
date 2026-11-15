@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/server"
+import { likeExact } from "@/lib/like-escape"
 
 export const metadata: Metadata = {
   title: "My Orders — Warcraft Exports",
@@ -45,7 +46,7 @@ export default async function AccountOrdersPage({
       await serviceClient
         .from("orders")
         .update({ user_id: user.id })
-        .ilike("customer_email", user.email.trim())
+        .ilike("customer_email", likeExact(user.email.trim()))
     } catch (err) {
       console.error("Order auto-link error:", err)
     }

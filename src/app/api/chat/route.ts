@@ -169,7 +169,7 @@ Be concise, friendly, professional, and knowledgeable. Keep responses under 220 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown"
 
-  if (!checkRateLimit(`chat:${ip}`, 25, 60_000)) {
+  if (!(await checkRateLimit(`chat:${ip}`, 25, 60_000))) {
     return NextResponse.json({ reply: "Too many messages. Please wait a minute before continuing." }, { status: 429 })
   }
 

@@ -49,3 +49,6 @@ scripts/*.csv
 
 # graphify local knowledge graph
 graphify-out/
+
+# end-to-end test output
+/test-results/

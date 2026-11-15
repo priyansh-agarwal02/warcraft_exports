@@ -9,6 +9,7 @@ export const dynamic = "force-dynamic"
 export async function generateMetadata(): Promise<Metadata> {
   const seo = await getPageSeo("fit-guide")
   return {
+    alternates: { canonical: "https://www.warcraftexports.com/fit-guide" },
     title: seo?.meta_title || "WW1 & WW2 Reproduction Equipment, Sizing & Impression Guide — Warcraft Exports",
     description: seo?.meta_description || "Complete sizing charts for military tunics, M41/M43 jackets, helmet shell-liner conversions, WW1 wool puttees wrapping, rifle sling mounting, and reenactment equipment guides.",
     keywords: [

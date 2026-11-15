@@ -5,6 +5,7 @@ import { siteConfig } from "@/config/site.config"
 import { Quote, ExternalLink, ArrowRight } from "lucide-react"
 
 export const metadata: Metadata = {
+  alternates: { canonical: "https://www.warcraftexports.com/reviews" },
   title: "Customer Reviews — Warcraft Exports",
   description: "Read verified customer reviews for Warcraft Exports historical reproduction gear.",
 }

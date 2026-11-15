@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient as createServerClient } from "@/lib/supabase/server"
 import { createServiceClient } from "@/lib/supabase/service"
+import { likeExact } from "@/lib/like-escape"
 import { createClient } from "@supabase/supabase-js"
 
 export async function GET(req: NextRequest) {
@@ -41,7 +42,14 @@ export async function GET(req: NextRequest) {
     const [{ data: profile }, { data: addresses }, { data: recentOrder }] = await Promise.all([
       serviceClient.from("profiles").select("full_name, phone, email").eq("id", user.id).maybeSingle(),
       serviceClient.from("addresses").select("*").eq("user_id", user.id).order("is_default", { ascending: false }),
-      serviceClient.from("orders").select("customer_name, customer_email, customer_phone, shipping_address").or(`user_id.eq.${user.id},customer_email.ilike.${user.email.trim()}`).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+      (async () => {
+        const cols = "customer_name, customer_email, customer_phone, shipping_address"
+        const byUser = await serviceClient.from("orders").select(cols).eq("user_id", user.id).order("created_at", { ascending: false }).limit(1).maybeSingle()
+        if (byUser.data || !user.email) return byUser
+        // Escape LIKE wildcards so the email is matched exactly (case-insensitive)
+        const emailPattern = likeExact(String(user.email).trim())
+        return serviceClient.from("orders").select(cols).ilike("customer_email", emailPattern).order("created_at", { ascending: false }).limit(1).maybeSingle()
+      })(),
     ])
 
     return NextResponse.json({

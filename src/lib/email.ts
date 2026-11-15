@@ -25,6 +25,27 @@ async function safeSendEmail(params: Parameters<typeof resend.emails.send>[0]) {
   }
 }
 
+// ── HTML escaping for anything that originated from a customer / form ──
+// Prevents customers from injecting links, buttons or markup into emails.
+function esc(value: unknown): string {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;")
+}
+function escapeStrings<T>(value: T): T {
+  if (typeof value === "string") return esc(value) as T
+  if (Array.isArray(value)) return value.map((v) => escapeStrings(v)) as T
+  if (value && typeof value === "object" && !(value instanceof Date)) {
+    const out: Record<string, unknown> = {}
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) out[k] = escapeStrings(v)
+    return out as T
+  }
+  return value
+}
+
 export interface OrderEmailData {
   orderNumber: string
   customerName: string
@@ -54,6 +75,7 @@ export interface OrderEmailData {
 }
 
 function orderConfirmationHtml(data: OrderEmailData): string {
+  data = escapeStrings(data)
   const itemRows = data.items
     .map(
       (item) =>
@@ -147,6 +169,7 @@ function orderConfirmationHtml(data: OrderEmailData): string {
 }
 
 function sellerOrderNotificationHtml(data: OrderEmailData): string {
+  data = escapeStrings(data)
   const itemRows = data.items
     .map(
       (item) =>
@@ -238,6 +261,8 @@ function sellerOrderNotificationHtml(data: OrderEmailData): string {
 }
 
 function welcomeHtml(name: string, email: string): string {
+  name = escapeStrings(name)
+  email = escapeStrings(email)
   return `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -267,6 +292,9 @@ function welcomeHtml(name: string, email: string): string {
 }
 
 function guestWelcomeHtml(name: string, email: string, tempPassword: string): string {
+  name = escapeStrings(name)
+  email = escapeStrings(email)
+  tempPassword = escapeStrings(tempPassword)
   return `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -303,6 +331,7 @@ function guestWelcomeHtml(name: string, email: string, tempPassword: string): st
 }
 
 function newsletterWelcomeHtml(email: string): string {
+  email = escapeStrings(email)
   return `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -379,6 +408,9 @@ export async function sendNewsletterWelcome(email: string) {
   })
 }
 function contactAutoresponderHtml(name: string, subject: string, message: string): string {
+  name = escapeStrings(name)
+  subject = escapeStrings(subject)
+  message = escapeStrings(message)
   return `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -424,6 +456,7 @@ export async function sendContactAutoresponder(name: string, email: string, subj
 }
 
 export async function sendContactNotification(name: string, email: string, subject: string, message: string) {
+  const h = escapeStrings({ name, email, subject, message })
   return safeSendEmail({
     from: FROM_HELLO,
     to: "warcraftexports@gmail.com",
@@ -450,27 +483,27 @@ export async function sendContactNotification(name: string, email: string, subje
         <tbody>
           <tr style="border-bottom:1px solid #F2EAD3;">
             <td style="padding:10px 12px;color:#8B7355;font-weight:bold;width:30%;background:#FAF7F2;">Sender Name</td>
-            <td style="padding:10px 12px;color:#3B2A1A;font-weight:bold;">${name}</td>
+            <td style="padding:10px 12px;color:#3B2A1A;font-weight:bold;">${h.name}</td>
           </tr>
           <tr style="border-bottom:1px solid #F2EAD3;">
             <td style="padding:10px 12px;color:#8B7355;font-weight:bold;background:#FAF7F2;">Sender Email</td>
             <td style="padding:10px 12px;color:#3B2A1A;">
-              <a href="mailto:${email}" style="color:#8B4513;text-decoration:none;font-weight:bold;">${email}</a>
+              <a href="mailto:${h.email}" style="color:#8B4513;text-decoration:none;font-weight:bold;">${h.email}</a>
             </td>
           </tr>
           <tr>
             <td style="padding:10px 12px;color:#8B7355;font-weight:bold;background:#FAF7F2;">Subject</td>
-            <td style="padding:10px 12px;color:#3B2A1A;">${subject}</td>
+            <td style="padding:10px 12px;color:#3B2A1A;">${h.subject}</td>
           </tr>
         </tbody>
       </table>
 
       <h2 style="font-size:13px;text-transform:uppercase;letter-spacing:1px;color:#3B2A1A;margin:24px 0 12px;border-bottom:2px solid #C3B091;padding-bottom:8px;">Message Content</h2>
-      <div style="background:#F2EAD3;padding:16px;font-size:13px;color:#3B2A1A;line-height:1.6;border:1px solid #e8dcc8;white-space:pre-wrap;margin-bottom:28px;">${message}</div>
+      <div style="background:#F2EAD3;padding:16px;font-size:13px;color:#3B2A1A;line-height:1.6;border:1px solid #e8dcc8;white-space:pre-wrap;margin-bottom:28px;">${h.message}</div>
 
       <div style="text-align:center;margin:32px 0 12px;">
-        <a href="mailto:${email}?subject=RE: ${encodeURIComponent(subject)} — Warcraft Exports" style="display:inline-block;background:#8B4513;color:#F2EAD3;padding:12px 24px;text-decoration:none;font-weight:bold;font-size:13px;letter-spacing:1px;text-transform:uppercase;border-radius:2px;">
-          Reply to ${name}
+        <a href="mailto:${h.email}?subject=RE: ${encodeURIComponent(subject)} — Warcraft Exports" style="display:inline-block;background:#8B4513;color:#F2EAD3;padding:12px 24px;text-decoration:none;font-weight:bold;font-size:13px;letter-spacing:1px;text-transform:uppercase;border-radius:2px;">
+          Reply to ${h.name}
         </a>
       </div>
     </div>
@@ -494,6 +527,7 @@ export async function sendWholesaleNotification(data: {
   volume: string
   message?: string
 }) {
+  const d = escapeStrings(data)
   return safeSendEmail({
     from: FROM_HELLO,
     to: "warcraftexports@gmail.com",
@@ -523,38 +557,38 @@ export async function sendWholesaleNotification(data: {
         <tbody>
           <tr style="border-bottom:1px solid #F2EAD3;">
             <td style="padding:10px 12px;color:#8B7355;font-weight:bold;width:36%;background:#FAF7F2;">Company Name</td>
-            <td style="padding:10px 12px;color:#3B2A1A;font-weight:bold;">${data.company || "N/A"}</td>
+            <td style="padding:10px 12px;color:#3B2A1A;font-weight:bold;">${d.company || "N/A"}</td>
           </tr>
           <tr style="border-bottom:1px solid #F2EAD3;">
             <td style="padding:10px 12px;color:#8B7355;font-weight:bold;background:#FAF7F2;">Contact Person</td>
-            <td style="padding:10px 12px;color:#3B2A1A;">${data.name}</td>
+            <td style="padding:10px 12px;color:#3B2A1A;">${d.name}</td>
           </tr>
           <tr style="border-bottom:1px solid #F2EAD3;">
             <td style="padding:10px 12px;color:#8B7355;font-weight:bold;background:#FAF7F2;">Country / Region</td>
-            <td style="padding:10px 12px;color:#3B2A1A;">${data.country}</td>
+            <td style="padding:10px 12px;color:#3B2A1A;">${d.country}</td>
           </tr>
           <tr style="border-bottom:1px solid #F2EAD3;">
             <td style="padding:10px 12px;color:#8B7355;font-weight:bold;background:#FAF7F2;">Email Address</td>
             <td style="padding:10px 12px;color:#3B2A1A;">
-              <a href="mailto:${data.email}" style="color:#8B4513;text-decoration:none;font-weight:bold;">${data.email}</a>
+              <a href="mailto:${d.email}" style="color:#8B4513;text-decoration:none;font-weight:bold;">${d.email}</a>
             </td>
           </tr>
           <tr style="border-bottom:1px solid #F2EAD3;">
             <td style="padding:10px 12px;color:#8B7355;font-weight:bold;background:#FAF7F2;">Phone / WhatsApp</td>
             <td style="padding:10px 12px;color:#3B2A1A;">
-              ${data.phone ? `<a href="tel:${data.phone}" style="color:#8B4513;text-decoration:none;">${data.phone}</a>` : '<span style="color:#8B7355;">Not provided</span>'}
+              ${d.phone ? `<a href="tel:${d.phone}" style="color:#8B4513;text-decoration:none;">${d.phone}</a>` : '<span style="color:#8B7355;">Not provided</span>'}
             </td>
           </tr>
           <tr style="border-bottom:1px solid #F2EAD3;">
             <td style="padding:10px 12px;color:#8B7355;font-weight:bold;background:#FAF7F2;">Estimated Volume</td>
             <td style="padding:10px 12px;color:#3B2A1A;font-weight:bold;">
-              <span style="display:inline-block;background:#F2EAD3;color:#3B2A1A;padding:3px 8px;border:1px solid #e8dcc8;border-radius:3px;font-size:12px;">${data.volume}</span>
+              <span style="display:inline-block;background:#F2EAD3;color:#3B2A1A;padding:3px 8px;border:1px solid #e8dcc8;border-radius:3px;font-size:12px;">${d.volume}</span>
             </td>
           </tr>
           <tr>
             <td style="padding:10px 12px;color:#8B7355;font-weight:bold;background:#FAF7F2;vertical-align:top;">Categories of Interest</td>
             <td style="padding:10px 12px;color:#3B2A1A;">
-              ${data.categories && data.categories.length > 0 ? data.categories.join(", ") : "General Catalog"}
+              ${d.categories && d.categories.length > 0 ? d.categories.join(", ") : "General Catalog"}
             </td>
           </tr>
         </tbody>
@@ -562,12 +596,12 @@ export async function sendWholesaleNotification(data: {
 
       <!-- Message / Specifications -->
       <h2 style="font-size:13px;text-transform:uppercase;letter-spacing:1px;color:#3B2A1A;margin:24px 0 12px;border-bottom:2px solid #C3B091;padding-bottom:8px;">Client Message & Specifications</h2>
-      <div style="background:#F2EAD3;padding:16px;font-size:13px;color:#3B2A1A;line-height:1.6;border:1px solid #e8dcc8;white-space:pre-wrap;margin-bottom:28px;">${data.message && data.message.trim() ? data.message : '<em style="color:#8B7355;">No additional message provided.</em>'}</div>
+      <div style="background:#F2EAD3;padding:16px;font-size:13px;color:#3B2A1A;line-height:1.6;border:1px solid #e8dcc8;white-space:pre-wrap;margin-bottom:28px;">${d.message && d.message.trim() ? d.message : '<em style="color:#8B7355;">No additional message provided.</em>'}</div>
 
       <!-- Reply Button -->
       <div style="text-align:center;margin:32px 0 12px;">
-        <a href="mailto:${data.email}?subject=RE: Wholesale Inquiry — Warcraft Exports" style="display:inline-block;background:#8B4513;color:#F2EAD3;padding:14px 28px;text-decoration:none;font-weight:bold;font-size:13px;letter-spacing:1px;text-transform:uppercase;border-radius:2px;">
-          Reply to ${data.name} (${data.company})
+        <a href="mailto:${d.email}?subject=RE: Wholesale Inquiry — Warcraft Exports" style="display:inline-block;background:#8B4513;color:#F2EAD3;padding:14px 28px;text-decoration:none;font-weight:bold;font-size:13px;letter-spacing:1px;text-transform:uppercase;border-radius:2px;">
+          Reply to ${d.name} (${d.company})
         </a>
       </div>
     </div>
@@ -615,6 +649,7 @@ function orderShippedHtml(data: {
   estimatedArrival: string
   items: { name: string; quantity: number; sku: string; variantLabel?: string }[]
 }): string {
+  data = escapeStrings(data)
   const itemRows = data.items
     .map(
       (item) =>
@@ -787,6 +822,7 @@ function orderDeliveredHtml(data: {
   customerName: string
   items: { name: string; quantity: number; sku: string }[]
 }): string {
+  data = escapeStrings(data)
   const itemRows = data.items
     .map(
       (item) =>
@@ -901,6 +937,7 @@ function orderCancelledHtml(data: {
   reason: string
   items: { name: string; quantity: number; sku: string }[]
 }): string {
+  data = escapeStrings(data)
   const itemRows = data.items
     .map(
       (item) =>
@@ -1024,6 +1061,7 @@ export async function sendWholesaleAutoresponder(data: {
   volume: string
   message?: string
 }) {
+  const d = escapeStrings(data)
   return safeSendEmail({
     from: FROM_HELLO,
     to: data.email,
@@ -1040,18 +1078,18 @@ export async function sendWholesaleAutoresponder(data: {
             <p style="margin:6px 0 0;font-size:12px;color:#C3B091;letter-spacing:1px;text-transform:uppercase;">Wholesale Inquiry Receipt</p>
           </div>
           <div style="padding:32px;">
-            <p style="font-size:15px;color:#3B2A1A;margin-top:0;">Dear ${data.name},</p>
+            <p style="font-size:15px;color:#3B2A1A;margin-top:0;">Dear ${d.name},</p>
             <p style="font-size:14px;color:#6B5A3E;line-height:1.6;">
-              Thank you for reaching out to Warcraft Exports regarding wholesale distribution for <strong>${data.company}</strong> (${data.country}).
+              Thank you for reaching out to Warcraft Exports regarding wholesale distribution for <strong>${d.company}</strong> (${d.country}).
               We have received your B2B inquiry and our trade management team will review your requirements and respond within 24 hours with catalog pricing and minimum order terms.
             </p>
 
             <h2 style="font-size:13px;text-transform:uppercase;letter-spacing:1px;color:#3B2A1A;margin:24px 0 12px;border-bottom:2px solid #C3B091;padding-bottom:8px;">Summary of Your Inquiry</h2>
             <div style="background:#F2EAD3;padding:16px;font-size:13px;color:#3B2A1A;line-height:1.6;border:1px solid #e8dcc8;">
-              <p style="margin:0 0 6px;"><strong>Company:</strong> ${data.company}</p>
-              <p style="margin:0 0 6px;"><strong>Estimated Monthly Volume:</strong> ${data.volume}</p>
-              <p style="margin:0 0 6px;"><strong>Product Categories:</strong> ${data.categories.join(", ") || "General Catalog"}</p>
-              ${data.message ? `<p style="margin:12px 0 0;border-top:1px dashed #C3B091;padding-top:8px;"><strong>Message Notes:</strong><br/>${data.message}</p>` : ""}
+              <p style="margin:0 0 6px;"><strong>Company:</strong> ${d.company}</p>
+              <p style="margin:0 0 6px;"><strong>Estimated Monthly Volume:</strong> ${d.volume}</p>
+              <p style="margin:0 0 6px;"><strong>Product Categories:</strong> ${d.categories.join(", ") || "General Catalog"}</p>
+              ${d.message ? `<p style="margin:12px 0 0;border-top:1px dashed #C3B091;padding-top:8px;"><strong>Message Notes:</strong><br/>${d.message}</p>` : ""}
             </div>
 
             <p style="font-size:13px;color:#6B5A3E;line-height:1.6;margin-top:24px;margin-bottom:0;">
@@ -1079,6 +1117,7 @@ export async function sendCancellationRequestReceiptEmail(orderId: string, custo
     .single()
 
   if (!order) return
+  const o = escapeStrings(order)
 
   return safeSendEmail({
     from: FROM_ORDERS,
@@ -1096,13 +1135,13 @@ export async function sendCancellationRequestReceiptEmail(orderId: string, custo
             <p style="margin:6px 0 0;font-size:12px;color:#C3B091;letter-spacing:1px;text-transform:uppercase;">Cancellation Request Under Review</p>
           </div>
           <div style="padding:32px;">
-            <p style="font-size:15px;color:#3B2A1A;margin-top:0;">Dear ${order.customer_name || "Valued Customer"},</p>
+            <p style="font-size:15px;color:#3B2A1A;margin-top:0;">Dear ${o.customer_name || "Valued Customer"},</p>
             <p style="font-size:14px;color:#6B5A3E;line-height:1.6;">
-              We have received your cancellation request for Order <strong>#${order.order_number}</strong>. Our management team is currently reviewing your order status at our workshop to ensure it has not already been prepared or dispatched.
+              We have received your cancellation request for Order <strong>#${o.order_number}</strong>. Our management team is currently reviewing your order status at our workshop to ensure it has not already been prepared or dispatched.
             </p>
             <h3 style="font-size:12px;text-transform:uppercase;letter-spacing:1px;color:#8B4513;margin:20px 0 8px;">Reason Provided:</h3>
             <div style="background:#F9F6F0;border-left:4px solid #8B4513;padding:12px;font-size:13px;color:#3B2A1A;font-style:italic;">
-              "${customerReason}"
+              "${esc(customerReason)}"
             </div>
             <p style="font-size:14px;color:#6B5A3E;line-height:1.6;margin-top:20px;">
               You will receive another email notification shortly once management approves or updates your request.
@@ -1129,6 +1168,7 @@ export async function sendCancellationRequestSellerNotification(orderId: string,
     .single()
 
   if (!order) return
+  const o = escapeStrings(order)
 
   return safeSendEmail({
     from: FROM_ORDERS,
@@ -1142,21 +1182,21 @@ export async function sendCancellationRequestSellerNotification(orderId: string,
         <div style="max-width:600px;margin:32px auto;background:#fff;border:1px solid #e8dcc8;">
           <div style="background:#8B1A1A;padding:24px 32px;text-align:center;">
             <h1 style="margin:0;font-size:22px;color:#fff;letter-spacing:1px;text-transform:uppercase;">Customer Cancellation Request</h1>
-            <p style="margin:4px 0 0;font-size:12px;color:#FFD700;letter-spacing:1px;">Order #${order.order_number} ($${order.total_usd?.toFixed(2)})</p>
+            <p style="margin:4px 0 0;font-size:12px;color:#FFD700;letter-spacing:1px;">Order #${o.order_number} ($${o.total_usd?.toFixed(2)})</p>
           </div>
           <div style="padding:28px;">
             <p style="font-size:14px;color:#3B2A1A;margin-top:0;">
-              Customer <strong>${order.customer_name}</strong> (${order.customer_email}) has requested to cancel Order #${order.order_number}.
+              Customer <strong>${o.customer_name}</strong> (${o.customer_email}) has requested to cancel Order #${o.order_number}.
             </p>
             <div style="background:#FFF5F5;border:1px solid #FEB2B2;padding:16px;margin:16px 0;font-size:13px;color:#991B1B;">
               <strong>Customer Reason:</strong><br/>
-              "${customerReason}"
+              "${esc(customerReason)}"
             </div>
             <p style="font-size:13px;color:#6B5A3E;">
               Please log in to the admin panel to review and click <strong>Accept Cancellation</strong> or <strong>Reject Cancellation</strong>.
             </p>
             <div style="text-align:center;margin-top:24px;">
-              <a href="https://warcraftexports.com/admin/orders/${order.id}" style="background:#3B2A1A;color:#fff;padding:12px 24px;text-decoration:none;font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;display:inline-block;">
+              <a href="https://warcraftexports.com/admin/orders/${o.id}" style="background:#3B2A1A;color:#fff;padding:12px 24px;text-decoration:none;font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;display:inline-block;">
                 Review Order in Admin Panel &rarr;
               </a>
             </div>
@@ -1179,6 +1219,7 @@ export async function sendCancellationRejectedEmail(orderId: string, rejectionRe
     .single()
 
   if (!order) return
+  const o = escapeStrings(order)
 
   return safeSendEmail({
     from: FROM_ORDERS,
@@ -1196,13 +1237,13 @@ export async function sendCancellationRejectedEmail(orderId: string, rejectionRe
             <p style="margin:6px 0 0;font-size:12px;color:#C3B091;letter-spacing:1px;text-transform:uppercase;">Cancellation Request Status</p>
           </div>
           <div style="padding:32px;">
-            <p style="font-size:15px;color:#3B2A1A;margin-top:0;">Dear ${order.customer_name || "Valued Customer"},</p>
+            <p style="font-size:15px;color:#3B2A1A;margin-top:0;">Dear ${o.customer_name || "Valued Customer"},</p>
             <p style="font-size:14px;color:#6B5A3E;line-height:1.6;">
-              Regarding your cancellation request for Order <strong>#${order.order_number}</strong>: Our management team reviewed your order and unfortunately we are unable to process a cancellation at this stage.
+              Regarding your cancellation request for Order <strong>#${o.order_number}</strong>: Our management team reviewed your order and unfortunately we are unable to process a cancellation at this stage.
             </p>
             <h3 style="font-size:12px;text-transform:uppercase;letter-spacing:1px;color:#8B4513;margin:20px 0 8px;">Management Note:</h3>
             <div style="background:#F9F6F0;border-left:4px solid #8B4513;padding:12px;font-size:13px;color:#3B2A1A;line-height:1.5;">
-              ${rejectionReason}
+              ${esc(rejectionReason)}
             </div>
             <p style="font-size:14px;color:#6B5A3E;line-height:1.6;margin-top:20px;">
               Your order is proceeding with fulfillment. If you have questions once delivered, our standard returns policy will apply.
@@ -1219,3 +1260,32 @@ export async function sendCancellationRejectedEmail(orderId: string, rejectionRe
 }
 
 
+
+export async function sendPaymentReviewAlert(data: {
+  orderNumber: string
+  customerEmail: string
+  totalUsd: number
+  paymentMethod: string
+  paymentRef: string
+  note: string
+}) {
+  const d = escapeStrings(data)
+  return safeSendEmail({
+    from: FROM_ORDERS,
+    to: "warcraftexports@gmail.com",
+    subject: `Action needed: check payment for order #${data.orderNumber}`,
+    html: `<!DOCTYPE html><html><head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background:#F2EAD3;font-family:Georgia,serif;">
+  <div style="max-width:600px;margin:32px auto;background:#fff;border:1px solid #e8dcc8;padding:32px;">
+    <h1 style="margin:0 0 16px;font-size:20px;color:#3B2A1A;">Order #${d.orderNumber} needs a payment check</h1>
+    <p style="font-size:14px;color:#6B5A3E;line-height:1.6;">The order was saved as <b>pending</b> because the payment could not be confirmed automatically. Please check it in your ${data.paymentMethod === "paypal" ? "PayPal" : "Razorpay"} dashboard before shipping.</p>
+    <table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:16px;">
+      <tr><td style="padding:8px;color:#8B7355;font-weight:bold;">Reason</td><td style="padding:8px;color:#3B2A1A;">${d.note}</td></tr>
+      <tr><td style="padding:8px;color:#8B7355;font-weight:bold;">Order total</td><td style="padding:8px;color:#3B2A1A;">$${Number(data.totalUsd).toFixed(2)}</td></tr>
+      <tr><td style="padding:8px;color:#8B7355;font-weight:bold;">Payment ID</td><td style="padding:8px;color:#3B2A1A;">${d.paymentRef}</td></tr>
+      <tr><td style="padding:8px;color:#8B7355;font-weight:bold;">Customer</td><td style="padding:8px;color:#3B2A1A;">${d.customerEmail}</td></tr>
+    </table>
+  </div>
+</body></html>`,
+  })
+}

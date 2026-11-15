@@ -1,22 +1,28 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { sendOrderConfirmation, sendGuestWelcomeEmail } from "@/lib/email"
+import { sendOrderConfirmation, sendGuestWelcomeEmail, sendPaymentReviewAlert } from "@/lib/email"
 import { checkRateLimit } from "@/lib/rate-limit"
 import { createServiceClient } from "@/lib/supabase/service"
 import { isBlatantTypo, suggestEmailCorrection } from "@/lib/email-validator"
 import crypto from "crypto"
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+import { computeOrderPricing } from "@/lib/orders/pricing"
+import { likeExact } from "@/lib/like-escape"
+import { paymentCoversTotal, verifyPayPalCapture, verifyPayPalPayment, verifyRazorpayPayment } from "@/lib/payments/gateways"
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown"
-  if (!checkRateLimit(`orders:${ip}`, 5, 60_000)) {
+  // Every order now needs a verified PayPal/Razorpay payment, so fake attempts fail anyway.
+  // The limit is generous so a genuine payer on a shared network (office, mobile carrier) is never blocked.
+  if (!(await checkRateLimit(`orders:${ip}`, 20, 60_000))) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 })
   }
 
+  // Set once a payment has been verified, so even an unexpected crash still alerts the owner.
+  let alertAfterPayment: ((reason: string, customerMessage: string) => Promise<NextResponse>) | null = null
+
   try {
     const body = await req.json()
-    const { customer, items, paymentMethod, paymentIntentId, shippingMethod = "standard", couponCode } = body as {
+    const { customer, items, paymentMethod, paymentIntentId, gatewayOrderId, shippingMethod = "standard", couponCode } = body as {
       customer: {
         fullName: string
         email: string
@@ -33,52 +39,108 @@ export async function POST(req: NextRequest) {
       items: { productId: string; variantId: string | null; variantLabel?: string | null; quantity: number }[]
       paymentMethod?: "razorpay" | "paypal"
       paymentIntentId?: string
+      gatewayOrderId?: string
       shippingMethod?: "standard" | "express"
       couponCode?: string | null
       displayCurrency?: string
       exchangeRate?: number
     }
 
-    // Server determines order status — never trust client
-    const status = "confirmed"
-
     // Honeypot — silent drop for bots
     if (customer?.honeypot) {
       return NextResponse.json({ orderId: "ok", orderNumber: "WE-OK" })
     }
 
+    // ── 1. Payment verification FIRST — ask PayPal / Razorpay directly; never trust the browser ──
+    if ((paymentMethod !== "paypal" && paymentMethod !== "razorpay") || !paymentIntentId) {
+      return NextResponse.json({ error: "Payment is required to place an order." }, { status: 402 })
+    }
+    let paymentRef = String(paymentIntentId).slice(0, 100)
+    // gatewayOrderId is missing only for checkouts started on the previous version of the site
+    // (open in a browser tab during the update) — those are verified by the payment id alone.
+    const gatewayRef = gatewayOrderId ? String(gatewayOrderId).slice(0, 100) : null
+
+    const verification = paymentMethod === "paypal"
+      ? (gatewayRef ? await verifyPayPalPayment(gatewayRef) : await verifyPayPalCapture(paymentRef))
+      : await verifyRazorpayPayment(gatewayRef, paymentRef)
+
+    if (verification.status === "not_paid") {
+      console.warn("[ORDERS] Rejected order with unverified payment:", paymentMethod, verification.reason)
+      return NextResponse.json({ error: "We could not confirm your payment. Please contact support if you were charged." }, { status: 402 })
+    }
+
+    if (verification.status === "paid") {
+      if (paymentMethod === "paypal" && paymentRef !== verification.captureId && (!gatewayRef || paymentRef !== gatewayRef)) {
+        return NextResponse.json({ error: "Payment details do not match." }, { status: 402 })
+      }
+      // Always store the gateway's own capture/payment id (canonical form)
+      paymentRef = verification.captureId
+    }
+
+    // From here on the customer has (very likely) paid. Any failure must alert the owner
+    // with the payment id instead of silently dropping the order.
+    const failAfterPayment = async (reason: string, customerMessage: string) => {
+      console.error("[ORDERS] Order not saved after payment:", reason, paymentMethod, paymentRef)
+      try {
+        await sendPaymentReviewAlert({
+          orderNumber: "NOT SAVED",
+          customerEmail: String(customer?.email ?? "unknown").slice(0, 254),
+          totalUsd: 0,
+          paymentMethod,
+          paymentRef,
+          note: `PAID BUT ORDER NOT SAVED — ${reason}. Customer: ${String(customer?.fullName ?? "").slice(0, 100)}, ${String(customer?.phone ?? "").slice(0, 30)}. Items: ${JSON.stringify(items ?? []).slice(0, 800)}`,
+        })
+      } catch (err) {
+        console.error("Payment review alert failed:", err)
+      }
+      return NextResponse.json(
+        { error: `${customerMessage} Your payment was received — please email warcraftexports@gmail.com with payment ID ${paymentRef} and we will complete your order.` },
+        { status: 400 }
+      )
+    }
+    alertAfterPayment = failAfterPayment
+
+    // A payment can only ever be used for one order (checked under every id it may be known by)
+    const serviceClient = createServiceClient()
+    const { count: reuseCount } = await serviceClient
+      .from("orders")
+      .select("id", { count: "exact", head: true })
+      .in("payment_intent_id", [...new Set([paymentRef, String(paymentIntentId).slice(0, 100), ...(gatewayRef ? [gatewayRef] : [])])])
+    if (reuseCount && reuseCount > 0) {
+      return NextResponse.json({ error: "This payment has already been used for an order." }, { status: 409 })
+    }
+
+    // ── 2. Customer details ──
     if (
       !customer?.fullName?.trim() || !customer?.email?.trim() ||
       !customer?.address1?.trim() || !customer?.city?.trim() || !customer?.country?.trim()
     ) {
-      return NextResponse.json({ error: "Missing required customer fields" }, { status: 400 })
+      return failAfterPayment("missing customer fields", "Some required details were missing.")
     }
 
     // Email format validation
     const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!EMAIL_RE.test(customer.email.trim())) {
-      return NextResponse.json({ error: "Invalid email address" }, { status: 400 })
+      return failAfterPayment("invalid email", "Your email address looks invalid.")
     }
 
+    let emailTypoNote: string | null = null
     if (isBlatantTypo(customer.email.trim())) {
-      const suggestion = suggestEmailCorrection(customer.email.trim())
-      return NextResponse.json({
-        error: `Please check your email address. Did you mean "${suggestion}"?`
-      }, { status: 400 })
+      // Don't reject a paid order over a suspected typo — flag it for the owner instead.
+      emailTypoNote = `Check customer email (possible typo — did they mean ${suggestEmailCorrection(customer.email.trim())}?)`
     }
 
-    // Phone format validation (if provided)
+    // Phone format: keep the order, but don't store junk
     if (customer.phone && !/^\+?[\d\s\-().]{7,20}$/.test(customer.phone.trim())) {
-      return NextResponse.json({ error: "Invalid phone number" }, { status: 400 })
+      customer.phone = customer.phone.replace(/[^\d+\s\-().]/g, "").slice(0, 20)
     }
 
-    // Length limits to prevent abuse
-    if (
-      customer.fullName.length > 100 || customer.email.length > 254 ||
-      customer.address1.length > 200 || customer.city.length > 100 ||
-      (customer.notes && customer.notes.length > 2000)
-    ) {
-      return NextResponse.json({ error: "Field length exceeds maximum allowed" }, { status: 400 })
+    // Length limits to prevent abuse (trim instead of rejecting a paid order)
+    customer.fullName = customer.fullName.trim().slice(0, 100)
+    customer.address1 = customer.address1.trim().slice(0, 200)
+    customer.city = customer.city.trim().slice(0, 100)
+    if (customer.email.length > 254) {
+      return failAfterPayment("email too long", "Your email address is too long.")
     }
 
     // Sanitize notes — strip HTML tags to prevent stored XSS
@@ -87,190 +149,55 @@ export async function POST(req: NextRequest) {
     }
 
     if (!items?.length) {
-      return NextResponse.json({ error: "Cart is empty" }, { status: 400 })
-    }
-
-    for (const item of items) {
-      if (!UUID_RE.test(String(item.productId))) {
-        return NextResponse.json({ error: "Invalid product id" }, { status: 400 })
-      }
+      return failAfterPayment("empty cart", "Your cart was empty.")
     }
 
     const supabase = await createClient()
-    const serviceClient = createServiceClient()
     const { data: { user: currentUser } } = await supabase.auth.getUser()
     const currentUserId = currentUser?.id || null
 
-    // Server-side price recalculation — never trust client amounts
-    const productIds = [...new Set(items.map((i) => i.productId))]
-    const { data: dbProducts, error: fetchError } = await serviceClient
-      .from("products")
-      .select("id, name, sku, price_usd, sale_price_usd, stock_quantity")
-      .in("id", productIds)
-
-    if (fetchError || !dbProducts) {
-      return NextResponse.json({ error: "Failed to validate products" }, { status: 500 })
+    // ── 3. Server-side price recalculation — never trust client amounts ──
+    // lenient: stock / coupon changes since payment become review notes, not a lost order.
+    const pricing = await computeOrderPricing(serviceClient, {
+      items,
+      country: customer.country,
+      shippingMethod,
+      couponCode,
+      email: customer.email,
+      userId: currentUserId,
+      lenient: true,
+    })
+    if (!pricing.ok) {
+      return failAfterPayment(`pricing failed: ${pricing.error}`, "We couldn't record your order automatically.")
     }
+    const { validatedItems, subtotal, shipping, discountUsd, total, couponId, isExpress, warnings, quantityDiscountUsd, quantityPromotionName } = pricing
 
-    // Fetch product variants if any items have a variant selected
-    const variantIds = items.map((i) => i.variantId).filter(Boolean) as string[]
-    let dbVariants: any[] = []
-    if (variantIds.length > 0) {
-      const { data, error } = await serviceClient
-        .from("product_variants")
-        .select("id, price_override, color, size, sku_suffix, image_url")
-        .in("id", variantIds)
-      if (!error && data) {
-        dbVariants = data
+    // ── 4. Decide status: confirmed only when the captured amount covers the server total ──
+    let status: "confirmed" | "pending" = "pending"
+    const reviewReasons: string[] = []
+    if (verification.status === "paid") {
+      const cover = await paymentCoversTotal(verification.amount, verification.currency, total)
+      if (cover.ok) {
+        status = "confirmed"
+      } else {
+        reviewReasons.push(`charged ${verification.amount} ${verification.currency}${cover.chargedUsd !== null ? ` (~$${cover.chargedUsd.toFixed(2)})` : ""}, order total $${total.toFixed(2)}`)
       }
+    } else {
+      reviewReasons.push(`could not verify payment automatically (${verification.reason})`)
     }
-    const variantMap = new Map(dbVariants.map((v) => [v.id, v]))
-
-    const productMap = new Map(dbProducts.map((p) => [p.id, p]))
-    const validatedItems: {
-      productId: string
-      productName: string
-      sku: string
-      priceUsd: number
-      quantity: number
-      variantId: string | null
-      variantLabel: string | null
-      color: string | null
-      size: string | null
-      shipsFromUsa: boolean
-    }[] = []
-    let subtotal = 0
-
-    for (const item of items) {
-      const product = productMap.get(item.productId)
-      if (!product) {
-        return NextResponse.json({ error: `Product not found` }, { status: 400 })
-      }
-      const qty = Math.max(1, Math.min(Number(item.quantity) || 1, 100))
-
-      // H-4 FIX: Validate stock quantity to prevent overselling
-      if (product.stock_quantity !== null && product.stock_quantity !== undefined && product.stock_quantity < qty) {
-        return NextResponse.json(
-          { error: `"${product.name}" has insufficient stock (${product.stock_quantity} available, ${qty} requested).` },
-          { status: 400 }
-        )
-      }
-      
-      // Check for variant price override and details
-      const variant = item.variantId ? variantMap.get(item.variantId) : null
-      const unitPrice = variant?.price_override != null
-        ? Number(variant.price_override)
-        : (product.sale_price_usd ?? product.price_usd)
-
-      const derivedVariantLabel = variant
-        ? [variant.color, variant.size].filter(Boolean).join(" / ")
-        : null
-      const variantLabel = item.variantLabel || derivedVariantLabel || null
-
-      subtotal += unitPrice * qty
-      validatedItems.push({
-        productId: product.id,
-        productName: product.name,
-        sku: product.sku,
-        priceUsd: unitPrice,
-        quantity: qty,
-        variantId: item.variantId ?? null,
-        variantLabel,
-        color: variant?.color ?? null,
-        size: variant?.size ?? null,
-        shipsFromUsa: Boolean((product as any).ships_from_usa),
-      })
+    if (warnings.length) {
+      status = "pending"
+      reviewReasons.push(...warnings)
     }
+    if (emailTypoNote) reviewReasons.push(emailTypoNote)
+    const paymentReviewNote = reviewReasons.length
+      ? `${status === "pending" ? "PAYMENT REVIEW" : "NOTE"}: ${reviewReasons.join("; ")}`
+      : null
 
-    subtotal = Math.round(subtotal * 100) / 100
-
-    let couponId: string | null = null
-    let couponType: string | null = null
-    let couponValue = 0
-
-    if (couponCode) {
-      const cleanCouponCode = couponCode.toUpperCase().trim()
-      const { data: dbCoupon, error: couponErr } = await serviceClient
-        .from("coupons")
-        .select("id, code, type, value, min_order_usd, usage_limit, times_used, is_active, expires_at")
-        .ilike("code", cleanCouponCode)
-        .maybeSingle()
-
-      if (!couponErr && dbCoupon && dbCoupon.is_active) {
-        const isNotExpired = !dbCoupon.expires_at || new Date(dbCoupon.expires_at) >= new Date()
-        const isMinOrderMet = !dbCoupon.min_order_usd || subtotal >= Number(dbCoupon.min_order_usd)
-        const isUnderLimit = !dbCoupon.usage_limit || (dbCoupon.times_used ?? 0) < dbCoupon.usage_limit
-
-        if (isNotExpired && isMinOrderMet && isUnderLimit) {
-          // Check if current user has already used this coupon
-          if (currentUserId) {
-            const { count: userCouponUses, error: countErr1 } = await serviceClient
-              .from("coupon_uses")
-              .select("id", { count: "exact", head: true })
-              .eq("coupon_id", dbCoupon.id)
-              .eq("user_id", currentUserId)
-            
-            if (!countErr1 && userCouponUses && userCouponUses > 0) {
-              return NextResponse.json({ error: "You have already used this coupon." }, { status: 400 })
-            }
-          }
-
-          // Check if customer email has already used this coupon
-          if (customer?.email) {
-            const { count: emailCouponUses, error: countErr2 } = await serviceClient
-              .from("orders")
-              .select("id", { count: "exact", head: true })
-              .eq("customer_email", customer.email.trim())
-              .eq("coupon_id", dbCoupon.id)
-
-            if (!countErr2 && emailCouponUses && emailCouponUses > 0) {
-              return NextResponse.json({ error: "You have already used this coupon." }, { status: 400 })
-            }
-          }
-
-          couponId = dbCoupon.id
-          couponType = dbCoupon.type
-          couponValue = Number(dbCoupon.value)
-        }
-      }
-    }
-
-    // Fetch active shipping rate from database based on selected country name
-    const { data: dbRate } = await serviceClient
-      .from("shipping_rates")
-      .select("standard_price, free_threshold, express_price")
-      .eq("country_name", customer.country)
-      .maybeSingle()
-
-    // Fallback to "Rest of World" / "OTHER" if no country-specific rate exists
-    let activeRate = dbRate
-    if (!activeRate) {
-      const { data: fallbackRate } = await serviceClient
-        .from("shipping_rates")
-        .select("standard_price, free_threshold, express_price")
-        .eq("country_code", "OTHER")
-        .maybeSingle()
-      activeRate = fallbackRate
-    }
-
-    const standardPrice = activeRate ? Number(activeRate.standard_price) : 14.99
-    const expressPrice = activeRate ? Number(activeRate.express_price) : 35.00
-    const freeThreshold = activeRate ? Number(activeRate.free_threshold) : 150
-
-    const isExpress = shippingMethod === "express"
-    const standardCost = (subtotal >= freeThreshold || couponType === "free_shipping") ? 0 : standardPrice
-    const expressCost = expressPrice
-
-    const shipping = isExpress ? expressCost : standardCost
-      
-    let discountUsd = 0
-    if (couponType === "percent") {
-      discountUsd = Math.round(subtotal * (couponValue / 100) * 100) / 100
-    } else if (couponType === "fixed") {
-      discountUsd = Math.min(subtotal, couponValue)
-    }
-
-    const total = Math.round(Math.max(0, subtotal - discountUsd + shipping) * 100) / 100
+    // Display-only currency info from the browser: accept only sane values
+    const displayCurrency = typeof body.displayCurrency === "string" && /^[A-Z]{3}$/.test(body.displayCurrency) ? body.displayCurrency : "USD"
+    const rawRate = Number(body.exchangeRate)
+    const exchangeRate = displayCurrency !== "USD" && Number.isFinite(rawRate) && rawRate > 0 && rawRate < 100000 ? rawRate : 1
 
     const orderNumber = `WE-${Date.now().toString(36).toUpperCase()}`
     const shippingAddress = {
@@ -293,7 +220,7 @@ export async function POST(req: NextRequest) {
         const { data: profileMatch } = await serviceClient
           .from("profiles")
           .select("id")
-          .ilike("email", customer.email.trim())
+          .ilike("email", likeExact(customer.email.trim()))
           .maybeSingle()
 
         if (profileMatch?.id) {
@@ -344,6 +271,8 @@ export async function POST(req: NextRequest) {
     }
 
     const formattedNotes = [
+      paymentReviewNote ? `[${paymentReviewNote}]` : "",
+      quantityDiscountUsd > 0 ? `[Quantity promotion: ${quantityPromotionName ?? "discount"} −$${quantityDiscountUsd.toFixed(2)}]` : "",
       isExpress ? "[Shipping Option: Express]" : "[Shipping Option: Standard]",
       customer.notes ? `Customer Notes: ${customer.notes}` : ""
     ].filter(Boolean).join(" | ")
@@ -362,20 +291,20 @@ export async function POST(req: NextRequest) {
         shipping_usd: shipping,
         discount_usd: discountUsd,
         total_usd: total,
-        display_currency: body.displayCurrency || "USD",
-        exchange_rate: body.exchangeRate || 1,
-        total_display: body.exchangeRate ? Number((total * body.exchangeRate).toFixed(2)) : total,
+        display_currency: displayCurrency,
+        exchange_rate: exchangeRate,
+        total_display: Number((total * exchangeRate).toFixed(2)),
         coupon_id: couponId,
-        status: status || "confirmed",
-        payment_method: paymentMethod || null,
-        payment_intent_id: paymentIntentId || null,
+        status,
+        payment_method: paymentMethod,
+        payment_intent_id: paymentRef,
       })
       .select("id")
       .single()
 
     if (orderError || !order) {
       console.error("Order insert error:", orderError)
-      return NextResponse.json({ error: "Failed to create order" }, { status: 500 })
+      return failAfterPayment(`database insert failed: ${orderError?.message ?? "unknown"}`, "We couldn't record your order automatically.")
     }
 
     // Auto-save shipping address using RLS-proof service role client if user is logged in or account created
@@ -484,6 +413,15 @@ export async function POST(req: NextRequest) {
       console.error("Order confirmation email failed:", err)
     }
 
+    // Alert the store owner when an order needs a manual payment check
+    if (status === "pending" && paymentReviewNote) {
+      try {
+        await sendPaymentReviewAlert({ orderNumber, customerEmail: customer.email, totalUsd: total, paymentMethod, paymentRef, note: paymentReviewNote })
+      } catch (err) {
+        console.error("Payment review alert failed:", err)
+      }
+    }
+
     // Send guest welcome email if a temp password was generated
     if (tempPasswordCreated) {
       try {
@@ -496,6 +434,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ orderId: order.id, orderNumber })
   } catch (err) {
     console.error("POST /api/orders error:", err)
+    if (alertAfterPayment) {
+      return alertAfterPayment(`unexpected error: ${err instanceof Error ? err.message : String(err)}`, "Something went wrong while recording your order.")
+    }
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

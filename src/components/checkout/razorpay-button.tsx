@@ -1,13 +1,14 @@
 "use client"
 import { useEffect, useState } from "react"
+import type { CheckoutPricingPayload } from "./paypal-button"
 
 interface RazorpayButtonProps {
-  totalUsd: number
+  pricingPayload: CheckoutPricingPayload
   currency: string
   customerName: string
   customerEmail: string
   customerPhone: string
-  onSuccess: (paymentId: string) => void
+  onSuccess: (paymentId: string, gatewayOrderId: string) => void
   onError: (msg?: string) => void
   onProcessing?: (state: "verifying" | "recording" | "redirecting" | null) => void
   onClick?: () => boolean
@@ -77,7 +78,7 @@ function loadScript(src: string): Promise<boolean> {
 }
 
 export function RazorpayButton({
-  totalUsd, currency, customerName, customerEmail, customerPhone, onSuccess, onError, onProcessing, onClick,
+  pricingPayload, currency, customerName, customerEmail, customerPhone, onSuccess, onError, onProcessing, onClick,
 }: RazorpayButtonProps) {
   const [loading, setLoading] = useState(false)
 
@@ -100,7 +101,7 @@ export function RazorpayButton({
       const res = await fetch("/api/payment/razorpay/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ totalUsd, currency }),
+        body: JSON.stringify({ ...pricingPayload, currency }),
       })
 
       const data = await res.json()
@@ -142,7 +143,7 @@ export function RazorpayButton({
             const verified = await verifyRes.json()
             if (verified.verified) {
               onProcessing?.("recording")
-              onSuccess(response.razorpay_payment_id)
+              onSuccess(response.razorpay_payment_id, response.razorpay_order_id)
             } else {
               onProcessing?.(null)
               onError("Payment verification failed. Please contact warcraftexports@gmail.com.")

@@ -37,6 +37,8 @@ async function getOrder(orderNumber: string, email: string) {
       created_at,
       shipping_address,
       customer_name,
+      customer_email,
+      guest_email,
       order_items (
         id,
         quantity,
@@ -58,9 +60,12 @@ async function getOrder(orderNumber: string, email: string) {
         )
       )
     `)
-    .eq("order_number", orderNumber)
-    .or(`customer_email.eq.${sanitizedEmail},guest_email.eq.${sanitizedEmail}`)
-    .single()
+    .eq("order_number", orderNumber.trim().slice(0, 40))
+    .maybeSingle()
+  if (!data) return null
+  // Compare emails case-insensitively in code (no user input inside the database filter)
+  const emails = [data.customer_email, data.guest_email].filter(Boolean).map((e: string) => e.trim().toLowerCase())
+  if (!emails.includes(sanitizedEmail)) return null
   return data
 }
 
@@ -80,7 +85,7 @@ export default async function TrackOrderPage({ searchParams }: { searchParams: S
   if (sp.order_number && sp.email) {
     const headersList = await headers()
     const ip = headersList.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown"
-    if (!checkRateLimit(`track-order:${ip}`, 10, 60_000)) {
+    if (!(await checkRateLimit(`track-order:${ip}`, 10, 60_000))) {
       rateLimited = true
     }
   }

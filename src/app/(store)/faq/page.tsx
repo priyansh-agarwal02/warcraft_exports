@@ -9,6 +9,7 @@ export const dynamic = "force-dynamic"
 export async function generateMetadata(): Promise<Metadata> {
   const seo = await getPageSeo("faq")
   return {
+    alternates: { canonical: "https://www.warcraftexports.com/faq" },
     title: seo?.meta_title || "Frequently Asked Questions — Warcraft Exports",
     description: seo?.meta_description || "Find answers to commonly asked questions about shipping times, customs duties, materials, return policy, and wholesale military gear reproductions.",
     keywords: [

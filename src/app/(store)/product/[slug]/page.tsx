@@ -16,7 +16,8 @@ type Props = { params: Promise<{ slug: string }> }
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
   const product = await getProductBySlug(slug)
-  if (!product) return { title: "Product Not Found — Warcraft Exports" }
+  // Calling notFound() here (before the page starts streaming) makes missing products return a real 404
+  if (!product) notFound()
 
   const BASE_URL = process.env.NODE_ENV === "production"
     ? "https://www.warcraftexports.com"

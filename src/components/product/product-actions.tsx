@@ -88,6 +88,7 @@ export function ProductActions({
               <button
                 onClick={() => setQuantity((q) => Math.max(1, q - 1))}
                 disabled={quantity <= 1}
+                aria-label="Decrease quantity"
                 className="w-9 h-9 flex items-center justify-center text-leather-dark hover:bg-parchment-dark transition-colors disabled:opacity-40"
               >
                 <Minus size={14} />
@@ -98,6 +99,7 @@ export function ProductActions({
               <button
                 onClick={() => setQuantity((q) => Math.min(maxQuantity, q + 1))}
                 disabled={quantity >= maxQuantity}
+                aria-label="Increase quantity"
                 className="w-9 h-9 flex items-center justify-center text-leather-dark hover:bg-parchment-dark transition-colors disabled:opacity-40"
               >
                 <Plus size={14} />

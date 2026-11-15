@@ -177,3 +177,8 @@ iframe.goog-te-banner-frame,
   min-height: 40px !important;
 }
 
+
+/* Hide the floating chat launcher while the mobile menu is open (it covered "Track Order") */
+html.mobile-menu-open [data-chat-launcher] {
+  display: none !important;
+}

@@ -81,7 +81,12 @@ export function LoginForm() {
     }
 
     const searchParams = new URLSearchParams(window.location.search)
-    const redirectTo = searchParams.get("redirectTo")
+    // Only allow redirects to pages on this site (blocks https://evil.com, //evil.com, javascript: …)
+    const rawRedirect = searchParams.get("redirectTo")
+    const redirectTo =
+      rawRedirect && rawRedirect.startsWith("/") && !rawRedirect.startsWith("//") && !rawRedirect.startsWith("/\\")
+        ? rawRedirect
+        : null
 
     if (profile?.role === "admin") {
       // Admins are allowed to go to /admin or anywhere else

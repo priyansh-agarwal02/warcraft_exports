@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Don't advertise the framework in response headers
+  poweredByHeader: false,
   // M-3 FIX: CSRF protection — restrict server actions to trusted origins
   experimental: {
     serverActions: {
@@ -41,7 +43,7 @@ const nextConfig: NextConfig = {
             value: [
               "default-src 'self'",
               // Scripts: allow self, Vercel Analytics, Google Translate, Razorpay, PayPal, Cloudflare Turnstile
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://translate.googleapis.com https://translate.google.com https://translate-pa.googleapis.com https://www.googletagmanager.com https://www.google-analytics.com https://ssl.google-analytics.com https://va.vercel-scripts.com https://checkout.razorpay.com https://www.paypal.com https://www.paypalobjects.com https://www.sandbox.paypal.com https://us-assets.i.posthog.com https://app.posthog.com",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://translate.googleapis.com https://translate.google.com https://translate-pa.googleapis.com https://www.googletagmanager.com https://www.google-analytics.com https://ssl.google-analytics.com https://va.vercel-scripts.com https://checkout.razorpay.com https://cdn.razorpay.com https://www.paypal.com https://www.paypalobjects.com https://www.sandbox.paypal.com https://us-assets.i.posthog.com https://app.posthog.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://www.google.com https://td.doubleclick.net",
               // Styles: allow self, inline (needed for Tailwind), Google Fonts, Google Translate
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://translate.googleapis.com https://www.gstatic.com",
               // Fonts: allow self + Google Fonts
@@ -51,13 +53,15 @@ const nextConfig: NextConfig = {
               // Media: allow self
               "media-src 'self' blob: https:",
               // Connect: Supabase, Groq, exchangerate API, Vercel, Google Translate, Razorpay, PayPal, Google Analytics, Cloudflare Turnstile
-              `connect-src 'self' https://challenges.cloudflare.com https://*.supabase.co https://*.supabase.io wss://*.supabase.co https://api.groq.com https://api.exchangerate-api.com https://vitals.vercel-insights.com https://translate.googleapis.com https://translate.google.com https://translate-pa.googleapis.com https://api.razorpay.com https://lumberjack.razorpay.com https://www.paypal.com https://www.sandbox.paypal.com https://*.paypal.com https://*.paypalobjects.com https://app.posthog.com https://us.i.posthog.com https://*.google-analytics.com https://*.analytics.google.com https://stats.g.doubleclick.net`,
+              `connect-src 'self' https://challenges.cloudflare.com https://*.supabase.co https://*.supabase.io wss://*.supabase.co https://api.groq.com https://api.exchangerate-api.com https://vitals.vercel-insights.com https://translate.googleapis.com https://translate.google.com https://translate-pa.googleapis.com https://api.razorpay.com https://lumberjack.razorpay.com https://www.paypal.com https://www.sandbox.paypal.com https://*.paypal.com https://*.paypalobjects.com https://app.posthog.com https://us.i.posthog.com https://us-assets.i.posthog.com https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://stats.g.doubleclick.net https://www.google.com https://google.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://td.doubleclick.net https://ad.doubleclick.net https://www.googletagmanager.com https://www.google.co.in https://www.google.co.uk https://www.google.ca https://www.google.com.au https://www.google.de https://www.google.fr`,
               // Workers: allow self and blob (required by Turnstile verification scripts)
               "worker-src 'self' blob:",
               // Frames: self, Google Translate, Razorpay, PayPal, Cloudflare Turnstile
-              "frame-src 'self' https://challenges.cloudflare.com https://translate.google.com https://translate.googleapis.com https://api.razorpay.com https://checkout.razorpay.com https://www.paypal.com https://www.sandbox.paypal.com",
+              "frame-src 'self' https://challenges.cloudflare.com https://translate.google.com https://translate.googleapis.com https://api.razorpay.com https://checkout.razorpay.com https://www.paypal.com https://www.sandbox.paypal.com https://td.doubleclick.net https://www.googletagmanager.com",
               // Objects: none
               "object-src 'none'",
+              // Only this site may embed our pages (modern equivalent of X-Frame-Options)
+              "frame-ancestors 'self'",
               // Base URI: self only
               "base-uri 'self'",
               // Form submissions: self only

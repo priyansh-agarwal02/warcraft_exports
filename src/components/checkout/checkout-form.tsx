@@ -14,6 +14,7 @@ import { createClient } from "@/lib/supabase/client"
 import { PhoneInput } from "@/components/ui/phone-input"
 import { parsePhoneNumber } from "@/lib/phone"
 import { suggestEmailCorrection, isBlatantTypo } from "@/lib/email-validator"
+import { calculateQuantityDiscount, type QuantityPromotion } from "@/lib/promotions"
 
 const COUNTRIES = [
   "United States", "United Kingdom", "Canada", "Australia", "Germany", "France",
@@ -57,6 +58,7 @@ export function CheckoutForm() {
   const [selectedAddressId, setSelectedAddressId] = useState<string>("")
   const [processingState, setProcessingState] = useState<"verifying" | "recording" | "redirecting" | null>(null)
   const [dbRates, setDbRates] = useState<any[]>([])
+  const [promotions, setPromotions] = useState<QuantityPromotion[]>([])
   const [shippingMethod, setShippingMethod] = useState<"standard" | "express">("standard")
 
   useEffect(() => {
@@ -66,6 +68,11 @@ export function CheckoutForm() {
       .then(({ rates }) => {
         if (rates && rates.length > 0) setDbRates(rates)
       })
+      .catch(() => {})
+    // Same quantity promotions the cart page shows ("Buy 2+ save 5%")
+    fetch("/api/promotions")
+      .then((r) => r.json())
+      .then(({ promotions: data }) => setPromotions(Array.isArray(data) ? data : []))
       .catch(() => {})
 
     const hasUsa = items.some((item) => item.shipsFromUsa)
@@ -219,7 +226,6 @@ export function CheckoutForm() {
     }
   }, [])
 
-  const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [formValidated, setFormValidated] = useState(false)
   const [errorKey, setErrorKey] = useState(0) // increments on each new error to re-trigger shake
@@ -258,15 +264,38 @@ export function CheckoutForm() {
   const shipping = isExpress ? expressCost : standardCost
   
   // Support percent or fixed coupon discount
+  // Same rounding/capping rules as the server (src/lib/orders/pricing.ts) so the amount shown here
+  // matches what PayPal / Razorpay will charge.
   const couponDiscount = appliedCoupon
     ? appliedCoupon.type === "percent"
-      ? subtotalUsd * (appliedCoupon.value / 100)
+      ? Math.round(subtotalUsd * (appliedCoupon.value / 100) * 100) / 100
       : appliedCoupon.type === "fixed"
-        ? appliedCoupon.value
+        ? Math.min(subtotalUsd, appliedCoupon.value)
         : 0
     : 0
 
-  const totalUsd = Math.max(0, subtotalUsd - couponDiscount + shipping)
+  // Quantity promotion — identical rule to the cart page and the server (calculateQuantityDiscount)
+  const promoResult = calculateQuantityDiscount(
+    items.map((i) => ({ productId: i.productId, priceUsd: i.priceUsd, quantity: i.quantity })),
+    promotions
+  )
+  const quantityDiscount = Math.round(promoResult.discountUsd * 100) / 100
+
+  const totalUsd = Math.round(Math.max(0, subtotalUsd - couponDiscount - quantityDiscount + shipping) * 100) / 100
+
+  // Sent to the payment routes: the server calculates the amount to charge from this cart.
+  const pricingPayload = {
+    items: items.map((i) => ({
+      productId: i.productId,
+      variantId: i.variantId,
+      variantLabel: i.variantLabel || null,
+      quantity: i.quantity,
+    })),
+    country: form.country,
+    shippingMethod: (isExpress ? "express" : "standard") as "standard" | "express",
+    couponCode: appliedCoupon?.code || null,
+    email: form.email,
+  }
   const shippingNote = shipping === 0 ? "Free" : format(shipping)
 
   if (!mounted) {
@@ -339,7 +368,7 @@ export function CheckoutForm() {
     return true
   }
 
-  async function createOrder(paymentDetails?: { paymentMethod: "razorpay" | "paypal"; paymentIntentId: string; status: string }): Promise<{ orderId: string; orderNumber: string } | null> {
+  async function createOrder(paymentDetails: { paymentMethod: "razorpay" | "paypal"; paymentIntentId: string; gatewayOrderId: string }): Promise<{ orderId: string; orderNumber: string } | null> {
     try {
       localStorage.setItem("warcraft_checkout_contact", JSON.stringify(form))
     } catch {}
@@ -355,7 +384,7 @@ export function CheckoutForm() {
           variantLabel: i.variantLabel || null,
           quantity: i.quantity,
         })),
-        shippingMethod,
+        shippingMethod: isExpress ? "express" : "standard",
         couponCode: appliedCoupon?.code || null,
         displayCurrency: currency,
         exchangeRate: rates[currency] ?? 1,
@@ -366,12 +395,12 @@ export function CheckoutForm() {
     return res.json()
   }
 
-  function handlePaymentSuccess(paymentId: string, paymentMethod: "razorpay" | "paypal" = "razorpay") {
+  function handlePaymentSuccess(paymentId: string, paymentMethod: "razorpay" | "paypal", gatewayOrderId: string) {
     setProcessingState("recording")
     createOrder({
       paymentMethod,
       paymentIntentId: paymentId,
-      status: "confirmed",
+      gatewayOrderId,
     }).then((order) => {
       if (!order) {
         setProcessingState(null)
@@ -394,26 +423,11 @@ export function CheckoutForm() {
     return validateForm()
   }
 
-  // Also support submit (COD / manual order)
-  async function handleSubmit(e: React.FormEvent) {
+  // Orders are only created after a successful PayPal / Razorpay payment.
+  // Submitting the form itself (e.g. pressing Enter) just validates the fields.
+  function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!validateForm()) return
-    setSubmitting(true)
-    setProcessingState("recording")
-    setError(null)
-    try {
-      const order = await createOrder()
-      if (!order) throw new Error("Order failed")
-      setProcessingState("redirecting")
-      clearCart()
-      setTimeout(() => {
-        router.push(`/checkout/success?order_id=${order.orderId}`)
-      }, 300)
-    } catch {
-      setError("Something went wrong. Please try again.")
-      setSubmitting(false)
-      setProcessingState(null)
-    }
+    validateForm()
   }
 
   const inputClass =
@@ -692,13 +706,13 @@ export function CheckoutForm() {
                 variants={{ hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 280, damping: 22 } } }}
               >
                 <PayPalCheckout
-                  totalUsd={totalUsd}
+                  pricingPayload={pricingPayload}
                   currency={currency}
                   customerName={form.fullName}
                   customerEmail={form.email}
                   customerPhone={form.phone}
                   customerAddress={form}
-                  onSuccess={(paymentId) => handlePaymentSuccess(paymentId, "paypal")}
+                  onSuccess={(paymentId, gatewayOrderId) => handlePaymentSuccess(paymentId, "paypal", gatewayOrderId)}
                   onError={handlePaymentError}
                   onClick={handlePaymentButtonClick}
                 />
@@ -721,12 +735,12 @@ export function CheckoutForm() {
                       Pay securely using your credit/debit cards, net banking, wallets, or UPI / QR code.
                     </p>
                     <RazorpayButton
-                      totalUsd={totalUsd}
+                      pricingPayload={pricingPayload}
                       currency={currency}
                       customerName={form.fullName}
                       customerEmail={form.email}
                       customerPhone={form.phone}
-                      onSuccess={(paymentId) => handlePaymentSuccess(paymentId, "razorpay")}
+                      onSuccess={(paymentId, gatewayOrderId) => handlePaymentSuccess(paymentId, "razorpay", gatewayOrderId)}
                       onError={handlePaymentError}
                       onProcessing={setProcessingState}
                       onClick={handlePaymentButtonClick}
@@ -789,6 +803,14 @@ export function CheckoutForm() {
                 <span>{format(subtotalUsd)}</span>
               </div>
               
+              {/* Quantity promotion line (same as cart page) */}
+              {quantityDiscount > 0 && promoResult.appliedPromotion && (
+                <div className="flex justify-between text-green-700 text-xs">
+                  <span>{promoResult.appliedPromotion.name}</span>
+                  <span>−{format(quantityDiscount)}</span>
+                </div>
+              )}
+
               {/* Coupon discount line */}
               {appliedCoupon && (
                 <div className="flex justify-between text-green-700 text-xs">

@@ -11,6 +11,12 @@ export function MobileDrawer() {
   const [shopOpen, setShopOpen] = useState(false)
   const [user, setUser] = useState<any>(null)
 
+  // While the menu is open, hide the floating chat launcher (it covered the "Track Order" button).
+  useEffect(() => {
+    document.documentElement.classList.toggle("mobile-menu-open", open)
+    return () => document.documentElement.classList.remove("mobile-menu-open")
+  }, [open])
+
   useEffect(() => {
     const supabase = createClient()
     let active = true

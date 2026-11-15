@@ -9,7 +9,7 @@ const EMAIL_REGEX = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown"
-  if (!checkRateLimit(`newsletter:${ip}`, 5, 3_600_000)) {
+  if (!(await checkRateLimit(`newsletter:${ip}`, 5, 3_600_000))) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 })
   }
 
