@@ -172,26 +172,28 @@ export async function POST(req: NextRequest) {
     }
     const { validatedItems, subtotal, shipping, discountUsd, total, couponId, isExpress, warnings, quantityDiscountUsd, quantityPromotionName } = pricing
 
-    // ── 4. Decide status: confirmed only when the captured amount covers the server total ──
-    let status: "confirmed" | "pending" = "pending"
+    // ── 4. Decide status ──
+    // Owner's rule: a payment that PayPal/Razorpay confirm as received is ALWAYS "confirmed".
+    // Anything unusual (amount differs, low stock, coupon re-use) is written in the order notes
+    // and emailed to the owner — it never changes the status.
+    // Only when the gateway could not confirm the money at all (outage / payment still clearing)
+    // is the order kept as "pending".
+    const status: "confirmed" | "pending" = verification.status === "paid" ? "confirmed" : "pending"
     const reviewReasons: string[] = []
     if (verification.status === "paid") {
       const cover = await paymentCoversTotal(verification.amount, verification.currency, total)
-      if (cover.ok) {
-        status = "confirmed"
-      } else {
+      if (!cover.ok) {
         reviewReasons.push(`charged ${verification.amount} ${verification.currency}${cover.chargedUsd !== null ? ` (~$${cover.chargedUsd.toFixed(2)})` : ""}, order total $${total.toFixed(2)}`)
       }
     } else {
       reviewReasons.push(`could not verify payment automatically (${verification.reason})`)
     }
-    if (warnings.length) {
-      status = "pending"
-      reviewReasons.push(...warnings)
-    }
+    reviewReasons.push(...warnings)
+    // Owner is alerted whenever something about the payment/order needs a look
+    const needsOwnerAttention = reviewReasons.length > 0
     if (emailTypoNote) reviewReasons.push(emailTypoNote)
     const paymentReviewNote = reviewReasons.length
-      ? `${status === "pending" ? "PAYMENT REVIEW" : "NOTE"}: ${reviewReasons.join("; ")}`
+      ? `${needsOwnerAttention ? "CHECK PAYMENT" : "NOTE"}: ${reviewReasons.join("; ")}`
       : null
 
     // Display-only currency info from the browser: accept only sane values
@@ -414,7 +416,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Alert the store owner when an order needs a manual payment check
-    if (status === "pending" && paymentReviewNote) {
+    if (needsOwnerAttention && paymentReviewNote) {
       try {
         await sendPaymentReviewAlert({ orderNumber, customerEmail: customer.email, totalUsd: total, paymentMethod, paymentRef, note: paymentReviewNote })
       } catch (err) {

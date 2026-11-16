@@ -29,6 +29,10 @@ interface PayPalButtonProps {
   onSuccess: (paymentId: string, gatewayOrderId: string) => void
   onError: (msg?: string) => void
   onClick?: () => boolean
+  // Customer closed the PayPal window without paying
+  onCancel?: () => void
+  // Changing this number closes any open PayPal window / card form and redraws the buttons
+  resetKey?: number
 }
 
 export function PayPalCheckout({
@@ -41,6 +45,8 @@ export function PayPalCheckout({
   onSuccess,
   onError,
   onClick,
+  onCancel,
+  resetKey = 0,
 }: PayPalButtonProps) {
   const clientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || "test"
 
@@ -120,8 +126,10 @@ export function PayPalCheckout({
               label: "paypal",
               height: 44,
             }}
+            forceReRender={[resetKey]}
             createOrder={createOrder}
             onApprove={onApprove}
+            onCancel={() => onCancel?.()}
             onError={(err) => {
               console.error("PayPal Express Error:", err)
               onError("An error occurred with PayPal Express checkout. Please try again.")

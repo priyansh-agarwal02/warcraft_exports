@@ -86,12 +86,13 @@ describe("POST /api/orders", () => {
     expect(sendAlert).not.toHaveBeenCalled()
   })
 
-  it("keeps an underpaid order as pending review and alerts the owner (never confirmed)", async () => {
-    verifyPayPal.mockResolvedValue({ status: "paid", amount: 0.01, currency: "USD", captureId: "CAP123" })
+  it("a verified payment with a different amount is still CONFIRMED, with a note and an owner alert", async () => {
+    // Real case WE-MWIJUSVU: paid $58.15 (standard) but order said express $61.14
+    verifyPayPal.mockResolvedValue({ status: "paid", amount: 46.53, currency: "USD", captureId: "CAP123" })
     const res = await POST(req({ paymentMethod: "paypal", paymentIntentId: "CAP123", gatewayOrderId: "5O190127TN364715T" }))
     expect(res.status).toBe(200)
-    expect(insertedOrder()).toMatchObject({ status: "pending" })
-    expect(String(insertedOrder()?.notes)).toContain("PAYMENT REVIEW")
+    expect(insertedOrder()).toMatchObject({ status: "confirmed" })
+    expect(String(insertedOrder()?.notes)).toContain("CHECK PAYMENT")
     expect(sendAlert).toHaveBeenCalledOnce()
   })
 
@@ -117,7 +118,7 @@ describe("POST /api/orders", () => {
   })
 
   it("ignores a 'status' field sent by the browser", async () => {
-    verifyPayPal.mockResolvedValue({ status: "paid", amount: 0.01, currency: "USD", captureId: "CAP123" })
+    verifyPayPal.mockResolvedValue({ status: "unverifiable", reason: "PayPal unreachable" })
     await POST(req({ paymentMethod: "paypal", paymentIntentId: "CAP123", gatewayOrderId: "5O190127TN364715T", status: "confirmed" }))
     expect(insertedOrder()).toMatchObject({ status: "pending" })
   })
@@ -139,7 +140,7 @@ describe("POST /api/orders", () => {
 })
 
 describe("POST /api/orders — a paying customer is never lost", () => {
-  it("saves the order as pending (not rejected) when stock ran out after payment", async () => {
+  it("saves the order as confirmed (not rejected) when stock ran out after payment, and alerts the owner", async () => {
     db = createSupabaseMock({
       products: { data: [{ id: P1, name: "Leather Pouch", sku: "WE-001", price_usd: 38.99, sale_price_usd: null, stock_quantity: 0, ships_from_usa: false }] },
       shipping_rates: { data: { standard_price: 9.99, free_threshold: 50, express_price: 35 } },
@@ -150,7 +151,7 @@ describe("POST /api/orders — a paying customer is never lost", () => {
     verifyPayPal.mockResolvedValue({ status: "paid", amount: 48.98, currency: "USD", captureId: "CAP123" })
     const res = await POST(req({ paymentMethod: "paypal", paymentIntentId: "CAP123", gatewayOrderId: "5O190127TN364715T" }))
     expect(res.status).toBe(200)
-    expect(insertedOrder()).toMatchObject({ status: "pending" })
+    expect(insertedOrder()).toMatchObject({ status: "confirmed" })
     expect(String(insertedOrder()?.notes)).toContain("Low stock")
     expect(sendAlert).toHaveBeenCalledOnce()
   })

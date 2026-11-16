@@ -57,6 +57,12 @@ export function CheckoutForm() {
   const [savedAddresses, setSavedAddresses] = useState<any[]>([])
   const [selectedAddressId, setSelectedAddressId] = useState<string>("")
   const [processingState, setProcessingState] = useState<"verifying" | "recording" | "redirecting" | null>(null)
+  // Once a payment button is clicked, PayPal/Razorpay have fixed the amount. Lock everything that
+  // changes the price (shipping, country, saved address) until the payment window is closed,
+  // so the order saved always matches what was charged.
+  const [paymentLocked, setPaymentLocked] = useState(false)
+  const [lockNoticeKey, setLockNoticeKey] = useState(0)
+  const [paypalResetKey, setPaypalResetKey] = useState(0)
   const [dbRates, setDbRates] = useState<any[]>([])
   const [promotions, setPromotions] = useState<QuantityPromotion[]>([])
   const [shippingMethod, setShippingMethod] = useState<"standard" | "express">("standard")
@@ -246,6 +252,11 @@ export function CheckoutForm() {
     }
   }, [isExpressAvailable, shippingMethod])
 
+  // Switching currency reloads the payment buttons (closing any open payment window), so unlock
+  useEffect(() => {
+    setPaymentLocked(false)
+  }, [currency])
+
   const standardPrice = selectedRate ? Number(selectedRate.standard_price) : 14.99
   const expressPrice = selectedRate ? Number(selectedRate.express_price) : 35.00
   const freeThreshold = selectedRate ? Number(selectedRate.free_threshold) : 150
@@ -315,7 +326,28 @@ export function CheckoutForm() {
     setFormValidated(false)
   }
 
+  // Returns true (and nudges the "close payment window" message) if checkout is locked
+  function blockedByOpenPayment(): boolean {
+    if (!paymentLocked) return false
+    setLockNoticeKey((k) => k + 1)
+    return true
+  }
+
+  // "Close payment window & edit": closes any open PayPal window / card form and unlocks checkout
+  function closePaymentAndEdit() {
+    setPaymentLocked(false)
+    setPaypalResetKey((k) => k + 1)
+  }
+
+  function chooseShipping(method: "standard" | "express") {
+    if (method === shippingMethod) return
+    if (blockedByOpenPayment()) return
+    setShippingMethod(method)
+  }
+
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
+    // Country changes the shipping price, so it can't change while a payment window is open
+    if (e.target.name === "country" && blockedByOpenPayment()) return
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
     setFormValidated(false)
     if (["address1", "address2", "city", "state", "postalCode", "country"].includes(e.target.name)) {
@@ -416,11 +448,14 @@ export function CheckoutForm() {
   }
 
   function handlePaymentError(msg?: string) {
+    setPaymentLocked(false)
     setError(msg || "Payment was not completed. Please try again or contact support.")
   }
 
   function handlePaymentButtonClick() {
-    return validateForm()
+    const ok = validateForm()
+    if (ok) setPaymentLocked(true)
+    return ok
   }
 
   // Orders are only created after a successful PayPal / Razorpay payment.
@@ -429,6 +464,27 @@ export function CheckoutForm() {
     e.preventDefault()
     validateForm()
   }
+
+  const lockNotice = paymentLocked ? (
+    <motion.div
+      key={lockNoticeKey}
+      role="status"
+      data-testid="payment-lock-notice"
+      initial={{ opacity: 0, y: -4 }}
+      animate={{ opacity: 1, y: 0, x: lockNoticeKey ? [0, -8, 8, -5, 5, 0] : 0 }}
+      transition={{ duration: 0.4 }}
+      className="mb-4 border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 rounded-sm flex flex-col sm:flex-row sm:items-center gap-2 sm:justify-between"
+    >
+      <span>Payment window is open. Please close the payment window to edit your order.</span>
+      <button
+        type="button"
+        onClick={closePaymentAndEdit}
+        className="flex-shrink-0 text-[11px] font-sans font-bold uppercase tracking-wider border border-amber-400 bg-white px-3 py-1.5 rounded-sm hover:bg-amber-100 transition-colors cursor-pointer"
+      >
+        Close payment window &amp; edit
+      </button>
+    </motion.div>
+  ) : null
 
   const inputClass =
     "w-full px-3 py-2.5 text-sm font-sans bg-parchment border border-khaki rounded-sm focus:outline-none focus:border-leather text-leather-dark placeholder:text-khaki/70"
@@ -516,6 +572,7 @@ export function CheckoutForm() {
                     id="savedAddressSelect"
                     className="w-full px-3 py-2 text-xs font-sans bg-canvas border border-khaki rounded-sm focus:outline-none focus:border-leather text-leather-dark"
                     onChange={(e) => {
+                      if (blockedByOpenPayment()) return
                       const addrId = e.target.value
                       setSelectedAddressId(addrId)
                       const addr = savedAddresses.find((a) => a.id === addrId)
@@ -590,6 +647,7 @@ export function CheckoutForm() {
 
           <section className="bg-canvas border border-khaki/40 rounded-sm p-6 animate-custom-fade-in">
             <h2 className="font-heading text-[20px] text-leather-dark uppercase tracking-wide mb-5">03. Shipping Method</h2>
+            {lockNotice}
             <div className="flex flex-col gap-4">
               {/* Standard option */}
               <div 
@@ -598,7 +656,7 @@ export function CheckoutForm() {
                     ? "border-leather bg-parchment/70 ring-1 ring-leather" 
                     : "border-khaki/60 hover:border-leather"
                 }`}
-                onClick={() => setShippingMethod("standard")}
+                onClick={() => chooseShipping("standard")}
               >
                 <div className="flex items-center gap-3.5">
                   <div className="w-4 h-4 rounded-full border border-leather flex items-center justify-center bg-canvas flex-shrink-0">
@@ -628,7 +686,7 @@ export function CheckoutForm() {
                       ? "border-leather bg-parchment/70 ring-1 ring-leather" 
                       : "border-khaki/60 hover:border-leather"
                   }`}
-                  onClick={() => setShippingMethod("express")}
+                  onClick={() => chooseShipping("express")}
                 >
                   <div className="flex items-center gap-3.5">
                     <div className="w-4 h-4 rounded-full border border-leather flex items-center justify-center bg-canvas flex-shrink-0">
@@ -668,6 +726,8 @@ export function CheckoutForm() {
               Your payment is processed securely. Amount charged in{" "}
               <span className="font-bold text-leather">{currency}</span>.
             </p>
+
+            {lockNotice}
 
             <AnimatePresence mode="wait">
               {error && (
@@ -715,6 +775,8 @@ export function CheckoutForm() {
                   onSuccess={(paymentId, gatewayOrderId) => handlePaymentSuccess(paymentId, "paypal", gatewayOrderId)}
                   onError={handlePaymentError}
                   onClick={handlePaymentButtonClick}
+                  onCancel={() => setPaymentLocked(false)}
+                  resetKey={paypalResetKey}
                 />
               </motion.div>
 
